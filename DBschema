@@ -1,0 +1,245 @@
+===========================
+🧑 USER
+===========================
+| Column         | Type         | Constraint     |
+|----------------|--------------|----------------|
+| user_id        | INTEGER      | PRIMARY KEY    |
+| user_name      | VARCHAR(100) |                |
+| user_password  | VARCHAR(100) |                |
+| status         | VARCHAR(100) |                |
+
+===========================
+🏢 IC_COMPANY
+===========================
+| Column              | Type         | Constraint     |
+|---------------------|--------------|----------------|
+| company_id          | INTEGER      | PRIMARY KEY    |
+| name                | VARCHAR(100) |                |
+| licence_no          | VARCHAR(100) |                |
+| licenced_by         | VARCHAR(100) |                |
+| capital             | NUMBER       |                |
+| activation_date     | DATE         |                |
+| subscription_status | VARCHAR(20)  |                |
+
+===========================
+🏬 BRANCH
+===========================
+| Column         | Type         | Constraint     |
+|----------------|--------------|----------------|
+| branch_id      | INTEGER      | PRIMARY KEY    |
+| branch_name    | VARCHAR(100) |                |
+| company_id     | INTEGER      | FOREIGN KEY    |
+
+===========================
+📍 ADDRESS
+===========================
+| Column       | Type         | Constraint     |
+|--------------|--------------|----------------|
+| address_id   | INTEGER      | PRIMARY KEY    |
+| company_id   | INTEGER      | FOREIGN KEY    |
+| branch_id    | INTEGER      | FOREIGN KEY    |
+| customer_id  | INTEGER      | FOREIGN KEY    |
+| country      | VARCHAR(100) |                |
+| city         | VARCHAR(50)  |                |
+| email        | VARCHAR(20)  |                |
+| postal_code  | VARCHAR(20)  |                |
+| phone_no     | VARCHAR(20)  |                |
+
+===========================
+📦 PRODUCT
+===========================
+| Column       | Type         | Constraint     |
+|--------------|--------------|----------------|
+| product_id   | INTEGER      | PRIMARY KEY    |
+| product_type | VARCHAR(100) |                |
+
+===========================
+⚙️ PRODUCT_CONFIG
+===========================
+| Column          | Type         | Constraint     |
+|-----------------|--------------|----------------|
+| config_id       | INTEGER      | PRIMARY KEY    |
+| product_id      | INTEGER      | FOREIGN KEY    |
+| company_id      | INTEGER      | FOREIGN KEY    |
+| branch_id       | INTEGER      | FOREIGN KEY    |
+| zone_id         | INTEGER      | FOREIGN KEY    |
+| user_id         | INTEGER      | FOREIGN KEY    |
+| fiscal_year     | INTEGER      |                |
+| growing_season  | VARCHAR(20)  |                |
+| period          | VARCHAR(20)  |                |
+| trigger_point   | NUMBER       |                |
+| exit_point      | NUMBER       |                |
+| elc_value       | NUMBER       |                |
+| premium_rate    | NUMBER       |                |
+| load            | NUMBER       |                |
+| discount        | NUMBER       |                |
+
+===========================
+📍 GPS_ZONE
+===========================
+| Column     | Type         | Constraint     |
+|------------|--------------|----------------|
+| zone_id    | INTEGER      | PRIMARY KEY    |
+| zone_name  | VARCHAR(100) |                |
+
+===========================
+📊 GRID
+===========================
+| Column    | Type         | Constraint     |
+|-----------|--------------|----------------|
+| grid_id   | INTEGER      | PRIMARY KEY    |
+| grid_name | VARCHAR(100) |                |
+
+===========================
+🏠 FIELD
+===========================
+| Column      | Type    | Constraint     |
+|-------------|---------|----------------|
+| field_id    | INTEGER | PRIMARY KEY    |
+| latitude    | NUMBER  |                |
+| longitude   | NUMBER  |                |
+| grid_id     | INTEGER | FOREIGN KEY    |
+| customer_id | INTEGER | FOREIGN KEY    |
+
+===========================
+👤 CUSTOMER
+===========================
+| Column       | Type         | Constraint     |
+|--------------|--------------|----------------|
+| customer_id  | INTEGER      | PRIMARY KEY    |
+| fname        | VARCHAR(100) |                |
+| mname        | VARCHAR(100) |                |
+| lname        | VARCHAR(100) |                |
+| account_no   | VARCHAR(100) |                |
+| account_type | VARCHAR(100) |                |
+
+===========================
+📝 ENROLMENT
+===========================
+| Column        | Type         | Constraint     |
+|---------------|--------------|----------------|
+| enrolment_id  | INTEGER      | PRIMARY KEY    |
+| customer_id   | INTEGER      | FOREIGN KEY    |
+| user_id       | INTEGER      | FOREIGN KEY    |
+| ic_company_id | INTEGER      | FOREIGN KEY    |
+| branch_id     | INTEGER      | FOREIGN KEY    |
+| receipt_no    | VARCHAR(100) |                |
+| product_id    | INTEGER      | FOREIGN KEY    |
+| item_id       | INTEGER      | FOREIGN KEY    |
+| item_qty      | NUMBER       |                |
+| premium       | NUMBER       |                |
+| sum_insured   | NUMBER       |                |
+| date_from     | DATE         |                |
+| date_to       | DATE         |                |
+
+===========================
+🧾 POLICY
+===========================
+| Column        | Type         | Constraint     |
+|---------------|--------------|----------------|
+| policy_id     | INTEGER      | PRIMARY KEY    |
+| enrolment_id  | INTEGER      | FOREIGN KEY    |
+| user_id       | INTEGER      | FOREIGN KEY    |
+| ic_company_id | INTEGER      | FOREIGN KEY    |
+| branch_id     | INTEGER      | FOREIGN KEY    |
+| policy_no     | VARCHAR(20)  |                |
+| fiscal_year   | VARCHAR(50)  |                |
+| growing_season| VARCHAR(50)  |                |
+| status        | VARCHAR(50)  |                |
+
+===========================
+📄 POLICY_DETAIL
+===========================
+| Column              | Type         | Constraint     |
+|---------------------|--------------|----------------|
+| policy_detail_id    | INTEGER      | PRIMARY KEY    |
+| policy_id           | INTEGER      | FOREIGN KEY    |
+| period              | VARCHAR(50)  |                |
+| period_sum_insured  | NUMBER       |                |
+
+===========================
+📉 CLAIM
+===========================
+| Column        | Type         | Constraint     |
+|---------------|--------------|----------------|
+| claim_id      | INTEGER      | PRIMARY KEY    |
+| policy_detail_id | INTEGER   | FOREIGN KEY    |
+| customer_id   | INTEGER      | FOREIGN KEY    |
+| fiscal_year   | VARCHAR(50)  |                |
+| growing_season| VARCHAR(50)  |                |
+| claim_type    | VARCHAR(50)  |                |
+| claim_period  | VARCHAR(50)  |                |
+| trigger_point | INTEGER      |                |
+| exit_point    | INTEGER      |                |
+| arrived_index | INTEGER      |                |
+| claim_amount  | VARCHAR(50)  |                |
+| status        | VARCHAR(50)  |                |
+
+===========================
+📊 NDVI_CROP / NDVI_LIVESTOCK
+===========================
+| Column      | Type         | Constraint     |
+|-------------|--------------|----------------|
+| id          | INTEGER      | PRIMARY KEY    |
+| zone_id     | INTEGER      | (crop only)    |
+| clustor_id  | INTEGER      | (livestock)    |
+| fiscal_year | VARCHAR(100) |                |
+| growing_season | VARCHAR(100) |             |
+| period      | VARCHAR(100) |                |
+| index_value | NUMBER       |                |
+
+===========================
+📍 TRIGGER_EXIT_POINTS
+===========================
+| Column           | Type         | Constraint     |
+|------------------|--------------|----------------|
+| teid             | INTEGER      | PRIMARY KEY    |
+| zone_id          | INTEGER      | FOREIGN KEY    |
+| fiscal_year      | INTEGER      |                |
+| growing_season   | VARCHAR(20)  |                |
+| period           | VARCHAR(20)  |                |
+| trigger_point    | NUMBER       |                |
+| exit_point       | NUMBER       |                |
+| trigger_percentile| NUMBER      |                |
+| exit_percentile  | NUMBER       |                |
+
+===========================
+💸 COMMISSION
+===========================
+| Column             | Type         | Constraint     |
+|--------------------|--------------|----------------|
+| commission_id      | INTEGER      | PRIMARY KEY    |
+| commission_rate_id | INTEGER      | FOREIGN KEY    |
+| payed_by           | INTEGER      | FOREIGN KEY    |
+| payed_for          | INTEGER      | FOREIGN KEY    |
+| fiscal_year        | INTEGER      |                |
+| season             | NUMBER       |                |
+| commission_amount  | NUMBER       |                |
+| deduction          | NUMBER       |                |
+| net_payment        | NUMBER       |                |
+| payment_status     | VARCHAR(50)  |                |
+
+===========================
+📈 COMMISSION_RATE
+===========================
+| Column         | Type         | Constraint     |
+|----------------|--------------|----------------|
+| commission_rate_id | INTEGER  | PRIMARY KEY    |
+| commission_rate     | NUMBER   |                |
+| description         | VARCHAR(200) |            |
+
+===========================
+📦 ITEMS
+===========================
+| Column   | Type         | Constraint     |
+|----------|--------------|----------------|
+| item_id  | INTEGER      | PRIMARY KEY    |
+| item_name| VARCHAR(100) |                |
+
+===========================
+📍 CLUSTOR
+===========================
+| Column       | Type         | Constraint     |
+|--------------|--------------|----------------|
+| clustor_id   | INTEGER      | PRIMARY KEY    |
+| clustor_name | VARCHAR(100) |                |
