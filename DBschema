@@ -7,6 +7,8 @@
 | user_name      | VARCHAR(100) |                |
 | user_password  | VARCHAR(100) |                |
 | status         | VARCHAR(100) |                |
+| role           | VARCHAR(100) |                |
+
 
 ===========================
 🏢 IC_COMPANY
