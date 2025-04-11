@@ -1,20 +1,21 @@
-# main route for this microservice
-from fastapi import FastAPI, Depends
-from sqlalchemy.orm import Session
-from backend.src.database.db import SessionLocal, Base, engine
-from backend.src.database.models import user  # make sure __init__.py exists in models
+from fastapi import FastAPI
+from src.routes.insurance_company import router as insurance_comapany_router
+from fastapi.middleware.cors import CORSMiddleware  
 
-app = FastAPI()
 
-Base.metadata.create_all(bind=engine)
+app = FastAPI(title="Insurance API")
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
-@app.get("/")
-def read_company(db: Session = Depends(get_db)):
-    return db.query(user.User).all()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+app.include_router(insurance_comapany_router, prefix="/incurance_comapnies", tags=["insurance_comapnies"])
+if __name__ == '__main__':
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

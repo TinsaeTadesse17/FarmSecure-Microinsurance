@@ -13,8 +13,10 @@ services:
     ports:
       - "5433:5432"  
     restart: always
+
   company_management_backend:
-    build: ./company_management
+    build: .services/company_management/backend
+    container_name: company_management_backend
     depends_on:
       - db_company_management
     ports:
