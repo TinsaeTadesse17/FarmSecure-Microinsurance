@@ -1,18 +1,32 @@
 version: '3.8'
 
 services:
-  db:
+  db_company_management:
     image: postgres:16
-    container_name: postgres_db
-    restart: always
+    container_name: db_company_management
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin123
-      POSTGRES_DB: agritech
+      POSTGRES_USER: company_user
+      POSTGRES_PASSWORD: pass1234
+      POSTGRES_DB: db_company_management
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "5433:5432"
+      - "5433:5432"  
+    restart: always
+  company_management_backend:
+    build: ./company_management
+    depends_on:
+      - db_company_management
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: db_company_management
+      DB_PORT: 5432
+      DB_USER: company_user
+      DB_PASS: pass1234
+      DB_NAME: db_company_management
+
+
 
   pgadmin:
     image: dpage/pgadmin4
