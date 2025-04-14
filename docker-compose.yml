@@ -14,7 +14,7 @@ services:
     restart: always
 
   company_management_backend:
-    build: services/company_management/backend
+    build: services/company_management
     container_name: company_management_backend
     depends_on:
       - db_company_management
