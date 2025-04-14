@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, HttpException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { AxiosResponse } from 'axios';
+import { AxiosError } from 'axios';
 
 @Injectable()
 export class UsersService {
@@ -10,39 +10,44 @@ export class UsersService {
 
   constructor(private readonly httpService: HttpService) {}
 
-  async create(userData: any): Promise<any> {
+  async create(userData: any) {
     try {
-      const response: AxiosResponse<any> = await firstValueFrom(
+      const { data } = await firstValueFrom(
         this.httpService.post(`${this.baseUrl}/api/users`, userData)
       );
-      return response.data;
+      return data;
     } catch (error) {
-      this.logger.error(`Error creating user: ${error.message}`);
-      throw error;
+      this.handleAxiosError(error, 'Error creating user');
     }
   }
 
-  async findOne(id: number): Promise<any> {
+  async findOne(id: number) {
     try {
-      const response: AxiosResponse<any> = await firstValueFrom(
+      const { data } = await firstValueFrom(
         this.httpService.get(`${this.baseUrl}/api/users/${id}`)
       );
-      return response.data;
+      return data;
     } catch (error) {
-      this.logger.error(`Error fetching user ${id}: ${error.message}`);
-      throw error;
+      this.handleAxiosError(error, `Error fetching user ${id}`);
     }
   }
 
-  async updateRoles(id: number, rolesData: any): Promise<any> {
+  async updateRoles(id: number, rolesData: any) {
     try {
-      const response: AxiosResponse<any> = await firstValueFrom(
+      const { data } = await firstValueFrom(
         this.httpService.put(`${this.baseUrl}/api/users/${id}/roles`, rolesData)
       );
-      return response.data;
+      return data;
     } catch (error) {
-      this.logger.error(`Error updating roles for user ${id}: ${error.message}`);
-      throw error;
+      this.handleAxiosError(error, `Error updating roles for user ${id}`);
     }
+  }
+
+  private handleAxiosError(error: AxiosError, context: string) {
+    this.logger.error(`${context}: ${error.message}`, error.stack);
+    throw new HttpException(
+      error.response?.data || context,
+      error.response?.status || 500
+    );
   }
 }
