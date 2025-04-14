@@ -1,10 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { CreateCommissionDto } from './dto/create-commission.dto';
-import { UpdateCommissionDto } from './dto/update-commission.dto';
 
 @Injectable()
 export class CommissionsService {
-  create(createCommissionDto: CreateCommissionDto) {
+  create() {
     return 'This action adds a new commission';
   }
 
@@ -16,7 +14,7 @@ export class CommissionsService {
     return `This action returns a #${id} commission`;
   }
 
-  update(id: number, updateCommissionDto: UpdateCommissionDto) {
+  update(id: number) {
     return `This action updates a #${id} commission`;
   }
 

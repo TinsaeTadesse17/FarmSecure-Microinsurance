@@ -1,10 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { CreateClaimDto } from './dto/create-claim.dto';
-import { UpdateClaimDto } from './dto/update-claim.dto';
 
 @Injectable()
 export class ClaimsService {
-  create(createClaimDto: CreateClaimDto) {
+  create() {
     return 'This action adds a new claim';
   }
 
@@ -16,7 +14,7 @@ export class ClaimsService {
     return `This action returns a #${id} claim`;
   }
 
-  update(id: number, updateClaimDto: UpdateClaimDto) {
+  update(id: number) {
     return `This action updates a #${id} claim`;
   }
 

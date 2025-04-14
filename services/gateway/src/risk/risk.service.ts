@@ -1,10 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { CreateRiskDto } from './dto/create-risk.dto';
-import { UpdateRiskDto } from './dto/update-risk.dto';
 
 @Injectable()
 export class RiskService {
-  create(createRiskDto: CreateRiskDto) {
+  create() {
     return 'This action adds a new risk';
   }
 
@@ -16,7 +14,7 @@ export class RiskService {
     return `This action returns a #${id} risk`;
   }
 
-  update(id: number, updateRiskDto: UpdateRiskDto) {
+  update(id: number) {
     return `This action updates a #${id} risk`;
   }
 

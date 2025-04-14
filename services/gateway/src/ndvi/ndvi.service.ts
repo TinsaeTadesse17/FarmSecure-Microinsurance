@@ -1,10 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { CreateNdviDto } from './dto/create-ndvi.dto';
-import { UpdateNdviDto } from './dto/update-ndvi.dto';
 
 @Injectable()
 export class NdviService {
-  create(createNdviDto: CreateNdviDto) {
+  create() {
     return 'This action adds a new ndvi';
   }
 
@@ -16,7 +14,7 @@ export class NdviService {
     return `This action returns a #${id} ndvi`;
   }
 
-  update(id: number, updateNdviDto: UpdateNdviDto) {
+  update(id: number) {
     return `This action updates a #${id} ndvi`;
   }
 
