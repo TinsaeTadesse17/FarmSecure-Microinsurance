@@ -16,6 +16,7 @@ app.add_middleware(
 
 
 app.include_router(insurance_comapany_router, prefix="/insurance_companies", tags=["insurance_companies"])
+app.include_router(insurance_comapany_router, prefix="/incurance_comapnies", tags=["insurance_comapnies"])
 if __name__ == '__main__':
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
