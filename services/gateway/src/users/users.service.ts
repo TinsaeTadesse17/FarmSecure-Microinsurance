@@ -1,4 +1,4 @@
-import { Injectable, Logger, HttpException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { AxiosError } from 'axios';
@@ -32,6 +32,20 @@ export class UsersService {
     }
   }
 
+  async findByEmail(email: string) {
+    try {
+      const { data } = await firstValueFrom(
+        this.httpService.get(`${this.baseUrl}/api/users/email/${email}`)
+      );
+      return data;
+    } catch (error) {
+      if ((error as AxiosError).response?.status === 404) {
+        return null;
+      }
+      this.handleAxiosError(error, `Error finding user by email ${email}`);
+    }
+  }
+
   async updateRoles(id: number, rolesData: any) {
     try {
       const { data } = await firstValueFrom(
@@ -45,9 +59,11 @@ export class UsersService {
 
   private handleAxiosError(error: AxiosError, context: string) {
     this.logger.error(`${context}: ${error.message}`, error.stack);
-    throw new HttpException(
-      error.response?.data || context,
-      error.response?.status || 500
-    );
+    
+    if (error.response?.status === 404) {
+      throw new NotFoundException(error.response?.data || 'User not found');
+    }
+    
+    throw error;
   }
 }

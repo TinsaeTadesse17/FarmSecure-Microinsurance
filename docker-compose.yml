@@ -26,16 +26,16 @@ services:
       DB_PASS: pass1234
       DB_NAME: db_company_management
 
-  product_service:
-    build: ./services/product
-    container_name: product_service
-    environment:
-      # Connect to the dedicated DB instance
-      - DATABASE_URL=postgresql://postgres:password@product_db:5432/productdb
-    ports:
-      - "8000:8000"
-    depends_on:
-      - product_db
+  # product_service:
+  #   build: ./services/product
+  #   container_name: product_service
+  #   environment:
+  #     # Connect to the dedicated DB instance
+  #     - DATABASE_URL=postgresql://postgres:password@product_db:5432/productdb
+  #   ports:
+  #     - "8000:8000"
+  #   depends_on:
+  #     - product_db
 
   product_db:
     image: postgres:13-alpine

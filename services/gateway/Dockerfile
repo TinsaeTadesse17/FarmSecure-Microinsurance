@@ -17,7 +17,7 @@ COPY . .
 RUN npm run build
 
 # Expose NestJS port
-EXPOSE 3000
+EXPOSE 7000
 
 # Start the app
 CMD ["node", "dist/main.js"]
