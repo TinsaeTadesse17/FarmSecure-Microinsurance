@@ -1,10 +1,18 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+import os
 
-SQLALCHEMY_DATABASE_URL = "postgresql://user:password@localhost/yourdb"
+DB_USER = os.getenv("DB_USER", "insurance_user")
+DB_PASS = os.getenv("DB_PASS", "insurance_pass")
+DB_HOST = os.getenv("DB_HOST", "register_insurance_db")  # Docker service name
+DB_PORT = os.getenv("DB_PORT", 5432)
+DB_NAME = os.getenv("DB_NAME", "insurance_db")
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
+engine = create_engine(DATABASE_URL)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
@@ -15,3 +23,4 @@ def get_db():
         yield db
     finally:
         db.close()
+
