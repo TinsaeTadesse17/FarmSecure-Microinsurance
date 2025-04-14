@@ -1,15 +1,13 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { NdviService } from './ndvi.service';
-import { CreateNdviDto } from './dto/create-ndvi.dto';
-import { UpdateNdviDto } from './dto/update-ndvi.dto';
 
 @Controller('ndvi')
 export class NdviController {
   constructor(private readonly ndviService: NdviService) {}
 
   @Post()
-  create(@Body() createNdviDto: CreateNdviDto) {
-    return this.ndviService.create(createNdviDto);
+  create( ) {
+    return this.ndviService.create();
   }
 
   @Get()
@@ -23,8 +21,8 @@ export class NdviController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateNdviDto: UpdateNdviDto) {
-    return this.ndviService.update(+id, updateNdviDto);
+  update(@Param('id') id: string) {
+    return this.ndviService.update(+id );
   }
 
   @Delete(':id')

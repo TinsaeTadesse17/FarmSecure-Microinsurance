@@ -1,15 +1,13 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { RiskService } from './risk.service';
-import { CreateRiskDto } from './dto/create-risk.dto';
-import { UpdateRiskDto } from './dto/update-risk.dto';
 
 @Controller('risk')
 export class RiskController {
   constructor(private readonly riskService: RiskService) {}
 
   @Post()
-  create(@Body() createRiskDto: CreateRiskDto) {
-    return this.riskService.create(createRiskDto);
+  create() {
+    return this.riskService.create();
   }
 
   @Get()
@@ -23,8 +21,8 @@ export class RiskController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateRiskDto: UpdateRiskDto) {
-    return this.riskService.update(+id, updateRiskDto);
+  update(@Param('id') id: string) {
+    return this.riskService.update(+id,);
   }
 
   @Delete(':id')

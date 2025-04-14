@@ -1,15 +1,13 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { ClaimsService } from './claims.service';
-import { CreateClaimDto } from './dto/create-claim.dto';
-import { UpdateClaimDto } from './dto/update-claim.dto';
 
 @Controller('claims')
 export class ClaimsController {
   constructor(private readonly claimsService: ClaimsService) {}
 
   @Post()
-  create(@Body() createClaimDto: CreateClaimDto) {
-    return this.claimsService.create(createClaimDto);
+  create( ) {
+    return this.claimsService.create();
   }
 
   @Get()
@@ -23,8 +21,8 @@ export class ClaimsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateClaimDto: UpdateClaimDto) {
-    return this.claimsService.update(+id, updateClaimDto);
+  update(@Param('id') id: string ) {
+    return this.claimsService.update(+id, );
   }
 
   @Delete(':id')
