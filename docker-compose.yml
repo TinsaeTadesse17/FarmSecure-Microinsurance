@@ -1,3 +1,4 @@
+
 services:
   db_company_management:
     image: postgres:16
@@ -87,11 +88,10 @@ services:
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     ports:
       - "5050:80"
+
     depends_on:
       - user_db
       - product_db
-
-   
 
 volumes:
   pgdata_user:
