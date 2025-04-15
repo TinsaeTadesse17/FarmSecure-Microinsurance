@@ -7,7 +7,6 @@ from src.schemas.insurance_company_schema import InsuranceCompanyCreate, Insuran
 class InsuranceCompanyService:
     def __init__(self, db: Session):
         self.db = db
-
     def create_company(self, company: InsuranceCompanyCreate):
         # Validate required non-empty fields
         if not company.name.strip():
