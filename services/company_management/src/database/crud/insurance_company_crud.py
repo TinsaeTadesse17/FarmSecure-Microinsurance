@@ -59,43 +59,14 @@ class InsuranceCompanyService:
     def get_companies(self, skip: int = 0, limit: int = 10):
         return self.db.query(InsuranceCompany).offset(skip).limit(limit).all()
 
-    def update_company(self, company_id: int, company_update: InsuranceCompanyUpdate):
+    def update_company(self, company_id: int):
         db_company = self.db.query(InsuranceCompany).filter(InsuranceCompany.id == company_id).first()
         if not db_company:
             raise HTTPException(status_code=404, detail="Company not found")
         
-        update_data = company_update.dict(exclude_unset=True)
-
-        # If updating email, validate it isn't empty and not already used by another company.
-        if "email" in update_data:
-            new_email = update_data["email"]
-            if not new_email.strip():
-                raise HTTPException(status_code=400, detail="Email cannot be empty")
-            duplicate_email = self.db.query(InsuranceCompany).filter(
-                InsuranceCompany.email == new_email,
-                InsuranceCompany.id != company_id
-            ).first()
-            if duplicate_email:
-                raise HTTPException(status_code=400, detail="Email already registered")
-
-        # If updating phoneNo, validate it isn't empty and not already used by another company.
-        if "phoneNo" in update_data:
-            new_phone = update_data["phoneNo"]
-            if not new_phone.strip():
-                raise HTTPException(status_code=400, detail="Phone number cannot be empty")
-            duplicate_phone = self.db.query(InsuranceCompany).filter(
-                InsuranceCompany.phoneNo == new_phone,
-                InsuranceCompany.id != company_id
-            ).first()
-            if duplicate_phone:
-                raise HTTPException(status_code=400, detail="Phone number already registered")
-
-        # Optional: Check for other fields (e.g., licenseNo) if needed
-
-        # Update all provided fields
-        for key, value in update_data.items():
-            setattr(db_company, key, value)
         
+        db_company.status = "approved"
+
         self.db.commit()
         self.db.refresh(db_company)
         return db_company
