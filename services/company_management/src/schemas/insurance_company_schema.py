@@ -20,7 +20,6 @@ class InsuranceCompanyBase(BaseModel):
 class InsuranceCompanyCreate(InsuranceCompanyBase):
     pass
 
-
 class InsuranceCompanyUpdate(BaseModel):
     name: Optional[str] = None
     licenseNo: Optional[str] = None
