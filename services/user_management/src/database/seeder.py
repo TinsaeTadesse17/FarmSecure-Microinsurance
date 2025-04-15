@@ -15,7 +15,8 @@ def seed_admin_user(db: Session):
         username=settings.ADMIN_USERNAME,
         password=hash_password(settings.ADMIN_PASSWORD),
         role="admin",
-        status="active"
+        status=None,           
+        company_id=None 
     )
 
     db.add(admin_user)

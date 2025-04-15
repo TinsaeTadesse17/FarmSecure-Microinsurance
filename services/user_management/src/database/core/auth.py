@@ -13,10 +13,12 @@ def login_user(db: Session, username: str, password: str):
     if not user:
         return None
     roles = [user.role]
+    company_id =[user.company_id]
     token = create_access_token({
         "sub": str(user.user_id),
         "username": user.username,
         "role": roles,
+        "company_id": company_id
         
     })
     return token
