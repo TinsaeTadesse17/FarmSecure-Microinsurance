@@ -31,7 +31,6 @@ class InsuranceCompany(Base):
     phoneNo = Column(String, nullable=False, unique=True)
     postalCode = Column(String, nullable=False)
     email = Column(String, nullable=False, unique=True)
-    # Use SQLAlchemy's Enum here by aliasing it as SQLEnum
     status = Column(SQLEnum(CompanyStatus), default=CompanyStatus.pending, nullable=False)
 
     status = Column(Enum(CompanyStatus), default=CompanyStatus.pending, nullable=False)
