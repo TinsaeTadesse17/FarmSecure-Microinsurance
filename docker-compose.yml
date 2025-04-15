@@ -28,6 +28,7 @@ services:
       DB_NAME: db_company_management
 
 
+
   product_service:
     build: ./services/product
     container_name: product_service
