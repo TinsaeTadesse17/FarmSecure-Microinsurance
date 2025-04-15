@@ -1,51 +1,53 @@
 services:
-  # db_company_management:
-  #   image: postgres:16
-  #   container_name: db_company_management
-  #   environment:
-  #     POSTGRES_USER: company_user
-  #     POSTGRES_PASSWORD: pass1234
-  #     POSTGRES_DB: db_company_management
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
-  #   ports:
-  #     - "5433:5432"  
-  #   restart: always
+  db_company_management:
+    image: postgres:16
+    container_name: db_company_management
+    environment:
+      POSTGRES_USER: company_user
+      POSTGRES_PASSWORD: pass1234
+      POSTGRES_DB: db_company_management
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  
+    restart: always
 
-  # company_management_backend:
-  #   build: ./services/company_management/backend
-  #   container_name: company_management_backend
-  #   depends_on:
-  #     - db_company_management
-  #   ports:
-  #     - "8000:8000"
-  #   environment:
-  #     DB_HOST: db_company_management
-  #     DB_PORT: 5432
-  #     DB_USER: company_user
-  #     DB_PASS: pass1234
-  #     DB_NAME: db_company_management
+  company_management_backend:
+    build: services/company_management
+    container_name: company_management_backend
+    depends_on:
+      - db_company_management
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: db_company_management
+      DB_PORT: 5432
+      DB_USER: company_user
+      DB_PASS: pass1234
+      DB_NAME: db_company_management
 
-  # product_service:
-  #   build: ./services/product
-  #   container_name: product_service
-  #   environment:
-  #     # Connect to the dedicated DB instance
-  #     - DATABASE_URL=postgresql://postgres:password@product_db:5432/productdb
-  #   ports:
-  #     - "8001:8000"
-  #   depends_on:
-  #     - product_db
 
-  # product_db:
-  #   image: postgres:13-alpine
-  #   container_name: product_configuration_db
-  #   environment:
-  #     POSTGRES_USER: postgres
-  #     POSTGRES_PASSWORD: password
-  #     POSTGRES_DB: productdb
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
+
+  product_service:
+    build: ./services/product
+    container_name: product_service
+    environment:
+      # Connect to the dedicated DB instance
+      - DATABASE_URL=postgresql://postgres:password@product_db:5432/productdb
+    ports:
+      - "8000:8000"
+    depends_on:
+      - product_db
+
+  product_db:
+    image: postgres:13-alpine
+    container_name: product_configuration_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: productdb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
 
   user_db:
     image: postgres:13
@@ -87,6 +89,7 @@ services:
       - "5050:80"
     depends_on:
       - user_db
+      - product_db
 
    
 
