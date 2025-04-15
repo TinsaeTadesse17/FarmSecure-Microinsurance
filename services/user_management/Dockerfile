@@ -13,6 +13,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src/ ./src/
 COPY tests/ ./tests/
 
+ENV PYTHONPATH=/app
+
 EXPOSE 9000
 
 # Start the application

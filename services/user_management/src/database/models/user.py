@@ -1,14 +1,15 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Table
-from sqlalchemy.orm import relationship
-from datetime import datetime
-from database import Base
+from sqlalchemy import Column, Integer, String, CheckConstraint
+from src.database.db import Base
 
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True)
-    password = Column(String)
-    company_id = Column(Integer)
-    roles = Column(String)  # Could be JSON or comma-separated string
-    created_at = Column(DateTime, default=datetime.utcnow)
+    user_id = Column(Integer, primary_key=True, index=True, )
+    username = Column(String(100), nullable=False)
+    password = Column(String(100), nullable=False)
+    status = Column(String(100), nullable=True)
+    role = Column(String(100), nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("role IN ('admin', 'agent')", name="check_valid_role"),
+    )
