@@ -1,3 +1,4 @@
+
 services:
   db_company_management:
     image: postgres:16
@@ -13,7 +14,7 @@ services:
     restart: always
 
   company_management_backend:
-    build: .services/company_management/backend
+    build: services/company_management
     container_name: company_management_backend
     depends_on:
       - db_company_management
@@ -25,6 +26,7 @@ services:
       DB_USER: company_user
       DB_PASS: pass1234
       DB_NAME: db_company_management
+
 
   product_service:
     build: ./services/product
@@ -56,8 +58,10 @@ services:
       PGADMIN_DEFAULT_PASSWORD: admin123
     ports:
       - "5050:80"
+
     depends_on:
       - product_db
+
 
 volumes:
   pgdata:
