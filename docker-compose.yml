@@ -1,57 +1,69 @@
 
 services:
-  # db_company_management:
-  #   image: postgres:16
-  #   container_name: db_company_management
-  #   environment:
-  #     POSTGRES_USER: company_user
-  #     POSTGRES_PASSWORD: pass1234
-  #     POSTGRES_DB: db_company_management
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
-  #   ports:
-  #     - "5433:5432"  
-  #   restart: always
+  db_company_management:
+    image: postgres:16
+    container_name: db_company_management
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${COMPANY_DB_USER}
+      POSTGRES_PASSWORD: ${COMPANY_DB_PASS}
+      POSTGRES_DB: ${COMPANY_DB_NAME}
+    volumes:
+      - pgdata_user:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  
+    restart: always
+    networks:
+      - app_network
 
-  # company_management_backend:
-  #   build: services/company_management
-  #   container_name: company_management_backend
-  #   depends_on:
-  #     - db_company_management
-  #   ports:
-  #     - "8000:8000"
-  #   environment:
-  #     DB_HOST: db_company_management
-  #     DB_PORT: 5432
-  #     DB_USER: company_user
-  #     DB_PASS: pass1234
-  #     DB_NAME: db_company_management
+  company_management_backend:
+    build: services/company_management
+    container_name: company_management_backend
+    env_file:
+      - .env
+    depends_on:
+      - db_company_management
+    ports:
+      - "8000:8000"
+    environment:
+      COMPANY_DB_HOST: ${COMPANY_DB_HOST}
+      COMPANY_DB_PORT: ${COMPANY_DB_PORT}
+      COMPANY_DB_USER: ${COMPANY_DB_USER}
+      COMPANY_DB_PASS: ${COMPANY_DB_PASS}
+      COMPANY_DB_NAME: ${COMPANY_DB_NAME}
+    networks:
+      - app_network
 
 
 
-  # product_service:
-  #   build: ./services/product
-  #   container_name: product_service
-  #   environment:
-  #     # Connect to the dedicated DB instance
-  #     - DATABASE_URL=postgresql://postgres:password@product_db:5432/productdb
-  #   ports:
-  #     - "8000:8000"
-  #   depends_on:
-  #     - product_db
+  product_service:
+    build: ./services/product
+    container_name: product_service
+    environment:
+      # Connect to the dedicated DB instance
+      - DATABASE_URL=postgresql://postgres:password@product_db:5432/productdb
+    ports:
+      - "8001:8000"
+    depends_on:
+      - product_db
+    networks:
+      - app_network
 
-  # product_db:
-  #   image: postgres:13-alpine
-  #   container_name: product_configuration_db
-  #   environment:
-  #     POSTGRES_USER: postgres
-  #     POSTGRES_PASSWORD: password
-  #     POSTGRES_DB: productdb
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
+  product_db:
+    image: postgres:16
+    container_name: product_configuration_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: productdb
+    volumes:
+      - pgdata_user:/var/lib/postgresql/data
+    networks:
+      - app_network
 
   user_db:
-    image: postgres:13
+    image: postgres:16
     container_name: user_db
     environment:
       POSTGRES_USER: ${DB_USER}
@@ -62,6 +74,8 @@ services:
     ports:
       - "5432:5432"
     restart: always
+    networks:
+      - app_network
 
   user_service:
     build: ./services/user_management
@@ -71,13 +85,15 @@ services:
     environment:
       DB_USER: ${DB_USER}
       DB_PASS: ${DB_PASS}
-      DB_HOST: ${USER_DB_HOST}
-      DB_PORT: ${USER_DB_PORT}
-      DB_NAME: ${USER_DB_NAME}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
     depends_on:
       - user_db
     ports:
-      - "8003:8000"
+      - "8002:8000"
+    networks:
+      - app_network
 
   pgadmin:
     image: dpage/pgadmin4
@@ -87,11 +103,16 @@ services:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     ports:
-      - "5050:80"
+      - "8003:8000"
 
     depends_on:
       - user_db
       # - product_db
+    networks:
+      - app_network
 
 volumes:
   pgdata_user:
+networks:
+  app_network:
+    driver: bridge
