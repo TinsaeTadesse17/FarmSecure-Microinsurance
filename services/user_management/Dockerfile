@@ -11,8 +11,6 @@ RUN pip install -r requirements.txt
 
 # Copy source code and tests
 COPY src/ ./src/
-# COPY tests/ ./tests/
-
 ENV PYTHONPATH=/app
 
 EXPOSE 9000
