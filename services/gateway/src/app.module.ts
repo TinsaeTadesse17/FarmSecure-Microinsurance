@@ -14,9 +14,11 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { ReportsModule } from './reports/reports.module';
 import { UsersModule } from './users/users.module';
 import { UsersController } from './users/users.controller';
+import { HttpModule } from '@nestjs/axios';
+
 
 @Module({
-  imports: [AuthModule, ProductsModule, CompaniesModule, PoliciesModule, ClaimsModule, PaymentsModule, CommissionsModule, RiskModule, NdviModule, DashboardModule, ReportsModule, UsersModule],
+  imports: [AuthModule,HttpModule, ProductsModule, CompaniesModule, PoliciesModule, ClaimsModule, PaymentsModule, CommissionsModule, RiskModule, NdviModule, DashboardModule, ReportsModule, UsersModule],
   controllers: [AppController, UsersController],
   providers: [AppService],
 })
