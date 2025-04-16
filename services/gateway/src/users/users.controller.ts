@@ -1,29 +1,74 @@
-import { Controller, Post, Body, Get, Param, Put, UseGuards } from '@nestjs/common';
-import { UsersService } from './users.service';
-import { AuthGuard } from '../auth/guards/auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Param,
+  Body,
+  Req,
+  Headers,
+  HttpException,
+  HttpStatus,
+  Inject,
+} from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 
-@Controller('users')
-@UseGuards(AuthGuard, RolesGuard)
+@Controller('api/user')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly http: HttpService) {}
+
+  @Post('login')
+  async login(@Body() body) {
+    try {
+      const res = await firstValueFrom(
+        this.http.post('http://localhost:8003/api/user/login', body),
+      );
+      return res.data;
+    } catch (err) {
+      throw new HttpException(err.response?.data || 'Login failed', err.response?.status || 500);
+    }
+  }
+
+  @Get('me')
+  async getMe(@Headers('authorization') auth: string) {
+    try {
+      const res = await firstValueFrom(
+        this.http.get('http://localhost:8003/api/user/me', {
+          headers: { Authorization: auth },
+        }),
+      );
+      return res.data;
+    } catch (err) {
+      throw new HttpException(err.response?.data || 'Auth error', err.response?.status || 500);
+    }
+  }
+
+  @Put('update/:id')
+  async updateUser(@Param('id') id: string, @Body() body, @Headers('authorization') auth: string) {
+    try {
+      const res = await firstValueFrom(
+        this.http.put(`http://localhost:8003/api/user/update/${id}`, body, {
+          headers: { Authorization: auth },
+        }),
+      );
+      return res.data;
+    } catch (err) {
+      throw new HttpException(err.response?.data || 'Update failed', err.response?.status || 500);
+    }
+  }
 
   @Post()
-  @Roles('admin')
-  async createUser(@Body() userData: any) {
-    return this.usersService.create(userData);
-  }
-
-  @Get(':id')
-  @Roles('admin', 'agent', 'IC')
-  async getUser(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
-  }
-
-  @Put(':id/roles')
-  @Roles('admin')
-  async updateRoles(@Param('id') id: string, @Body() rolesData: any) {
-    return this.usersService.updateRoles(+id, rolesData);
+  async createUser(@Body() body, @Headers('authorization') auth: string) {
+    try {
+      const res = await firstValueFrom(
+        this.http.post(`http://localhost:8003/api/user/`, body, {
+          headers: { Authorization: auth },
+        }),
+      );
+      return res.data;
+    } catch (err) {
+      throw new HttpException(err.response?.data || 'User creation failed', err.response?.status || 500);
+    }
   }
 }
