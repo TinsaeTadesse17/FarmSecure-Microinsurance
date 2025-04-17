@@ -1,9 +1,13 @@
+// src/company-management/company-management.module.ts
 import { Module } from '@nestjs/common';
-import { CompaniesService } from './companies.service';
-import { CompaniesController } from './companies.controller';
+import { HttpModule } from '@nestjs/axios';
+import { CompanyManagementController } from './companies.controller';
+import { CompanyManagementService } from './companies.service';
 
 @Module({
-  controllers: [CompaniesController],
-  providers: [CompaniesService],
+  imports: [HttpModule],
+  controllers: [CompanyManagementController],
+  providers: [CompanyManagementService],
+  exports: [CompanyManagementService],
 })
-export class CompaniesModule {}
+export class CompanyManagementModule {}
