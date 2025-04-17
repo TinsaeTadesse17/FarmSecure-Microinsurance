@@ -59,8 +59,10 @@ services:
       - app_network
 
   product_service:
-    build:
+    build: 
       context: ./services/product
+      args:
+        - DATABASE_URL=postgresql://postgres:password@product_db:5432/productdb
     container_name: product_service
     env_file:
       - .env
