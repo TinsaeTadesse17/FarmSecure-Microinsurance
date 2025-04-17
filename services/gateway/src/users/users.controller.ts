@@ -1,34 +1,74 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Param,
+  Body,
+  Req,
+  Headers,
+  HttpException,
+  HttpStatus,
+  Inject,
+} from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 
-@Controller('users')
+@Controller('api/user')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly http: HttpService) {}
+
+  @Post('login')
+  async login(@Body() body) {
+    try {
+      const res = await firstValueFrom(
+        this.http.post('http://localhost:8003/api/user/login', body),
+      );
+      return res.data;
+    } catch (err) {
+      throw new HttpException(err.response?.data || 'Login failed', err.response?.status || 500);
+    }
+  }
+
+  @Get('me')
+  async getMe(@Headers('authorization') auth: string) {
+    try {
+      const res = await firstValueFrom(
+        this.http.get('http://localhost:8003/api/user/me', {
+          headers: { Authorization: auth },
+        }),
+      );
+      return res.data;
+    } catch (err) {
+      throw new HttpException(err.response?.data || 'Auth error', err.response?.status || 500);
+    }
+  }
+
+  @Put('update/:id')
+  async updateUser(@Param('id') id: string, @Body() body, @Headers('authorization') auth: string) {
+    try {
+      const res = await firstValueFrom(
+        this.http.put(`http://localhost:8003/api/user/update/${id}`, body, {
+          headers: { Authorization: auth },
+        }),
+      );
+      return res.data;
+    } catch (err) {
+      throw new HttpException(err.response?.data || 'Update failed', err.response?.status || 500);
+    }
+  }
 
   @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.usersService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateUserDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
+  async createUser(@Body() body, @Headers('authorization') auth: string) {
+    try {
+      const res = await firstValueFrom(
+        this.http.post(`http://localhost:8003/api/user/`, body, {
+          headers: { Authorization: auth },
+        }),
+      );
+      return res.data;
+    } catch (err) {
+      throw new HttpException(err.response?.data || 'User creation failed', err.response?.status || 500);
+    }
   }
 }
