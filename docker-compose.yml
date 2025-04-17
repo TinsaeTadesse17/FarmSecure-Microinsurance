@@ -27,15 +27,17 @@ services:
       DB_NAME: db_company_management
 
   product_service:
-    build: ./services/product
+    build: 
+      context: ./services/product
+      args:
+        - DATABASE_URL=postgresql://postgres:password@product_db:5432/productdb
     container_name: product_service
-    environment:
-      # Connect to the dedicated DB instance
-      - DATABASE_URL=postgresql://postgres:password@product_db:5432/productdb
     ports:
-      - "8000:8000"
+      - "8005:8000"
     depends_on:
       - product_db
+    networks:
+      - internal
 
   product_db:
     image: postgres:13-alpine
@@ -46,7 +48,24 @@ services:
       POSTGRES_DB: productdb
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -h localhost"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    networks:
+      - internal
 
+  product_tests:
+    build: ./services/product
+    container_name: product_tests
+    command: ["pytest", "-v", "--tb=short", "-p", "no:cacheprovider"] 
+    depends_on:
+      product_db:
+        condition: service_healthy
+    networks:
+      - internal
+  
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin4
@@ -58,6 +77,12 @@ services:
       - "5050:80"
     depends_on:
       - product_db
+    networks:
+      - internal
 
 volumes:
   pgdata:
+
+networks:
+  internal:
+    driver: bridge
