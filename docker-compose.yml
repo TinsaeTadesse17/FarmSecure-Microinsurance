@@ -94,6 +94,20 @@ services:
       - "8002:8000"
     networks:
       - app_network
+    
+  gateway:
+    build: ./services/gateway
+    container_name: gateway
+    env_file:
+      - .env
+    ports:
+      - "7000:7000"
+    depends_on:
+      - company_management_backend
+      - product_service
+      - user_service
+    networks:
+      - app_network
 
   pgadmin:
     image: dpage/pgadmin4
