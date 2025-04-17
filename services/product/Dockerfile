@@ -1,19 +1,26 @@
-FROM python:3.9-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install system dependencies if needed
-RUN apt-get update && apt-get install -y gcc
+ENV PYTHONPATH=/app
 
-# Copy requirements and install Python dependencies
+# Accept DATABASE_URL as a build argument
+ARG DATABASE_URL
+# Set it as an environment variable inside the container
+ENV DATABASE_URL=${DATABASE_URL}
+
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
-# Copy source code and tests
-COPY src/ ./src/
-COPY tests/ ./tests/
+COPY . .
+
 
 EXPOSE 8000
 
-# Start the application
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+RUN chmod +x entrypoint.sh
+
+# Use a non-root user for security
+RUN useradd -m appuser
+USER appuser
+# Use an entrypoint that first runs Alembic migrations then starts the API
+CMD ["./entrypoint.sh"]

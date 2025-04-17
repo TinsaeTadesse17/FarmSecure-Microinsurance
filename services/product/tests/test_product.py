@@ -1,93 +1,89 @@
-import json
 import pytest
+
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-from src.main import app
-from src.database.db import Base, get_db
+# client fixture is provided by conftest.py
+@pytest.mark.usefixtures("setup_test_db")
+class TestProductAPI:
+    def test_create_product(self, client: TestClient):
+        product_data = {
+            "company_id": 1,
+            "name": "Test Crop Insurance",
+            "type": "crop",
+            "elc": 1000.0,
+            "commission_rate": 0.1
+        }
+        resp = client.post("/api/products", json=product_data)
+        assert resp.status_code == 200, f"Got {resp.status_code}: {resp.text}"
+        data = resp.json()
+        assert data["name"] == product_data["name"]
+        assert data["type"] == product_data["type"]
+        assert data["elc"] == product_data["elc"]
+        assert data["commission_rate"] == product_data["commission_rate"]
+        assert data["company_id"] == product_data["company_id"]
+        # defaults
+        assert data["trigger_point"] == 15.0
+        assert data["exit_point"] == 5.0
+        assert "id" in data
 
-# Create a new SQLite database for testing purposes.
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    def test_get_product_not_found(self, client: TestClient):
+        resp = client.get("/api/products/99999")
+        assert resp.status_code == 404, f"Got {resp.status_code}: {resp.text}"
 
-# Create tables in the test database
-Base.metadata.create_all(bind=engine)
+    def test_update_product(self, client: TestClient):
+        initial = {
+            "company_id": 2,
+            "name": "Test Livestock Insurance",
+            "type": "livestock",
+            "elc": 2000.0,
+            "commission_rate": 0.2,
+            "trigger_point": 20.0
+        }
+        create = client.post("/api/products", json=initial)
+        assert create.status_code == 200, create.text
+        pid = create.json()["id"]
 
-# Dependency override for testing
-def override_get_db():
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+        update = {
+            "name": "Updated Livestock Insurance",
+            "commission_rate": 0.25,
+            "elc": 2500.0
+        }
+        resp = client.put(f"/api/products/{pid}", json=update)
+        assert resp.status_code == 200, resp.text
+        out = resp.json()
+        assert out["id"] == pid
+        assert out["name"] == update["name"]
+        assert out["commission_rate"] == update["commission_rate"]
+        assert out["elc"] == update["elc"]
+        # unchanged fields
+        assert out["type"] == initial["type"]
+        assert out["trigger_point"] == initial["trigger_point"]
+        assert out["company_id"] == initial["company_id"]
 
-app.dependency_overrides[get_db] = override_get_db
+    def test_update_product_not_found(self, client: TestClient):
+        resp = client.put("/api/products/99999", json={"name": "X", "company_id": 1})
+        assert resp.status_code == 404, resp.text
 
-client = TestClient(app)
+    def test_calculate_premium(self, client: TestClient):
+        p = {
+            "company_id": 3,
+            "name": "Test Premium Product",
+            "type": "crop",
+            "elc": 1500.0,
+            "commission_rate": 0.05,
+            "trigger_point": 18.0,
+            "exit_point": 6.0
+        }
+        create = client.post("/api/products", json=p)
+        assert create.status_code == 200, create.text
+        pid = create.json()["id"]
 
-@pytest.fixture(autouse=True)
-def run_around_tests():
-    # Optionally you can add setup/teardown code here (e.g., cleaning up DB tables)
-    yield
+        resp = client.post(f"/api/products/{pid}/calculate-premium")
+        assert resp.status_code == 200, resp.text
+        premium = resp.json()["premium"]
+        expected = p["elc"] * ((p["trigger_point"] + p["exit_point"]) / 100) + (p["commission_rate"] * p["elc"])
+        assert abs(premium - expected) < 1e-2, f"{premium} != {expected}"
 
-def test_create_product():
-    product_data = {
-        "company_id": 1,
-        "name": "Test Crop Insurance",
-        "type": "crop",
-        "elc": 1000.0,
-        "commission_rate": 0.1
-    }
-    response = client.post("/api/products", json=product_data)
-    assert response.status_code == 200, response.text
-    data = response.json()
-    assert data["name"] == "Test Crop Insurance"
-    assert data["trigger_point"] == 15.0  # default value
-    assert data["exit_point"] == 5.0      # default value
-
-def test_get_product_not_found():
-    response = client.get("/api/products/999")
-    assert response.status_code == 404
-
-def test_update_product():
-    # First create a product
-    product_data = {
-        "company_id": 1,
-        "name": "Test Livestock Insurance",
-        "type": "livestock",
-        "elc": 2000.0,
-        "commission_rate": 0.2
-    }
-    create_response = client.post("/api/products", json=product_data)
-    product = create_response.json()
-    product_id = product["id"]
-
-    update_data = {"name": "Updated Livestock Insurance", "commission_rate": 0.25}
-    response = client.put(f"/api/products/{product_id}", json=update_data)
-    assert response.status_code == 200, response.text
-    updated_product = response.json()
-    assert updated_product["name"] == "Updated Livestock Insurance"
-    assert updated_product["commission_rate"] == 0.25
-
-def test_calculate_premium():
-    # Create a product first
-    product_data = {
-        "company_id": 1,
-        "name": "Test Premium Product",
-        "type": "crop",
-        "elc": 1500.0,
-        "commission_rate": 0.05,
-        # trigger_point and exit_point left as default values
-    }
-    create_response = client.post("/api/products", json=product_data)
-    product = create_response.json()
-    product_id = product["id"]
-
-    response = client.post(f"/api/products/{product_id}/calculate-premium")
-    assert response.status_code == 200, response.text
-    premium_data = response.json()
-    # Calculate expected premium based on: ELC * ((15 + 5) / 100) + (commission_rate * ELC)
-    expected_premium = 1500.0 * (20 / 100) + (0.05 * 1500.0)
-    assert abs(premium_data["premium"] - expected_premium) < 0.01
+    def test_calculate_premium_not_found(self, client: TestClient):
+        resp = client.post("/api/products/99999/calculate-premium")
+        assert resp.status_code == 404, resp.text

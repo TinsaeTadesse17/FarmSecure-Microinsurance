@@ -30,9 +30,10 @@ def update_product(db: Session, product_id: int, product: ProductUpdate):
     db_product = get_product(db, product_id)
     if not db_product:
         return None
-    update_data = product.dict(exclude_unset=True)
+    update_data = product.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(db_product, key, value)
+    db.add(db_product)
     db.commit()
     db.refresh(db_product)
     return db_product
