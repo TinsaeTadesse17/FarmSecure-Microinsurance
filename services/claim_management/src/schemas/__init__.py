@@ -1,0 +1,1 @@
+# in this folder we will put all the schemas for the API
