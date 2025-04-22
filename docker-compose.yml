@@ -11,10 +11,10 @@ services:
     volumes:
       - pgdata_company:/var/lib/postgresql/data
     ports:
-      - "5433:5432"
+      - "5444:5432"
     restart: always
     healthcheck:
-      test: ["CMD‑SHELL", "pg_isready -U ${COMPANY_DB_USER} -d ${COMPANY_DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U ${COMPANY_DB_USER} -d ${COMPANY_DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -24,12 +24,14 @@ services:
   company_service:
     build:
       context: ./services/company_management
+      args:
+        - DATABASE_URL=postgresql://${COMPANY_DB_USER}:${COMPANY_DB_PASS}@company_db:5432/${COMPANY_DB_NAME}
     container_name: company_service
     env_file:
       - .env
     depends_on:
-      db_company_management:
-        condition: service_healthy
+      company_db:
+        condition: service_started
     ports:
       - "8000:8000"
     environment:
@@ -38,6 +40,16 @@ services:
       COMPANY_DB_USER: ${COMPANY_DB_USER}
       COMPANY_DB_PASS: ${COMPANY_DB_PASS}
       COMPANY_DB_NAME: ${COMPANY_DB_NAME}
+    networks:
+      - app_network
+
+  company_tests:
+    build:
+      context: ./services/company_management
+    env_file:
+      - .env
+    container_name: company_tests
+    command: ["pytest", "-v", "--tb=short", "-p", "no:cacheprovider"]
     networks:
       - app_network
 
@@ -51,7 +63,7 @@ services:
     volumes:
       - pgdata_product:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD‑SHELL", "pg_isready -U postgres -d productdb"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d productdb"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -103,7 +115,7 @@ services:
       - "5432:5432"
     restart: always
     healthcheck:
-      test: ["CMD‑SHELL", "pg_isready -U ${DB_USER} -d ${USER_DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${USER_DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -136,13 +148,6 @@ services:
     container_name: gateway
     env_file:
       - .env
-    depends_on:
-      company_management_backend:
-        condition: service_healthy
-      product_service:
-        condition: service_started
-      user_service:
-        condition: service_started
     ports:
       - "7000:7000"
     networks:

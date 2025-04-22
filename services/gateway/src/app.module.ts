@@ -3,7 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { ProductsModule } from './products/products.module';
-import { CompaniesModule } from './companies/companies.module';
+import { CompanyManagementModule } from './companies/companies.module';
 import { PoliciesModule } from './policies/policies.module';
 import { ClaimsModule } from './claims/claims.module';
 import { PaymentsModule } from './payments/payments.module';
@@ -18,7 +18,7 @@ import { HttpModule } from '@nestjs/axios';
 
 
 @Module({
-  imports: [AuthModule,HttpModule, ProductsModule, CompaniesModule, PoliciesModule, ClaimsModule, PaymentsModule, CommissionsModule, RiskModule, NdviModule, DashboardModule, ReportsModule, UsersModule],
+  imports: [AuthModule,HttpModule, ProductsModule, CompanyManagementModule, PoliciesModule, ClaimsModule, PaymentsModule, CommissionsModule, RiskModule, NdviModule, DashboardModule, ReportsModule, UsersModule],
   controllers: [AppController, UsersController],
   providers: [AppService],
 })

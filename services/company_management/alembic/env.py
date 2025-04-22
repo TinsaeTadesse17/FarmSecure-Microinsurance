@@ -4,9 +4,12 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 import os
+from src.core.config import settings
 
 # Interpret the config file for Python logging.
 config = context.config
+db_url = os.getenv("DATABASE_URL", settings.DATABASE_URL)
+config.set_main_option("sqlalchemy.url", db_url)
 fileConfig(config.config_file_name)
 
 # Import your Base from your project and any models so they are included in the metadata.
