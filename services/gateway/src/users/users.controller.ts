@@ -14,6 +14,8 @@ import {
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 
+const USER_SERVICE_BASE_URL = 'http://user_service:8000/api/user';
+
 @Controller('api/user')
 export class UsersController {
   constructor(private readonly http: HttpService) {}
@@ -21,11 +23,14 @@ export class UsersController {
   @Post('login')
   async login(@Body() body) {
     try {
+      console.log("Logging in with body:", body);
       const res = await firstValueFrom(
-        this.http.post('http://localhost:8003/api/user/login', body),
+        this.http.post(`${USER_SERVICE_BASE_URL}/login`, body),
       );
+      console.log("Login response:", res.data);
       return res.data;
     } catch (err) {
+      console.error("Login error:", err);
       throw new HttpException(err.response?.data || 'Login failed', err.response?.status || 500);
     }
   }
@@ -34,7 +39,7 @@ export class UsersController {
   async getMe(@Headers('authorization') auth: string) {
     try {
       const res = await firstValueFrom(
-        this.http.get('http://localhost:8003/api/user/me', {
+        this.http.get(`${USER_SERVICE_BASE_URL}/me`, {
           headers: { Authorization: auth },
         }),
       );
@@ -48,7 +53,7 @@ export class UsersController {
   async updateUser(@Param('id') id: string, @Body() body, @Headers('authorization') auth: string) {
     try {
       const res = await firstValueFrom(
-        this.http.put(`http://localhost:8003/api/user/update/${id}`, body, {
+        this.http.put(`${USER_SERVICE_BASE_URL}/update/${id}`, body, {
           headers: { Authorization: auth },
         }),
       );
@@ -62,7 +67,7 @@ export class UsersController {
   async createUser(@Body() body, @Headers('authorization') auth: string) {
     try {
       const res = await firstValueFrom(
-        this.http.post(`http://localhost:8003/api/user/`, body, {
+        this.http.post(`${USER_SERVICE_BASE_URL}`, body, {
           headers: { Authorization: auth },
         }),
       );

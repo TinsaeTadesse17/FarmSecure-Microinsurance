@@ -15,6 +15,8 @@ import string
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import jwt, JWTError
 from src.database.core.config import settings
+from src.services.email_service import send_email_notification
+from src.services.company_service import get_company
 
 router = APIRouter(prefix="/api/user", tags=["user"])
 
@@ -67,6 +69,11 @@ def create_user(
 
     if not user.company_id:
         raise HTTPException(status_code=400, detail="company_id is required for non-admin users.")
+    
+    # Check if the company exists
+    company = get_company(user.company_id)
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found.")
 
     generated_username = generate_username()
     generated_password = generate_password()
@@ -81,9 +88,20 @@ def create_user(
         must_change_password=True
     )
 
+
+
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+
+    # Send email notification
+    email_result = send_email_notification(
+        to=company.email,
+        subject="Welcome to Agriteck MicroIncorance Platform",
+        type="account_approval",
+        username=generated_username,
+        password=generated_password
+    )
 
     return {
         "username": generated_username,
@@ -95,7 +113,6 @@ def create_user(
 def get_user_info(current_user: User = Depends(get_current_active_user)):
     print(f"Returning current user: ID {current_user.user_id}, username: {current_user.username}")
     return current_user
-
 
 @router.put("/update/{user_id}", response_model=user_schema.UserOut)
 def update_user_account(
