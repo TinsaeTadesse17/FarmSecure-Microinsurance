@@ -132,13 +132,14 @@ services:
       user_db:
         condition: service_healthy
     ports:
-      - "8002:8000"
+      - "8003:8000"
     environment:
       DB_HOST: user_db
       DB_PORT: 5432
       DB_USER: ${DB_USER}
       DB_PASS: ${DB_PASS}
       DB_NAME: ${USER_DB_NAME}
+      NOTIFICATION_SERVICE_URL: http://notification_service:8000
     networks:
       - app_network
 
@@ -166,7 +167,7 @@ services:
       product_db:
         condition: service_healthy
     ports:
-      - "8003:8000"
+      - "8006:8000"
     networks:
       - app_network
   

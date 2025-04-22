@@ -9,3 +9,4 @@ pydantic_settings
 passlib[bcrypt]
 python-jose[cryptography]
 fastapi[all]
+requests
