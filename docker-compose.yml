@@ -49,6 +49,9 @@ services:
       context: ./services/company_management
     env_file:
       - .env
+    environment:
+      USER_SERVICE_URL: ${USER_SERVICE_URL}
+
     container_name: company_tests
     command: ["pytest", "-v", "--tb=short", "-p", "no:cacheprovider"]
     networks:
@@ -111,7 +114,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: ${USER_DB_NAME}
     volumes:
-      - pgdata_user:/var/lib/postgresql/data
+      - pgdata_users:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     restart: always
@@ -192,7 +195,7 @@ services:
 volumes:
   pgdata_company:
   pgdata_product:
-  pgdata_user:
+  pgdata_users:
 
 networks:
   app_network:

@@ -9,6 +9,7 @@ from sqlalchemy.pool import StaticPool
 # 1) Point your app at an in‑memory DB
 SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///:memory:"
 os.environ["DATABASE_URL"] = SQLALCHEMY_TEST_DATABASE_URL
+os.environ["USER_SERVICE_URL"] = "http://user_service:8000"
 
 # 2) Create one Engine that all sessions will share
 engine = create_engine(
