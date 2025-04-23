@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from src.database.crud.insurance_company_crud import InsuranceCompanyService
 from src.schemas import insurance_company_schema as schemas
 from src.database.db import get_db
+from src.core.config import settings
 import httpx
 
 router = APIRouter()
@@ -32,16 +33,19 @@ def update_company(company_id: int, db: Session = Depends(get_db)):
     db_company = service.update_company(company_id)
     if db_company is None:
         raise HTTPException(status_code=404, detail="Company not found")
+
     return db_company
+
 @router.post("/{company_id}/credentials", response_model=schemas.CrediencialResponse)
 def generate_crediential(company_id: int, role: str):
+    url = f"{settings.USER_SERVICE_URL}/api/user/"
     try:
         payload = {
             "company_id": company_id,
             "role": role
         }
 
-        response = httpx.post("http://localhost:8000/users", json=payload)
+        response = httpx.post(url, json=payload)
 
         if response.status_code != 200:
             raise HTTPException(

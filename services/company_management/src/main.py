@@ -1,7 +1,11 @@
 from fastapi import FastAPI
+from src.database.db import Base
+from src.database.db import engine
 from src.routes.insurance_company import router as insurance_comapany_router
 from fastapi.middleware.cors import CORSMiddleware  
 
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Insurance API")
 

@@ -8,9 +8,9 @@ logger.setLevel(logging.INFO)
 
 email_server = settings.NOTIFICATION_SERVICE_URL
 
-BASE_URL = email_server.rstrip("/") + "/notify/email"
+BASE_URL = email_server.rstrip("/") + "/api/v1/notify/email"
 
-def send_email_notification(to: str, subject: str, type="application_received", **kwargs) -> Dict[str, Any]:
+def send_email_notification(to: str, subject: str, type="account_approval", **kwargs) -> Dict[str, Any]:
     """Send an email notification via the notification service."""
     
     payload = {
