@@ -15,11 +15,27 @@ import { ReportsModule } from './reports/reports.module';
 import { UsersModule } from './users/users.module';
 import { UsersController } from './users/users.controller';
 import { HttpModule } from '@nestjs/axios';
+import { ThrottlerModule, ThrottlerGuard, minutes } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 
 @Module({
-  imports: [AuthModule,HttpModule, ProductsModule, CompanyManagementModule, PoliciesModule, ClaimsModule, PaymentsModule, CommissionsModule, RiskModule, NdviModule, DashboardModule, ReportsModule, UsersModule],
+  imports: [AuthModule,HttpModule, ProductsModule, CompanyManagementModule, PoliciesModule, ClaimsModule, PaymentsModule, CommissionsModule, RiskModule, NdviModule, DashboardModule, ReportsModule, UsersModule, 
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          limit: 15,
+          ttl: minutes(1), // 60,000 milliseconds
+        },
+      ],
+    }),
+  ],
   controllers: [AppController, UsersController],
-  providers: [AppService],
+  providers: [AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    }
+  ],
 })
 export class AppModule {}
