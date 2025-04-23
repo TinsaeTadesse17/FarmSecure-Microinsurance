@@ -40,6 +40,7 @@ services:
       COMPANY_DB_USER: ${COMPANY_DB_USER}
       COMPANY_DB_PASS: ${COMPANY_DB_PASS}
       COMPANY_DB_NAME: ${COMPANY_DB_NAME}
+      USER_SERVICE_URL: http://user_service:8000
     networks:
       - app_network
 
@@ -139,7 +140,7 @@ services:
       DB_USER: ${DB_USER}
       DB_PASS: ${DB_PASS}
       DB_NAME: ${USER_DB_NAME}
-      NOTIFICATION_SERVICE_URL: http://notification_service:8000
+      NOTIFICATION_SERVICE_URL: "http://notification_service:8000"
     networks:
       - app_network
 

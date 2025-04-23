@@ -6,11 +6,11 @@ import { CreateCompanyDto } from './dto/create-company.dto';
 import { CompanyResponseDto } from './dto/company-response.dto';
 import { CredentialResponseDto } from './dto/credential-response.dto';
 
+const COMPANIES_BASE_URL = 'http://company_service:8000/companies'; // Adjust this URL to point to your microservice
 @Injectable()
 export class CompanyManagementService {
   // Adjust the base URL to point to the actual microservice. For example:
-  private readonly baseUrl = 'http://localhost:8000/companies';
-
+  private readonly baseUrl = `${COMPANIES_BASE_URL}`;
 
   constructor(private readonly httpService: HttpService) {}
 
@@ -21,6 +21,7 @@ export class CompanyManagementService {
       );
       return response.data;
     } catch (error: any) {
+      console.log('Error creating company:', error);
       throw new HttpException(
         error.response?.data || 'Error creating company',
         error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR

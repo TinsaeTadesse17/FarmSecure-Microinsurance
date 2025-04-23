@@ -16,7 +16,7 @@ class BaseNotification(BaseModel):
 
 class AccountApprovalNotification(BaseNotification):
     type: Literal[NotificationType.account_approval]
-    portal_link: str
+    portal_link: str = 'http://localhost:8000'
     username: str
     password: str
 

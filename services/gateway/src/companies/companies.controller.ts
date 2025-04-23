@@ -5,7 +5,7 @@ import { CreateCompanyDto } from './dto/create-company.dto';
 import { CompanyResponseDto } from './dto/company-response.dto';
 import { CredentialResponseDto } from './dto/credential-response.dto';
 
-@Controller('companies')
+@Controller('api/companies')
 export class CompanyManagementController {
   constructor(private readonly companyManagementService: CompanyManagementService) {}
 
@@ -53,7 +53,7 @@ export class CompanyManagementController {
   @Post(':id/credentials')
   async generateCredentials(
     @Param('id') id: number,
-    @Query('role') role: string
+    @Body('role') role: string
   ): Promise<CredentialResponseDto> {
     try {
       return await this.companyManagementService.generateCredentials(id, role);

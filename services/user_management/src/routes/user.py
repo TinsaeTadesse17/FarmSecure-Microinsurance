@@ -12,16 +12,11 @@ from src.database.core.auth import (
 )
 import secrets
 import string
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import jwt, JWTError
 from src.database.core.config import settings
 from src.services.email_service import send_email_notification
 from src.services.company_service import get_company
 
 router = APIRouter(prefix="/api/user", tags=["user"])
-
-token_scheme = HTTPBearer(auto_error=True)
-
 def generate_username():
     return "user_" + secrets.token_hex(4)
 
@@ -41,32 +36,7 @@ def login(credentials: auth_schema.LoginRequest, db: Session = Depends(get_db)):
 def create_user(
     user: user_schema.UserCreate,
     db: Session = Depends(get_db),
-    token: HTTPAuthorizationCredentials = Depends(token_scheme)
 ):
-    try:
-        payload = jwt.decode(
-            token.credentials,
-            settings.JWT_SECRET_KEY,
-            algorithms=[settings.JWT_ALGORITHM]
-        )
-    except JWTError as e:
-        raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
-
-    # Extract role safely
-    creator_role = payload.get("role")
-    if isinstance(creator_role, list):
-        creator_role = creator_role[0]
-    if not creator_role:
-        raise HTTPException(status_code=403, detail="Role missing from token")
-
-    if user.role == "admin":
-        raise HTTPException(status_code=403, detail="Creating admin users is not allowed via API.")
-
-    if user.role == "ic" and creator_role != "admin":
-        raise HTTPException(status_code=403, detail="Only admins can create IC users.")
-    elif user.role == "agent" and creator_role != "ic":
-        raise HTTPException(status_code=403, detail="Only ICs can create agent users.")
-
     if not user.company_id:
         raise HTTPException(status_code=400, detail="company_id is required for non-admin users.")
     
@@ -88,15 +58,13 @@ def create_user(
         must_change_password=True
     )
 
-
-
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
 
     # Send email notification
     email_result = send_email_notification(
-        to=company.email,
+        to=company['email'],
         subject="Welcome to Agriteck MicroIncorance Platform",
         type="account_approval",
         username=generated_username,

@@ -41,7 +41,7 @@ class InsuranceCompanyResponse(InsuranceCompanyBase):
     class Config:
         orm_mode = True
 class CrediencialResponse(BaseModel):
-    email: EmailStr
+    username: str
     password: str
     class Config:
         orm_mode = True
