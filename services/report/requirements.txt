@@ -1,8 +1,10 @@
 fastapi
 uvicorn[standard]
+httpx
+pydantic-settings
 sqlalchemy
 psycopg2-binary
 alembic
-pydantic-settings
-httpx
+reportlab
+pandas
 python-dotenv
