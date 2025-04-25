@@ -1,10 +1,12 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 
+from src.schemas.excel_ingest import ProductType
+
 class ProductBase(BaseModel):
     company_id: int
     name: str
-    type: str  # 'crop' or 'livestock'
+    type: ProductType = ProductType.crop
     elc: float
     trigger_point: Optional[float] = 15.0
     exit_point: Optional[float] = 5.0
@@ -13,7 +15,7 @@ class ProductBase(BaseModel):
     discount: Optional[float] = None
     fiscal_year: Optional[str] = None
     growing_season: Optional[str] = None
-    cps_zone: Optional[str] = None
+    cps_zone_id: Optional[int] = 1
     period: Optional[str] = None
 
 class ProductCreate(ProductBase):

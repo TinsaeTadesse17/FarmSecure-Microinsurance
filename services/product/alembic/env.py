@@ -6,7 +6,11 @@ import sys
 import os
 from alembic import context
 from src.database.db import Base
-from src.database.models.product import Product
+from src.database.models.product import ProductConfig
+from src.database.models.excel_ingest import (
+    CPSZone, Product, Period,
+    GrowingSeason, NDVICrop, TriggerExitPoint
+)
 from src.core.config import settings
 
 
