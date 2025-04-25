@@ -1,8 +1,8 @@
 from sqlalchemy import Column, Integer, String, Float
 from src.database.db import Base
 
-class Product(Base):
-    __tablename__ = "products"
+class ProductConfig(Base):
+    __tablename__ = "product_config"
 
     id = Column(Integer, primary_key=True, index=True)
     company_id = Column(Integer, index=True)

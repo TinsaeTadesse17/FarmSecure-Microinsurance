@@ -1,63 +1,289 @@
 services:
-  # db_company_management:
-  #   image: postgres:16
-  #   container_name: db_company_management
-  #   environment:
-  #     POSTGRES_USER: company_user
-  #     POSTGRES_PASSWORD: pass1234
-  #     POSTGRES_DB: db_company_management
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
-  #   ports:
-  #     - "5433:5432"  
-  #   restart: always
-
-  # company_management_backend:
-  #   build: .services/company_management/backend
-  #   container_name: company_management_backend
-  #   depends_on:
-  #     - db_company_management
-  #   ports:
-  #     - "8000:8000"
-  #   environment:
-  #     DB_HOST: db_company_management
-  #     DB_PORT: 5432
-  #     DB_USER: company_user
-  #     DB_PASS: pass1234
-  #     DB_NAME: db_company_management
-
-  product_service:
-    build: ./services/product
-    container_name: product_service
+  company_db:
+    image: postgres:16
+    container_name: company_db
+    env_file:
+      - .env
     environment:
-      # Connect to the dedicated DB instance
-      - DATABASE_URL=postgresql://postgres:password@product_db:5432/productdb
+      POSTGRES_USER: ${COMPANY_DB_USER}
+      POSTGRES_PASSWORD: ${COMPANY_DB_PASS}
+      POSTGRES_DB: ${COMPANY_DB_NAME}
+    volumes:
+      - pgdata_company:/var/lib/postgresql/data
+    ports:
+      - "5444:5432"
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${COMPANY_DB_USER} -d ${COMPANY_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_network
+
+  company_service:
+    build:
+      context: ./services/company_management
+      args:
+        - DATABASE_URL=postgresql://${COMPANY_DB_USER}:${COMPANY_DB_PASS}@company_db:5432/${COMPANY_DB_NAME}
+    container_name: company_service
+    env_file:
+      - .env
+    depends_on:
+      company_db:
+        condition: service_started
     ports:
       - "8000:8000"
-    depends_on:
-      - product_db
+    environment:
+      COMPANY_DB_HOST: company_db
+      COMPANY_DB_PORT: 5432
+      COMPANY_DB_USER: ${COMPANY_DB_USER}
+      COMPANY_DB_PASS: ${COMPANY_DB_PASS}
+      COMPANY_DB_NAME: ${COMPANY_DB_NAME}
+      USER_SERVICE_URL: http://user_service:8000
+    networks:
+      - app_network
+  company_tests:
+    build:
+      context: ./services/company_management
+    env_file:
+      - .env
+    environment:
+      USER_SERVICE_URL: ${USER_SERVICE_URL}
+
+    container_name: company_tests
+    command: ["pytest", "-v", "--tb=short", "-p", "no:cacheprovider"]
+    networks:
+      - app_network
 
   product_db:
-    image: postgres:13-alpine
-    container_name: product_configuration_db
+    image: postgres:16
+    container_name: product_db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: productdb
     volumes:
-      - product_pgdata:/var/lib/postgresql/data
+      - pgdata_product:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d productdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_network
+
+  product_service:
+    build: 
+      context: ./services/product
+      args:
+        - DATABASE_URL=postgresql://postgres:password@product_db:5432/productdb
+    container_name: product_service
+    env_file:
+      - .env
+    depends_on:
+      product_db:
+        condition: service_healthy
+    ports:
+      - "8001:8000"
+    environment:
+      # at runtime, the app can read its DB URL here
+      DATABASE_URL: postgresql://postgres:password@product_db:5432/productdb
+    networks:
+      - app_network
+
+  product_tests:
+    build:
+      context: ./services/product
+    container_name: product_tests
+    command: ["pytest", "-v", "--tb=short", "-p", "no:cacheprovider"]
+    depends_on:
+      product_db:
+        condition: service_healthy
+    networks:
+      - app_network
+
+  user_db:
+    image: postgres:16
+    container_name: user_db
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${USER_DB_NAME}
+    volumes:
+      - pgdata_users:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${USER_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_network
+
+  user_service:
+    build:
+      context: ./services/user_management
+    container_name: user_service
+    env_file:
+      - .env
+    depends_on:
+      user_db:
+        condition: service_healthy
+    ports:
+      - "8003:8000"
+    environment:
+      DB_HOST: user_db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_NAME: ${USER_DB_NAME}
+      NOTIFICATION_SERVICE_URL: "http://notification_service:8000"
+    networks:
+      - app_network
+  policy_db:
+    image: postgres:16
+    container_name: policy_db
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POLICY_DB_USER}
+      POSTGRES_PASSWORD: ${POLICY_DB_PASS}
+      POSTGRES_DB: ${POLICY_DB_NAME}
+    volumes:
+      - pgdata_policy:/var/lib/postgresql/data
+    ports:
+      - "5555:5432"
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POLICY_DB_USER} -d ${POLICY_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_network
+
+  policy_service:
+    build:
+      context: ./services/policy
+      args:
+        - DATABASE_URL=postgresql://${POLICY_DB_USER}:${POLICY_DB_PASS}@policy_db:5432/${POLICY_DB_NAME}
+    container_name: policy_service
+    env_file:
+      - .env
+    depends_on:
+      policy_db:
+        condition: service_started
+    ports:
+      - "8009:8000"
+    environment:
+      COMPANY_DB_HOST: policy_db
+      COMPANY_DB_PORT: 5432
+      COMPANY_DB_USER: ${POLICY_DB_USER}
+      COMPANY_DB_PASS: ${POLICY_DB_PASS}
+      COMPANY_DB_NAME: ${POLICY_DB_NAME}
+      PRODUCT_SERVICE_URL: http://product_service:8000
+      DFS_SERVICE_URL: http://dfs_service:8000
+      POLICY_DATABASE_URL: postgresql://${POLICY_DB_USER}:${POLICY_DB_PASS}@policy_db:5432/${POLICY_DB_NAME}
+    networks:
+      - app_network
+  report_db:
+    image: postgres:16
+    container_name: report_db
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${REPORT_DB_USER}
+      POSTGRES_PASSWORD: ${REPORT_DB_PASS}
+      POSTGRES_DB: ${REPORT_DB_NAME}
+    volumes:
+      - pgdata_report:/var/lib/postgresql/data
+    ports:
+      - "6666:5432"
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${REPORT_DB_USER} -d ${REPORT_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_network
+
+  report_service:
+    build:
+      context: ./services/report
+      args:
+        - DATABASE_URL=postgresql://${REPORT_DB_USER}:${REPORT_DB_PASS}@report_db:5432/${REPORT_DB_NAME}
+    container_name: report_service
+    env_file:
+      - .env
+    depends_on:
+      report_db:
+        condition: service_started
+    ports:
+      - "8010:8000"
+    environment:
+      REPORT_DB_HOST: report_db
+      REPORT_DB_PORT: 5432
+      REPORT_DB_USER: ${REPORT_DB_USER}
+      REPORT_DB_PASS: ${REPORT_DB_PASS}
+      REPORT_DB_NAME: ${REPORT_DB_NAME}
+      CLAIM_SERVICE_URL: http://claim_service:8000
+      POLICY_SERVICE_URL: http://policy_service:8000
+      COMMISSION_SERVICE_URL: http://commision_service:8000
+      REPORT_DATABASE_URL: postgresql://${REPORT_DB_USER}:${REPORT_DB_PASS}@report_db:5432/${REPORT_DB_NAME}
+    networks:
+      - app_network
+
+
+  gateway:
+    build:
+      context: ./services/gateway
+    container_name: gateway
+    env_file:
+      - .env
+    ports:
+      - "7000:7000"
+    networks:
+      - app_network
 
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin4
     restart: always
+    env_file:
+      - .env
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
-    ports:
-      - "5050:80"
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     depends_on:
-      - product_db
+      product_db:
+        condition: service_healthy
+    ports:
+      - "8006:8000"
+    networks:
+      - app_network
+  
+  notification_service:
+    build:
+      context: ./services/notification
+    container_name: notification_service
+    env_file:
+      - .env
+    environment:
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM=${SMTP_FROM}
+    ports:
+      - "8004:8000"
+    networks:
+      - app_network
 
   claim_db:
     image: postgres:16
@@ -90,5 +316,13 @@ services:
       - "8007:8001" 
 
 volumes:
-  product_pgdata:  # Added product volume
-  claim_pgdata:  # Added claim volume
+  claim_pgdata:
+  pgdata_company:
+  pgdata_product:
+  pgdata_users:
+  pgdata_policy:
+  pgdata_report:
+
+networks:
+  app_network:
+    driver: bridge

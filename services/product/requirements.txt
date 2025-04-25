@@ -6,3 +6,7 @@ pydantic
 pytest
 httpx
 pydantic_settings
+alembic
+pandas
+openpyxl
+python-multipart

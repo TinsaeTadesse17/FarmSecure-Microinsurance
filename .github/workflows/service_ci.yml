@@ -1,0 +1,90 @@
+name: "Monorepo Service Tests"
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  filter:
+    name: "Determine Changed Services"
+    runs-on: ubuntu-latest
+    outputs:
+      company: ${{ steps.filter.outputs.company }}
+      product: ${{ steps.filter.outputs.product }}
+      user: ${{ steps.filter.outputs.user }}
+      gateway: ${{ steps.filter.outputs.gateway }}
+      notification: ${{ steps.filter.outputs.notification }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: "Filter paths"
+        id: filter
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            company:
+              - 'services/company_management/**'
+            product:
+              - 'services/product/**'
+            user:
+              - 'services/user_management/**'
+            gateway:
+              - 'services/gateway/**'
+            notification:
+              - 'services/notification/**'
+
+  test-company:
+    name: "Run Company Service Tests"
+    needs: filter
+    if: needs.filter.outputs.company == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: "Run Company Tests"
+        run: |
+          docker-compose run --rm company_tests
+
+  test-product:
+    name: "Run Product Service Tests"
+    needs: filter
+    if: needs.filter.outputs.product == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: "Run Product Tests"
+        run: |
+          docker-compose run --rm product_tests
+
+  test-user:
+    name: "Run User Service Tests"
+    needs: filter
+    if: needs.filter.outputs.user == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: "Run User Management Tests"
+        run: |
+          docker-compose run --rm user_service pytest services/user_management
+
+  test-gateway:
+    name: "Run Gateway Service Tests"
+    needs: filter
+    if: needs.filter.outputs.gateway == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: "Run Gateway Tests"
+        run: |
+          docker-compose run --rm gateway
+
+  test-notification:
+    name: "Run Notification Service Tests"
+    needs: filter
+    if: needs.filter.outputs.notification == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: "Run Notification Tests"
+        run: |
+          docker-compose run --rm notification_service pytest services/notification
