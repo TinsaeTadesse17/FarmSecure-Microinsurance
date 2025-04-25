@@ -43,7 +43,6 @@ services:
       USER_SERVICE_URL: http://user_service:8000
     networks:
       - app_network
-
   company_tests:
     build:
       context: ./services/company_management
@@ -286,7 +285,38 @@ services:
     networks:
       - app_network
 
+  claim_db:
+    image: postgres:16
+    container_name: claim_db
+    environment:
+      POSTGRES_USER: claim_user  
+      POSTGRES_PASSWORD: claim_password  
+      POSTGRES_DB: claim_db  
+    volumes:
+      - claim_pgdata:/var/lib/postgresql/data
+      
+    ports:
+      - "5434:5432"
+    healthcheck:  # Add healthcheck
+      test: ["CMD-SHELL", "pg_isready -U claim_user -d claim_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: always
+
+  claim_management_service:
+    build: ./services/claim_management
+    container_name: claim_service
+    depends_on:
+      claim_db:
+        condition: service_healthy  # Add healthcheck dependency
+    environment:
+      DATABASE_URL: postgresql://claim_user:claim_password@claim_db:5432/claim_db
+    ports:
+      - "8007:8001" 
+
 volumes:
+  claim_pgdata:
   pgdata_company:
   pgdata_product:
   pgdata_users:

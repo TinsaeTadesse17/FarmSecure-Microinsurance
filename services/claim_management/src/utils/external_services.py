@@ -56,6 +56,7 @@ def calculate_crop_claim(ndvi_index: float, trigger: float, exit_point: float, s
         return (1 - (ndvi_index - exit_point) / (trigger - exit_point)) * sum_insured_period
     else:
         return sum_insured_period
+    
 
 def calculate_livestock_claim(z_score: float, trigger: float, exit_point: float, sum_insured_period: float) -> float:
     """
