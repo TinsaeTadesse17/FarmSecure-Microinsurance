@@ -14,11 +14,11 @@ class ClaimStatusEnum(str, enum.Enum):
     SETTLED = "settled"
 
 class Claim(Base):
-    __tablename__ = "claims"
+    __tablename__ = "claim"
 
     id = Column(Integer, primary_key=True, index=True)
     policy_id = Column(Integer, nullable=False)
-    customer_id = Column(Integer, nullable=False)
+    customer_id = Column(Integer, nullable=False)#input
     grid_id = Column(Integer, nullable=False)
     claim_type = Column(Enum(ClaimTypeEnum), nullable=False)
     claim_amount = Column(Float, nullable=False)

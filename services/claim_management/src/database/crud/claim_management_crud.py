@@ -5,9 +5,9 @@ from src.schemas.claim_management_schema import ClaimCreateSchema
 def create_claim(db: Session, claim_in: ClaimCreateSchema, claim_amount: float):
     claim = Claim(
         policy_id=claim_in.policy_id,
-        customer_id=claim_in.customer_id,
+        customer_id=claim_in.customer_id,#input
         grid_id=claim_in.grid_id,
-        claim_type=claim_in.claim_type,
+        claim_type=claim_in.claim_type,#product_type
         claim_amount=claim_amount,
         status=ClaimStatusEnum.PENDING,
     )
