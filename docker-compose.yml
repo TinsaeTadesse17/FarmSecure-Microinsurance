@@ -1,30 +1,30 @@
 services:
-  db_company_management:
-    image: postgres:16
-    container_name: db_company_management
-    environment:
-      POSTGRES_USER: company_user
-      POSTGRES_PASSWORD: pass1234
-      POSTGRES_DB: db_company_management
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5433:5432"  
-    restart: always
+  # db_company_management:
+  #   image: postgres:16
+  #   container_name: db_company_management
+  #   environment:
+  #     POSTGRES_USER: company_user
+  #     POSTGRES_PASSWORD: pass1234
+  #     POSTGRES_DB: db_company_management
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+  #   ports:
+  #     - "5433:5432"  
+  #   restart: always
 
-  company_management_backend:
-    build: .services/company_management/backend
-    container_name: company_management_backend
-    depends_on:
-      - db_company_management
-    ports:
-      - "8000:8000"
-    environment:
-      DB_HOST: db_company_management
-      DB_PORT: 5432
-      DB_USER: company_user
-      DB_PASS: pass1234
-      DB_NAME: db_company_management
+  # company_management_backend:
+  #   build: .services/company_management/backend
+  #   container_name: company_management_backend
+  #   depends_on:
+  #     - db_company_management
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     DB_HOST: db_company_management
+  #     DB_PORT: 5432
+  #     DB_USER: company_user
+  #     DB_PASS: pass1234
+  #     DB_NAME: db_company_management
 
   product_service:
     build: ./services/product
@@ -45,7 +45,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: productdb
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - product_pgdata:/var/lib/postgresql/data
 
   pgadmin:
     image: dpage/pgadmin4
@@ -59,5 +59,36 @@ services:
     depends_on:
       - product_db
 
+  claim_db:
+    image: postgres:16
+    container_name: claim_db
+    environment:
+      POSTGRES_USER: claim_user  
+      POSTGRES_PASSWORD: claim_password  
+      POSTGRES_DB: claim_db  
+    volumes:
+      - claim_pgdata:/var/lib/postgresql/data
+      
+    ports:
+      - "5434:5432"
+    healthcheck:  # Add healthcheck
+      test: ["CMD-SHELL", "pg_isready -U claim_user -d claim_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: always
+
+  claim_management_service:
+    build: ./services/claim_management
+    container_name: claim_service
+    depends_on:
+      claim_db:
+        condition: service_healthy  # Add healthcheck dependency
+    environment:
+      DATABASE_URL: postgresql://claim_user:claim_password@claim_db:5432/claim_db
+    ports:
+      - "8007:8001" 
+
 volumes:
-  pgdata:
+  product_pgdata:  # Added product volume
+  claim_pgdata:  # Added claim volume
