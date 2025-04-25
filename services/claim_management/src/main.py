@@ -13,7 +13,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(claim_router, prefix="/api/claims")
+app.include_router(claim_router, prefix="/api/claim")
 
 if __name__ == "__main__":
     import uvicorn
