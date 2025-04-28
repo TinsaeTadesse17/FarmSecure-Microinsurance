@@ -16,6 +16,7 @@ jobs:
       user: ${{ steps.filter.outputs.user }}
       gateway: ${{ steps.filter.outputs.gateway }}
       notification: ${{ steps.filter.outputs.notification }}
+      policy: ${{ steps.filter.outputs.policy }}
     steps:
       - uses: actions/checkout@v3
       - name: "Filter paths"
@@ -33,6 +34,18 @@ jobs:
               - 'services/gateway/**'
             notification:
               - 'services/notification/**'
+            policy:
+              - 'services/policy_management/**'
+  test-policy:
+    name: "Run Policy Service Tests"
+    needs: filter
+    if: needs.filter.outputs.policy == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: "Run Policy Tests"
+        run: |
+          docker-compose run --rm policy_tests
 
   test-company:
     name: "Run Company Service Tests"
