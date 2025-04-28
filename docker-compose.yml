@@ -197,7 +197,7 @@ services:
       context: ./services/policy
     container_name: policy_tests
     environment:
-      - DATABASE_URL=sqlite:///:memory
+      - DATABASE_URL=sqlite:///:memory:
       - PRODUCT_SERVICE_URL=http://product_service:8000
       - DFS_SERVICE_URL=http://dfs_service:8000
     command: ["pytest", "-v", "--tb=short", "-p", "no:cacheprovider"]
