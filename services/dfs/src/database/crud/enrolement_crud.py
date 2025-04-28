@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from src.database.models.enrolement import Enrolement
 from src.schemas.enrolement_schema import EnrolementRequest
 from datetime import datetime
+from src.core.config import settings
+import httpx
 class EnrolementService:
     def __init__(self, db: Session):
         self.db = db
@@ -44,6 +46,7 @@ class EnrolementService:
         
         # Create new instance from received data
         db_enrolement = Enrolement(
+            
             customer_id = customer_id,
             cps_zone  = enrolement.cps_zone,
             user_id      = enrolement.user_id,
@@ -55,37 +58,58 @@ class EnrolementService:
             date_to      = enrolement.date_to,
             receipt_no   = enrolement.receipt_no,
             product_id   = enrolement.product_id,
+            status       = "pending",
+            createdAt    = datetime.utcnow()
         )
+
+
+        
+        
         self.db.add(db_enrolement)
         self.db.commit()
         self.db.refresh(db_enrolement)
-        return db_enrolement
+        
+
+        return {
+            "enrolement_id": db_enrolement.enrolment_id,
+            "createdAt": db_enrolement.createdAt,
+        }
+
+        
 
     def get_enrolement(self, enrolement_id: int):
         return self.db.query(Enrolement).filter(Enrolement.enrolment_id == enrolement_id).first()
 
-    def get_enrolements(self, skip: int = 0, limit: int = 10):
-        return self.db.query(Enrolement).offset(skip).limit(limit).all()
+    def get_enrolements(self):
+        return self.db.query(Enrolement).all()
 
     def approve_enrolement(self, enrolement_id: int):
-        db_company = self.db.query(Enrolement).filter(Enrolement.enrolment_id == enrolement_id).first()
-        if not db_company:
+        db_enroll = self.db.query(Enrolement).filter(Enrolement.enrolment_id == enrolement_id).first()
+        if not db_enroll:
             raise HTTPException(status_code=404, detail="Company not found")
+        try:
+            resp = httpx.post(
+                f"{settings.POLICY_SERVICE_URL}/policy",
+                json={"enrollment_id": enrolement_id},
+                timeout=5
+            )
+            resp.raise_for_status()
+        except httpx.HTTPError as e:
+            raise HTTPException(status_code=502, detail=f"Policy service error: {e}")
         
-        
-        db_company.status = "approved"
+        db_enroll.status = "approved"
 
         self.db.commit()
-        self.db.refresh(db_company)
-        return db_company
+        self.db.refresh(db_enroll)
+        return db_enroll
     def reject_enrolement(self, enrolement_id: int):
-        db_company = self.db.query(Enrolement).filter(Enrolement.enrolment_id == enrolement_id).first()
-        if not db_company:
+        db_enroll = self.db.query(Enrolement).filter(Enrolement.enrolment_id == enrolement_id).first()
+        if not db_enroll:
             raise HTTPException(status_code=404, detail=f"Enrolement with {enrolement_id} not found")
         
         
-        db_company.status = "rejected"
+        db_enroll.status = "rejected"
 
         self.db.commit()
-        self.db.refresh(db_company)
-        return db_company
+        self.db.refresh(db_enroll)
+        return db_enroll

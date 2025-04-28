@@ -3,11 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.core.config import settings
 from src.routes.enrolement import router as dfs_router
 from src.database.db import Base
-from src.database.db import customer_engine
-from src.database.db import enrolement_engine
+from src.database.db import engine
 
 
-Base.metadata.create_all(bind=enrolement_engine)
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Enrolement API")
 
