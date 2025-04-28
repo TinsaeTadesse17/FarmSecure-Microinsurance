@@ -252,6 +252,81 @@ services:
       DATABASE_URL: postgresql://${REPORT_DB_USER}:${REPORT_DB_PASS}@report_db:5432/${REPORT_DB_NAME}
     networks:
       - app_network
+  customer_db:
+    image: postgres:16
+    container_name: customer_db
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${CUSTOMER_DB_USER}
+      POSTGRES_PASSWORD: ${CUSTOMER_DB_PASS}
+      POSTGRES_DB: ${CUSTOMER_DB_NAME}
+    volumes:
+      - pgdata_customer:/var/lib/postgresql/data
+    ports:
+      - "6001:5432"
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${CUSTOMER_DB_USER} -d ${CUSTOMER_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_network
+  enrolement_db:
+    image: postgres:16
+    container_name: enrolement_db
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${ENROLEMENT_DB_USER}
+      POSTGRES_PASSWORD: ${ENROLEMENT_DB_PASS}
+      POSTGRES_DB: ${ENROLEMENT_DB_NAME}
+    volumes:
+      - pgdata_enrolement:/var/lib/postgresql/data
+    ports:
+      - "6002:5432"
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ENROLEMENT_DB_USER} -d ${ENROLEMENT_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_network
+
+  dfs_service:
+    build:
+      context: ./services/dfs
+      args:
+        - ENROLEMENT_DATABASE_URL=postgresql://${ENROLEMENT_DB_USER}:${ENROLEMENT_DB_PASS}@enrolement_db:5432/${ENROLEMENT_DB_NAME}
+        - CUSTOMER_DATABASE_URL=postgresql://${CUSTOMER_DB_USER}:${CUSTOMER_DB_PASS}@customer_db:5432/${CUSTOMER_DB_NAME}
+    container_name: dfs_service
+    env_file:
+      - .env
+    depends_on:
+      enrolement_db:
+        condition: service_started
+      customer_db:
+        condition: service_started
+    ports:
+      - "8011:8000"
+    environment:
+      ENROLEMENT_DB_USER: ${ENROLEMENT_DB_USER}
+      ENROLEMENT_DB_PASS: ${ENROLEMENT_DB_PASS}
+      ENROLEMENT_DB_HOST: ${ENROLEMENT_DB_HOST} 
+      ENROLEMENT_DB_PORT: ${ENROLEMENT_DB_PORT}
+      ENROLEMENT_DB_NAME: ${ENROLEMENT_DB_NAME}
+      CUSTOMER_DB_USER: ${CUSTOMER_DB_USER}
+      CUSTOMER_DB_PASS: ${CUSTOMER_DB_PASS}
+      CUSTOMER_DB_HOST: ${CUSTOMER_DB_HOST} 
+      CUSTOMER_DB_PORT: ${CUSTOMER_DB_PORT}
+      CUSTOMER_DB_NAME: ${CUSTOMER_DB_NAME}
+      POLICY_SERVICE_URL: http://policy_service:8000
+      ENROLEMENT_DATABASE_URL: postgresql://${ENROLEMENT_DB_USER}:${ENROLEMENT_DB_PASS}@enrolement_db:5432/${ENROLEMENT_DB_NAME}
+      CUSTOMER_DATABASE_URL: postgresql://${CUSTOMER_DB_USER}:${CUSTOMER_DB_PASS}@customer_db:5432/${CUSTOMER_DB_NAME}
+    networks:
+      - app_network
 
 
   gateway:
@@ -336,6 +411,8 @@ volumes:
   pgdata_users:
   pgdata_policy:
   pgdata_report:
+  pgdata_customer:
+  pgdata_enrolement:
 
 networks:
   app_network:
