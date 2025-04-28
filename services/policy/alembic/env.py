@@ -8,7 +8,7 @@ from src.core.config import settings
 
 # Interpret the config file for Python logging.
 config = context.config
-db_url = os.getenv("POLICY_DATABASE_URL", settings.POLICY_DATABASE_URL)
+db_url = os.getenv("DATABASE_URL", settings.DATABASE_URL)
 config.set_main_option("sqlalchemy.url", db_url)
 fileConfig(config.config_file_name)
 

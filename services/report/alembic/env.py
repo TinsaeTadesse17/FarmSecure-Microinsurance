@@ -13,7 +13,7 @@ from src.core.config import settings
 config = context.config
 
 # override the SQLAlchemy URL from env or settings
-db_url = os.getenv("REPORT_DATABASE_URL", settings.DATABASE_URL)
+db_url = os.getenv("DATABASE_URL", settings.DATABASE_URL)
 config.set_main_option("sqlalchemy.url", db_url)
 
 # Interpret the config file for Python logging.
