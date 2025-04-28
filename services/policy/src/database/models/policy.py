@@ -1,22 +1,30 @@
-# policy/src/database/models/policy.py
-import enum
-from sqlalchemy import Column, Integer, String, Float, DateTime, JSON, Enum
-from sqlalchemy.sql import func
+from sqlalchemy import Column, Integer, String, ForeignKey, Numeric, CheckConstraint
+from sqlalchemy.orm import relationship
 from src.database.db import Base
 
-class PolicyStatus(str, enum.Enum):
-    pending = "pending"
-    approved = "approved"
-    rejected = "rejected"
-
 class Policy(Base):
-    __tablename__ = "policies"
+    __tablename__ = 'policy'
+    policy_id = Column(Integer, primary_key=True, index=True)
+    enrollment_id = Column(Integer, nullable=False)
+    user_id = Column(Integer, nullable=False)
+    ic_company_id = Column(Integer, nullable=False)
+    policy_no = Column(String(50), nullable=False, unique=True)
+    fiscal_year = Column(String(4), nullable=False)
+    status = Column(String(20), nullable=False, default='pending')
 
-    id = Column(Integer, primary_key=True, index=True)
-    customer_id = Column(Integer, nullable=False)
-    product_id = Column(Integer, nullable=False)
-    policy_id = Column(String, unique=True, nullable=False)
-    sum_insured = Column(Float, nullable=False)
-    periods = Column(JSON, nullable=False)
-    status = Column(Enum(PolicyStatus), default=PolicyStatus.pending, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    __table_args__ = (
+        CheckConstraint("status IN ('pending', 'approved', 'rejected')", name='ck_policy_status'),
+    )
+
+    details = relationship(
+        'PolicyDetail', back_populates='policy', cascade='all, delete-orphan'
+    )
+
+class PolicyDetail(Base):
+    __tablename__ = 'policy_detail'
+    policy_detail_id = Column(Integer, primary_key=True, index=True)
+    policy_id = Column(Integer, ForeignKey('policy.policy_id'), nullable=False)
+    period = Column(Integer, nullable=False)
+    period_sum_insured = Column(Numeric(14, 2), nullable=False)
+
+    policy = relationship('Policy', back_populates='details')

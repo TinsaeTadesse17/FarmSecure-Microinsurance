@@ -11,15 +11,16 @@ jobs:
     name: "Determine Changed Services"
     runs-on: ubuntu-latest
     outputs:
-      company: ${{ steps.filter.outputs.company }}
-      product: ${{ steps.filter.outputs.product }}
-      user: ${{ steps.filter.outputs.user }}
-      gateway: ${{ steps.filter.outputs.gateway }}
-      notification: ${{ steps.filter.outputs.notification }}
+      company: ${{ steps.paths.outputs.company }}
+      product: ${{ steps.paths.outputs.product }}
+      user: ${{ steps.paths.outputs.user }}
+      gateway: ${{ steps.paths.outputs.gateway }}
+      notification: ${{ steps.paths.outputs.notification }}
+      policy: ${{ steps.paths.outputs.policy }}
     steps:
       - uses: actions/checkout@v3
       - name: "Filter paths"
-        id: filter
+        id: paths
         uses: dorny/paths-filter@v2
         with:
           filters: |
@@ -33,58 +34,50 @@ jobs:
               - 'services/gateway/**'
             notification:
               - 'services/notification/**'
+            policy:
+              - 'services/policy/**'
 
-  test-company:
-    name: "Run Company Service Tests"
+  test-services:
+    name: "Run Changed Service Tests"
     needs: filter
-    if: needs.filter.outputs.company == 'true'
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: policy
+            changed: ${{ needs.filter.outputs.policy }}
+            service: policy_tests
+            args: ""
+          - name: company
+            changed: ${{ needs.filter.outputs.company }}
+            service: company_tests
+            args: ""
+          - name: product
+            changed: ${{ needs.filter.outputs.product }}
+            service: product_tests
+            args: ""
+          - name: user
+            changed: ${{ needs.filter.outputs.user }}
+            service: user_service
+            args: "pytest services/user_management"
+          - name: gateway
+            changed: ${{ needs.filter.outputs.gateway }}
+            service: gateway
+            args: ""
+          - name: notification
+            changed: ${{ needs.filter.outputs.notification }}
+            service: notification_service
+            args: "pytest services/notification"
+    # only run matrix entries where the path-filter flagged changes
+    if: ${{ matrix.changed == 'true' }}
     steps:
       - uses: actions/checkout@v3
-      - name: "Run Company Tests"
-        run: |
-          docker-compose run --rm company_tests
 
-  test-product:
-    name: "Run Product Service Tests"
-    needs: filter
-    if: needs.filter.outputs.product == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: "Run Product Tests"
+      - name: Install Docker Compose plugin (V2)
         run: |
-          docker-compose run --rm product_tests
+          sudo apt-get update
+          sudo apt-get install -y docker-compose-plugin
 
-  test-user:
-    name: "Run User Service Tests"
-    needs: filter
-    if: needs.filter.outputs.user == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: "Run User Management Tests"
+      - name: Run ${{ matrix.name }} tests
         run: |
-          docker-compose run --rm user_service pytest services/user_management
-
-  test-gateway:
-    name: "Run Gateway Service Tests"
-    needs: filter
-    if: needs.filter.outputs.gateway == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: "Run Gateway Tests"
-        run: |
-          docker-compose run --rm gateway
-
-  test-notification:
-    name: "Run Notification Service Tests"
-    needs: filter
-    if: needs.filter.outputs.notification == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: "Run Notification Tests"
-        run: |
-          docker-compose run --rm notification_service pytest services/notification
+          docker compose run --rm ${{ matrix.service }} ${{ matrix.args }}

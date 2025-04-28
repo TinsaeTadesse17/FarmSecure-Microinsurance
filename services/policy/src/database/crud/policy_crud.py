@@ -1,69 +1,112 @@
-# policy/src/database/crud/policy_crud.py
+import os
+import httpx
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from httpx import AsyncClient, HTTPError
-from src.database.models.policy import Policy, PolicyStatus
-from src.schemas.policy_schema import PolicyCreate
+from datetime import datetime
+from ..models.policy import Policy, PolicyDetail
 from src.core.config import settings
 
-class PolicyService:
-    def __init__(self, db: Session):
-        self.db = db
+DFS_SERVICE_URL = settings.DFS_SERVICE_URL 
 
-    async def _fetch_product(self, product_id: int):
-        url = f"{settings.PRODUCT_SERVICE_URL}{settings.API_V1_STR}/products/{product_id}"
-        async with AsyncClient() as client:
-            resp = await client.get(url)
-            resp.raise_for_status()
-            return resp.json()
-
-    async def create_policy(self, policy_in: PolicyCreate):
-        # Validate customer via DFS (optional)
-        # dfs_url = f"{settings.DFS_SERVICE_URL}/enrollments/{policy_in.customer_id}"
-        # ... fetch/validate ...
-
-        product = await self._fetch_product(policy_in.product_id)
-        print("policy_in")
-        print(policy_in)
-        print("product")
-        print(product)
-        ptype = product["type"]
-        periods = []
-
-        if ptype == "crop":
-            n = int(product["period"])
-            amt = int(policy_in.sum_insured )/ n
-            periods = [{"period": str(i+1), "amount": amt} for i in range(n)]
-
-        elif ptype == "livestock":
-            # 58% LRLD (4 months), 42% SRSD (3 months)
-            lrld = policy_in.sum_insured * 0.58
-            srsd = policy_in.sum_insured * 0.42
-            per_lrld = lrld / 4
-            per_srsd = srsd / 3
-            periods = [{"period": f"LRLD-{i+1}", "amount": per_lrld} for i in range(4)]
-            periods += [{"period": f"SRSD-{i+1}", "amount": per_srsd} for i in range(3)]
-
-        db_obj = Policy(
-            customer_id=policy_in.customer_id,
-            product_id=policy_in.product_id,
-            policy_id=policy_in.policy_id,
-            sum_insured=policy_in.sum_insured,
-            periods=periods,
-            status=PolicyStatus.pending
+def fetch_enrollment(enrollment_id: int) -> dict:
+    try:
+        resp = httpx.get(
+            f"{DFS_SERVICE_URL}/api/enrollment/{enrollment_id}", timeout=5
         )
-        self.db.add(db_obj)
-        self.db.commit()
-        self.db.refresh(db_obj)
-        return db_obj
+        resp.raise_for_status()
+        return resp.json()
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=502, detail=f"Enrollment (DFS) service error: {e}")
 
-    def get_policy(self, policy_id: int):
-        return self.db.query(Policy).filter(Policy.id == policy_id).first()
+def create_policy(db: Session, enrollment_id: int) -> Policy:
+    data = fetch_enrollment(enrollment_id)
+    sum_insured = data.get('sum_insured')
+    user_id = data.get('user_id')
+    ic_company_id = data.get('ic_company_id')
+    receipt_no = data.get('receipt_no')
+    product_id = data.get('product_id')
 
-    def approve_policy(self, policy_id: int):
-        pol = self.get_policy(policy_id)
-        if not pol:
-            return None
-        pol.status = PolicyStatus.approved
-        self.db.commit()
-        self.db.refresh(pol)
-        return pol
+    if None in (sum_insured, user_id, ic_company_id, receipt_no, product_id):
+        raise HTTPException(status_code=400, detail="Invalid enrollment data")
+
+    fiscal_year = str(datetime.utcnow().year)
+
+    policy = Policy(
+        enrollment_id=enrollment_id,
+        user_id=user_id,
+        ic_company_id=ic_company_id,
+        policy_no=receipt_no,
+        fiscal_year=fiscal_year,
+        status='pending'
+    )
+    db.add(policy)
+    db.flush()  # to populate policy.policy_id
+
+    details = []
+    if product_id == 2:
+        # Livestock: 2 periods
+        details.append(PolicyDetail(
+            policy_id=policy.policy_id, period=1,
+            period_sum_insured=sum_insured * 0.58
+        ))
+        details.append(PolicyDetail(
+            policy_id=policy.policy_id, period=2,
+            period_sum_insured=sum_insured * 0.42
+        ))
+    else:
+        # Crop: 36 equal periods
+        per_sum = sum_insured / 36
+        for p in range(1, 37):
+            details.append(PolicyDetail(
+                policy_id=policy.policy_id,
+                period=p,
+                period_sum_insured=per_sum
+            ))
+
+    db.add_all(details)
+    db.commit()
+    db.refresh(policy)
+    return policy
+
+
+def change_status(db: Session, policy_id: int, new_status: str) -> Policy:
+    policy = db.query(Policy).get(policy_id)
+    if not policy:
+        raise HTTPException(status_code=404, detail="Policy not found")
+    policy.status = new_status
+    db.commit()
+    db.refresh(policy)
+    return policy
+
+
+def get_policy(db: Session, policy_id: int) -> Policy:
+    policy = db.query(Policy).get(policy_id)
+    if not policy:
+        raise HTTPException(status_code=404, detail="Policy not found")
+    return policy
+
+
+def list_policies(db: Session):
+    return db.query(Policy).all()
+
+
+def get_policy_details(db: Session, policy_id: int):
+    policy = get_policy(db, policy_id)
+    return policy.details
+
+
+def list_policy_details(db: Session):
+    details = db.query(PolicyDetail).all()
+    output = []
+    for d in details:
+        p = d.policy
+        enrollment = fetch_enrollment(p.enrollment_id)
+        output.append({
+            'policy_detail_id': d.policy_detail_id,
+            'customer_id': enrollment.get('customer_id'),
+            'policy_id': p.policy_id,
+            'period_sum_insured': float(d.period_sum_insured),
+            'cps_zone': enrollment.get('cps_zone'),
+            'product_type': enrollment.get('product_id')
+        })
+    return output

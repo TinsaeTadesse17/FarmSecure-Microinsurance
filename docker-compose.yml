@@ -181,16 +181,30 @@ services:
     ports:
       - "8009:8000"
     environment:
-      COMPANY_DB_HOST: policy_db
-      COMPANY_DB_PORT: 5432
-      COMPANY_DB_USER: ${POLICY_DB_USER}
-      COMPANY_DB_PASS: ${POLICY_DB_PASS}
-      COMPANY_DB_NAME: ${POLICY_DB_NAME}
+      DB_HOST: policy_db
+      DB_PORT: 5432
+      DB_USER: ${POLICY_DB_USER}
+      DB_PASS: ${POLICY_DB_PASS}
+      DB_NAME: ${POLICY_DB_NAME}
       PRODUCT_SERVICE_URL: http://product_service:8000
       DFS_SERVICE_URL: http://dfs_service:8000
       DATABASE_URL: postgresql://${POLICY_DB_USER}:${POLICY_DB_PASS}@policy_db:5432/${POLICY_DB_NAME}
     networks:
       - app_network
+
+  policy_tests:
+    build:
+      context: ./services/policy
+    container_name: policy_tests
+    environment:
+      - DATABASE_URL=sqlite:///:memory:
+      - PRODUCT_SERVICE_URL=http://product_service:8000
+      - DFS_SERVICE_URL=http://dfs_service:8000
+    command: ["pytest", "-v", "--tb=short", "-p", "no:cacheprovider"]
+
+    networks:
+      - app_network
+      
   report_db:
     image: postgres:16
     container_name: report_db

@@ -1,45 +1,63 @@
-# policy/src/routes/policy.py
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from src.database.crud.policy_crud import PolicyService
-from src.schemas.policy_schema import PolicyCreate, PolicyResponse
+from typing import List
 from src.database.db import get_db
-import asyncio
-from logging import getLogger
+from src.database.crud.policy_crud import (
 
+    create_policy, change_status,
+    get_policy, list_policies,
+    get_policy_details, list_policy_details
+)
+from ..schemas.policy_schema import (
+    PolicyCreateSchema, PolicySchema,
+    PolicyDetailSchema, MessageSchema
+)
 
-logger = getLogger(__name__)
 router = APIRouter()
 
-logger.debug("Policy router initialized")
-
-@router.post("/", response_model=PolicyResponse, status_code=201)
-async def create_policy(
-    policy_in: PolicyCreate,
+@router.post("/policy", response_model=PolicySchema)
+def create_policy_endpoint(
+    payload: PolicyCreateSchema,
     db: Session = Depends(get_db)
 ):
-    service = PolicyService(db)
-    try:
-        return await service.create_policy(policy_in)
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return create_policy(db, payload.enrollment_id)
 
+@router.post("/policy/{policy_id}/approve", response_model=PolicySchema)
+def approve_policy(
+    policy_id: int,
+    db: Session = Depends(get_db)
+):
+    return change_status(db, policy_id, 'approved')
 
-@router.get("/{policy_id}", response_model=PolicyResponse)
-def read_policy(policy_id: int, db: Session = Depends(get_db)):
-    service = PolicyService(db)
-    db_pol = service.get_policy(policy_id)
-    logger.debug(f"Fetched policy: {db_pol}")
-    if db_pol is None:
-        raise HTTPException(status_code=404, detail="Policy not found")
-    return db_pol
+@router.post("/policy/{policy_id}/reject", response_model=PolicySchema)
+def reject_policy(
+    policy_id: int,
+    db: Session = Depends(get_db)
+):
+    return change_status(db, policy_id, 'rejected')
 
-@router.put("/{policy_id}/approve", response_model=PolicyResponse)
-def approve_policy(policy_id: int, db: Session = Depends(get_db)):
-    service = PolicyService(db)
-    db_pol = service.approve_policy(policy_id)
-    if db_pol is None:
-        raise HTTPException(status_code=404, detail="Policy not found")
-    return db_pol
+@router.get("/policy/{policy_id}", response_model=PolicySchema)
+def get_policy_endpoint(
+    policy_id: int,
+    db: Session = Depends(get_db)
+):
+    return get_policy(db, policy_id)
+
+@router.get("/policy/{policy_id}/details", response_model=List[PolicyDetailSchema])
+def get_policy_details_endpoint(
+    policy_id: int,
+    db: Session = Depends(get_db)
+):
+    return get_policy_details(db, policy_id)
+
+@router.get("/policies", response_model=List[PolicySchema])
+def list_policies_endpoint(
+    db: Session = Depends(get_db)
+):
+    return list_policies(db)
+
+@router.get("/policies/details", response_model=List[dict])
+def list_policy_details_endpoint(
+    db: Session = Depends(get_db)
+):
+    return list_policy_details(db)
