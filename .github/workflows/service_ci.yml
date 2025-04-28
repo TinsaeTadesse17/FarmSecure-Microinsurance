@@ -35,7 +35,7 @@ jobs:
             notification:
               - 'services/notification/**'
             policy:
-              - 'services/policy_management/**'
+              - 'services/policy/**'
   test-policy:
     name: "Run Policy Service Tests"
     needs: filter
