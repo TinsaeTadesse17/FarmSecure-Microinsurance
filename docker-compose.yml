@@ -188,7 +188,7 @@ services:
       COMPANY_DB_NAME: ${POLICY_DB_NAME}
       PRODUCT_SERVICE_URL: http://product_service:8000
       DFS_SERVICE_URL: http://dfs_service:8000
-      POLICY_DATABASE_URL: postgresql://${POLICY_DB_USER}:${POLICY_DB_PASS}@policy_db:5432/${POLICY_DB_NAME}
+      DATABASE_URL: postgresql://${POLICY_DB_USER}:${POLICY_DB_PASS}@policy_db:5432/${POLICY_DB_NAME}
     networks:
       - app_network
   report_db:
@@ -235,7 +235,7 @@ services:
       CLAIM_SERVICE_URL: http://claim_service:8000
       POLICY_SERVICE_URL: http://policy_service:8000
       COMMISSION_SERVICE_URL: http://commision_service:8000
-      REPORT_DATABASE_URL: postgresql://${REPORT_DB_USER}:${REPORT_DB_PASS}@report_db:5432/${REPORT_DB_NAME}
+      DATABASE_URL: postgresql://${REPORT_DB_USER}:${REPORT_DB_PASS}@report_db:5432/${REPORT_DB_NAME}
     networks:
       - app_network
 
@@ -264,7 +264,7 @@ services:
       product_db:
         condition: service_healthy
     ports:
-      - "8006:8000"
+      - "8006:80"
     networks:
       - app_network
   
