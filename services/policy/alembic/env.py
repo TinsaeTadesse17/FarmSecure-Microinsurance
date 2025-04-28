@@ -14,7 +14,7 @@ fileConfig(config.config_file_name)
 
 # Import your Base from your project and any models so they are included in the metadata.
 from src.database.db import Base
-from src.database.models.policy import Policy  # ensure the model is imported
+from src.database.models.policy import *  # ensure the model is imported
 
 target_metadata = Base.metadata
 # this is the Alembic Config object, which provides

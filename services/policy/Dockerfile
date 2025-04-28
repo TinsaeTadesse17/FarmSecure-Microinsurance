@@ -1,18 +1,26 @@
-# policy/Dockerfile
-FROM python:3.10-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install dependencies
+ENV PYTHONPATH=/app
+
+# Accept DATABASE_URL as a build argument
+ARG DATABASE_URL
+# Set it as an environment variable inside the container
+ENV DATABASE_URL=${DATABASE_URL}
+
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
-# Copy source
-COPY src ./src
-COPY entrypoint.sh .
+COPY . .
 
-RUN chmod +x entrypoint.sh
 
 EXPOSE 8000
 
-ENTRYPOINT ["./entrypoint.sh"]
+RUN chmod +x entrypoint.sh
+
+# Use a non-root user for security
+RUN useradd -m appuser
+USER appuser
+# Use an entrypoint that first runs Alembic migrations then starts the API
+CMD ["./entrypoint.sh"]
