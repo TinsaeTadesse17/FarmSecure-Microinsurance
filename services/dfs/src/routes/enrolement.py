@@ -60,7 +60,7 @@ def create_enrolement(
     )
     return enroll
 
-@router.get("/{enrolement_id}", response_model=EnrolementResponse)
+@router.get("/{enrollment_id}", response_model=EnrolementResponse)
 def read_enrolement(
     enrolement_id: int,
     db: Session = Depends(get_db)
@@ -115,7 +115,7 @@ def list_enrolements(
         result.append(enrol)
     return result
 
-@router.put("/{enrolement_id}/approve")
+@router.put("/{enrollment_id}/approve")
 def approve_enrolement(
     enrolement_id: int,
     db: Session = Depends(get_db)
@@ -139,7 +139,7 @@ def approve_enrolement(
         except httpx.HTTPStatusError as e:
             raise HTTPException(status_code=response.status_code, detail=f"Policy service error: {e}")
 
-@router.put("/{enrolement_id}/reject")
+@router.put("/{enrollment_id}/reject")
 def reject_enrolement(
     enrolement_id: int,
     db: Session = Depends(get_db)
