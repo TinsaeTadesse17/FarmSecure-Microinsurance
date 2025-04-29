@@ -22,6 +22,7 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 # Import your model Base from the appropriate module
 from src.database.models.claim_management import Base
+from src.database.models.claim_management import Claim
 
 target_metadata = Base.metadata
 

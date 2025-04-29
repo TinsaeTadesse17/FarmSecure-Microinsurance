@@ -1,9 +1,15 @@
 from fastapi import FastAPI
+from src.database.db import engine
+from src.database.models.claim_management import Base
 from src.routes.claim_management import router as claim_router
 from fastapi.middleware.cors import CORSMiddleware  
 
 
 app = FastAPI(title="Claim Management Service")
+
+@app.on_event("startup")
+async def create_tables():
+    Base.metadata.create_all(bind=engine)
 
 app.add_middleware(
     CORSMiddleware,

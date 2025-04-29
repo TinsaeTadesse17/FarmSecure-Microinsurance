@@ -35,6 +35,7 @@ def authorize_claim(db: Session, claim_id: int):
         db.add(claim)
         db.commit()
         db.refresh(claim)
+        return claim
     return 
 
 

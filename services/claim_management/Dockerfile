@@ -8,6 +8,9 @@ RUN apt-get update && \
     libpq-dev && \
     rm -rf /var/lib/apt/lists/*
 
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
 WORKDIR /app
 
 # Install Python dependencies

@@ -1,13 +1,3 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
-DATABASE_URL = "postgresql://claim_user:claim_password@claim_db:5432/claim_db"
-
-engine = create_engine(DATABASE_URL, echo=True)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -28,3 +18,4 @@ if not DATABASE_URL:
 
 engine = create_engine(DATABASE_URL, echo=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
