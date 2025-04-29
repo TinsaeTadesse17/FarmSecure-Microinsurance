@@ -1,4 +1,3 @@
-// src/company-management/dto/company-response.dto.ts
 export class CompanyResponseDto {
     id: number;
     name: string;

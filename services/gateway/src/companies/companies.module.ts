@@ -1,4 +1,3 @@
-// src/company-management/company-management.module.ts
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { CompanyManagementController } from './companies.controller';
