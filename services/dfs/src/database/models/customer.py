@@ -12,6 +12,6 @@ class Customer(Base):
     f_name = Column(String, nullable=False)
     m_name = Column(String, nullable=False)
     l_name = Column(String, nullable=False)
-    account_no = Column(String, nullable=False, unique=True)
+    account_no = Column(String, nullable=False,)
     account_type = Column(String, nullable=False)
     createdAt = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

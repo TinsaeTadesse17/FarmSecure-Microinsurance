@@ -1,28 +1,36 @@
-# tests/conftest.py
+import os
 import pytest
-import httpx
+
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from src.main import app
-from src.database.db import Base, get_db
-from src.database.models.enrolement import Enrolement
-from src.database.models.customer import Customer
+# Use in‑memory SQLite for tests
+env_db = "sqlite:///:memory:"
+os.environ["DATABASE_URL"] = env_db
+os.environ["USER_SERVICE_URL"] = "http://user_service:8000"
+os.environ["POLICY_SERVICE_URL"] = "http://policy_service:8000"
 
-# --- Database Test Setup ---------------------------------------------------
-DATABASE_URL = "sqlite:///:memory:"
+# Single Engine shared by all sessions
 engine = create_engine(
-    DATABASE_URL, 
+    env_db,
     connect_args={"check_same_thread": False},
     poolclass=StaticPool,
 )
+
+# Import Base & get_db AFTER setting env
+from src.database.db import Base, get_db
+from src.main import app
+
+# Create a TestingSessionLocal bound to our engine
 TestingSessionLocal = sessionmaker(
-    autocommit=False, 
-    autoflush=False, 
-    bind=engine
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
 )
+
+# Override get_db dependency to use the testing session
 
 def override_get_db():
     db = TestingSessionLocal()
@@ -33,50 +41,16 @@ def override_get_db():
 
 app.dependency_overrides[get_db] = override_get_db
 
+# Create / drop tables once per session
 @pytest.fixture(scope="session", autouse=True)
-def setup_database():
-    """Create and drop all tables once per test session."""
+
+def setup_test_db():
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
 
+# Provide a TestClient
 @pytest.fixture(scope="session")
+
 def client():
-    """TestClient with overridden DB dependency."""
-    client = TestClient(app)
-    return client
-
-@pytest.fixture
-def mock_external_service(monkeypatch):
-    """Helper to mock external service responses if needed."""
-    def _mock(data=None, status_code=200, error=None):
-        class MockResponse:
-            def __init__(self, json_data, status_code, error):
-                self._json = json_data or {}
-                self.status_code = status_code
-                self._error = error
-
-            def raise_for_status(self):
-                if self._error:
-                    raise self._error
-                if not (200 <= self.status_code < 300):
-                    raise httpx.HTTPStatusError('Error', request=None, response=None)
-
-            def json(self):
-                return self._json
-
-        def _mock_get(url, timeout):
-            return MockResponse(data, status_code, error)
-
-        monkeypatch.setattr(httpx, 'get', _mock_get)
-
-    return _mock
-
-@pytest.fixture
-def db_session():
-    """Provide a database session for direct database operations."""
-    session = TestingSessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
+    return TestClient(app)
