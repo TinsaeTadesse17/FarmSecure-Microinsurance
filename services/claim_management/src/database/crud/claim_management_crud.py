@@ -28,6 +28,9 @@ def update_claim_amount(db: Session, claim_id: int, amount: float):
 def get_claim(db: Session, claim_id: int):
     return db.query(Claim).filter(Claim.id == claim_id).first()
 
+def get_claims(db: Session):
+    return db.query(Claim).all()
+
 def authorize_claim(db: Session, claim_id: int):
     claim = get_claim(db, claim_id)
     if claim:
@@ -36,6 +39,6 @@ def authorize_claim(db: Session, claim_id: int):
         db.commit()
         db.refresh(claim)
         return claim
-    return 
+    return None
 
 
