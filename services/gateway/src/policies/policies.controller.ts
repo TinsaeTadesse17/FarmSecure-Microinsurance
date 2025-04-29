@@ -1,32 +1,42 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body } from '@nestjs/common';
 import { PoliciesService } from './policies.service';
 
 @Controller('policies')
 export class PoliciesController {
-  constructor(private readonly policiesService: PoliciesService) {}
+  constructor(private readonly policyService: PoliciesService) {}
 
   @Post()
-  create( ) {
-    return this.policiesService.create();
+  async createPolicy(@Body() payload: any) {
+    return this.policyService.createPolicy(payload);
+  }
+
+  @Post(':policyId/approve')
+  async approvePolicy(@Param('policyId') policyId: number) {
+    return this.policyService.approvePolicy(policyId);
+  }
+
+  @Post(':policyId/reject')
+  async rejectPolicy(@Param('policyId') policyId: number) {
+    return this.policyService.rejectPolicy(policyId);
+  }
+
+  @Get(':policyId')
+  async getPolicy(@Param('policyId') policyId: number) {
+    return this.policyService.getPolicy(policyId);
+  }
+
+  @Get(':policyId/details')
+  async getPolicyDetails(@Param('policyId') policyId: number) {
+    return this.policyService.getPolicyDetails(policyId);
   }
 
   @Get()
-  findAll() {
-    return this.policiesService.findAll();
+  async listPolicies() {
+    return this.policyService.listPolicies();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.policiesService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string) {
-    return this.policiesService.update(+id );
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.policiesService.remove(+id);
+  @Get('details')
+  async listPolicyDetails() {
+    return this.policyService.listPolicyDetails();
   }
 }
