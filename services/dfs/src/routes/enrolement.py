@@ -62,11 +62,11 @@ def create_enrolement(
 
 @router.get("/{enrollment_id}", response_model=EnrolementResponse)
 def read_enrolement(
-    enrolement_id: int,
+    enrollment_id: int,
     db: Session = Depends(get_db)
 ):
     service = EnrolementService(db)
-    db_enr = service.get_enrolement(enrolement_id)
+    db_enr = service.get_enrolement(enrollment_id)
     result = EnrolementResponse(
         enrolement_id=db_enr.enrolment_id,
         createdAt=db_enr.createdAt,
@@ -117,23 +117,27 @@ def list_enrolements(
 
 @router.put("/{enrollment_id}/approve")
 def approve_enrolement(
-    enrolement_id: int,
+    enrollment_id: int,
     db: Session = Depends(get_db)
 ):
     service = EnrolementService(db)
     try:
-        result = service.approve_enrolement(enrolement_id)
+        result = service.approve_enrolement(enrollment_id)
     except HTTPException as e:
         raise e
 
     if result:
         url = f"{POLICY_SERVICE_URL}/policy"
         payload = {
-            "enrollment_id": enrolement_id,
+            "enrollment_id": enrollment_id,
         }
         try:
             response = httpx.post(url, json=payload)
             response.raise_for_status()
+            return {
+                "sucess": True,
+                "message": f"Enrollment for {enrollment_id} approved and policy created successfully",
+            }
         except httpx.RequestError as e:
             raise HTTPException(status_code=500, detail=f"Policy service request failed: {e}")
         except httpx.HTTPStatusError as e:
@@ -141,11 +145,11 @@ def approve_enrolement(
 
 @router.put("/{enrollment_id}/reject")
 def reject_enrolement(
-    enrolement_id: int,
+    enrollment_id: int,
     db: Session = Depends(get_db)
 ):
     service = EnrolementService(db)
     try:
-        return service.reject_enrolement(enrolement_id)
+        return service.reject_enrolement(enrollment_id)
     except HTTPException as e:
         raise e
