@@ -14,7 +14,8 @@ class EnrolementService:
         # Check for duplicate customer ID
         # 1. Prevent duplicate enrolment
         if self.db.query(Enrolement).filter(Enrolement.customer_id == customer_id).first():
-            raise HTTPException(status_code=400, detail="Customer already enrolled")  # :contentReference[oaicite:0]{index=0}
+            print("Customer already enrolled: ", self.db.query(Enrolement).filter(Enrolement.customer_id == customer_id).first())
+            raise HTTPException(status_code=400, detail="Customer already enrolled") 
 
         # 2. Validate integer fields
         for name in ("user_id", "ic_company_id", "branch_id", "product_id", "cps_zone"):
@@ -86,16 +87,7 @@ class EnrolementService:
     def approve_enrolement(self, enrolement_id: int):
         db_enroll = self.db.query(Enrolement).filter(Enrolement.enrolment_id == enrolement_id).first()
         if not db_enroll:
-            raise HTTPException(status_code=404, detail="Company not found")
-        try:
-            resp = httpx.post(
-                f"{settings.POLICY_SERVICE_URL}/policy",
-                json={"enrollment_id": enrolement_id},
-                timeout=5
-            )
-            resp.raise_for_status()
-        except httpx.HTTPError as e:
-            raise HTTPException(status_code=502, detail=f"Policy service error: {e}")
+            raise HTTPException(status_code=404, detail="Enrolement not found")
         
         db_enroll.status = "approved"
 

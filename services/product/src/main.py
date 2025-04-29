@@ -8,6 +8,7 @@ from src.database.models.excel_ingest import (
     GrowingSeason, NDVICrop, TriggerExitPoint
 )
 from src.routes import product_router
+from src.routes import ndvi_router
 from src.routes import excel_router
 
 # Configure basic logging
@@ -22,6 +23,8 @@ app = FastAPI(title="Product Configuration Service")
 # Include product router
 app.include_router(product_router, prefix="/api")
 app.include_router(excel_router, prefix="/api", tags=["Excel-Ingest"])
+app.include_router(ndvi_router, prefix="/api", tags=["NDVI"])
+
 
 # Global Exception Handler
 @app.exception_handler(Exception)
