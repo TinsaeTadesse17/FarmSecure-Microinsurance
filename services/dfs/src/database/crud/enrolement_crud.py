@@ -14,7 +14,7 @@ class EnrolementService:
         # Check for duplicate customer ID
         # 1. Prevent duplicate enrolment
         if self.db.query(Enrolement).filter(Enrolement.customer_id == customer_id).first():
-            print("Customer already enrolled: ", self.db.query(Enrolement).filter(Enrolement.customer_id == customer_id).first())
+            logger.warning("Customer already enrolled: %s", self.db.query(Enrolement).filter(Enrolement.customer_id == customer_id).first())
             raise HTTPException(status_code=400, detail="Customer already enrolled") 
 
         # 2. Validate integer fields
