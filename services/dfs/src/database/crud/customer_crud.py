@@ -20,10 +20,6 @@ class CustomerService:
         if not customer.account_type.strip():
             raise HTTPException(status_code=400, detail="account type field cannot be empty")
 
-        # Check for duplicate email
-        duplicate_account_no = self.db.query(Customer).filter(Customer.account_no == customer.account_no).first()
-        if duplicate_account_no:
-            raise HTTPException(status_code=400, detail="This Account number already registered")
 
         # Create new instance from received data
         db_customer = Customer(
