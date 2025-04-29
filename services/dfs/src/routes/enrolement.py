@@ -7,7 +7,14 @@ from src.database.crud.customer_crud import CustomerService
 from src.schemas.enrolement_schema import EnrolementRequest, EnrolementResponse
 from src.database.db import get_db
 from src.schemas.customer_schema import CustomerRequest
+from src.core.config import settings
+import httpx
+
+POLICY_SERVICE_URL = settings.POLICY_SERVICE_URL + '/api'
+
 router = APIRouter()
+
+
 
 @router.post("/", response_model=EnrolementResponse, status_code=201)
 def create_enrolement(
@@ -115,9 +122,22 @@ def approve_enrolement(
 ):
     service = EnrolementService(db)
     try:
-        return service.approve_enrolement(enrolement_id)
+        result = service.approve_enrolement(enrolement_id)
     except HTTPException as e:
         raise e
+
+    if result:
+        url = f"{POLICY_SERVICE_URL}/policy"
+        payload = {
+            "enrollment_id": enrolement_id,
+        }
+        try:
+            response = httpx.post(url, json=payload)
+            response.raise_for_status()
+        except httpx.RequestError as e:
+            raise HTTPException(status_code=500, detail=f"Policy service request failed: {e}")
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(status_code=response.status_code, detail=f"Policy service error: {e}")
 
 @router.put("/{enrolement_id}/reject")
 def reject_enrolement(

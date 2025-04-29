@@ -20,6 +20,7 @@ def fetch_enrollment(enrollment_id: int) -> dict:
 
 def create_policy(db: Session, enrollment_id: int) -> Policy:
     data = fetch_enrollment(enrollment_id)
+
     sum_insured = data.get('sum_insured')
     user_id = data.get('user_id')
     ic_company_id = data.get('ic_company_id')
@@ -107,6 +108,7 @@ def list_policy_details(db: Session):
             'policy_id': p.policy_id,
             'period_sum_insured': float(d.period_sum_insured),
             'cps_zone': enrollment.get('cps_zone'),
-            'product_type': enrollment.get('product_id')
+            'product_type': enrollment.get('product_id'),
+            "period": d.period,
         })
     return output
