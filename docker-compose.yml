@@ -46,10 +46,11 @@ services:
   company_tests:
     build:
       context: ./services/company_management
+    profiles: [ "test" ] 
     env_file:
       - .env
     environment:
-      USER_SERVICE_URL: ${USER_SERVICE_URL}
+      USER_SERVICE_URL: http://user_service:8000
 
     container_name: company_tests
     command: ["pytest", "-v", "--tb=short", "-p", "no:cacheprovider"]
@@ -89,12 +90,14 @@ services:
     environment:
       # at runtime, the app can read its DB URL here
       DATABASE_URL: postgresql://postgres:password@product_db:5432/productdb
+      CLAIM_SERVICE_URL: http://claim_service:8000/api/claim
     networks:
       - app_network
 
   product_tests:
     build:
       context: ./services/product
+    profiles: [ "test" ] 
     container_name: product_tests
     command: ["pytest", "-v", "--tb=short", "-p", "no:cacheprovider"]
     depends_on:
@@ -195,6 +198,7 @@ services:
   policy_tests:
     build:
       context: ./services/policy
+    profiles: [ "test" ] 
     container_name: policy_tests
     environment:
       - DATABASE_URL=sqlite:///:memory
@@ -269,16 +273,11 @@ services:
     ports:
       - "8022:8000"
     environment:
-      DFS_DB_USER: ${DFS_DB_USER}
-      DFS_DB_PASS: ${DFS_DB_PASS}
-      DFS_DB_HOST: ${DFS_DB_HOST} 
-      DFS_DB_PORT: ${DFS_DB_PORT}
-      DFS_DB_NAME: ${DFS_DB_NAME}
-      
       POLICY_SERVICE_URL: http://policy_service:8000
       DATABASE_URL: postgresql://${DFS_DB_USER}:${DFS_DB_PASS}@dfs_db:5432/${DFS_DB_NAME}
     networks:
       - app_network
+
   dfs_db:
     image: postgres:16
     container_name: dfs_db
@@ -303,6 +302,7 @@ services:
   enrolement_tests:
     build:
       context: ./services/dfs
+    profiles: [ "test" ] 
     container_name: enrolement_tests
     environment:
       - DATABASE_URL=sqlite:///:memory
@@ -362,9 +362,7 @@ services:
       POSTGRES_USER: claim_user  
       POSTGRES_PASSWORD: claim_password  
       POSTGRES_DB: claim_db  
-    volumes:
-      - claim_pgdata:/var/lib/postgresql/data
-      
+     
     ports:
       - "5434:5432"
     healthcheck:  # Add healthcheck
@@ -373,8 +371,10 @@ services:
       timeout: 5s
       retries: 10
     restart: always
+    networks:
+      - app_network
 
-  claim_management_service:
+  claim_service:
     build: ./services/claim_management
     container_name: claim_service
     depends_on:
@@ -382,8 +382,11 @@ services:
         condition: service_healthy  # Add healthcheck dependency
     environment:
       DATABASE_URL: postgresql://claim_user:claim_password@claim_db:5432/claim_db
+      POLICY_SERVICE_URL: http://policy_service:8000
     ports:
-      - "8007:8001" 
+      - "8007:8000" 
+    networks:
+      - app_network
 
 volumes:
   claim_pgdata:

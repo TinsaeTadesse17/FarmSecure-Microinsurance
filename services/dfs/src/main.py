@@ -8,7 +8,7 @@ from src.database.db import engine
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Enrolement API")
+app = FastAPI(title="DFS API")
 
 
 app.add_middleware(
@@ -17,8 +17,8 @@ app.add_middleware(
 
 app.include_router(
     dfs_router,
-    prefix=f"{settings.API_V1_STR}/enrolement",
-    tags=["enrolement"]
+    prefix=f"{settings.API_V1_STR}/enrollment",
+    tags=["Enrollment"]
 )
 
 if __name__ == "__main__":
