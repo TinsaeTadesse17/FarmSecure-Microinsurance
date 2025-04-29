@@ -1,6 +1,8 @@
+# src/schemas/claim_management_schema.py
 from pydantic import BaseModel
-from enum import Enum
 from datetime import datetime
+from typing import Dict
+from enum import Enum
 
 class ClaimTypeEnum(str, Enum):
     CROP = "CROP"
@@ -11,22 +13,26 @@ class ClaimStatusEnum(str, Enum):
     AUTHORIZED = "authorized"
     SETTLED = "settled"
 
-class ClaimBaseSchema(BaseModel):
+class ClaimBase(BaseModel):
     policy_id: int
     customer_id: int
     grid_id: int
-    claim_type: ClaimTypeEnum
 
-class ClaimCreateSchema(ClaimBaseSchema):
-    # No input for claim_amount as it is computed automatically.
-    pass
+class CropClaimCreate(ClaimBase):
+    ndvi_data: Dict[str, float]
+    period: str
 
-class ClaimReadSchema(ClaimBaseSchema):
+class LivestockClaimCreate(ClaimBase):
+    ndvi_data: Dict[str, float]
+    month: str
+
+class ClaimReadSchema(ClaimBase):
     id: int
+    claim_type: str
     claim_amount: float
-    status: ClaimStatusEnum
+    status: str
     calculated_at: datetime
-
+    
     class Config:
         orm_mode = True
 
