@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@nestjs/axios": "github:nestjs/axios",
+    "@nestjs/throttler": "github:nestjs/throttler"
+  }
+}
