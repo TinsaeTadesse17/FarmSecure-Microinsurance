@@ -31,7 +31,7 @@ class EnrolementService:
             raise HTTPException(status_code=400, detail="premium must be greater than zero")
         if not isinstance(enrolement.sum_insured, (float, int)) or enrolement.sum_insured <= 0:
             raise HTTPException(status_code=400, detail="sum_insured must be greater than zero")
-
+        
         # 4. Validate date range
         if not isinstance(enrolement.date_from, datetime) or not isinstance(enrolement.date_to, datetime):
             raise HTTPException(status_code=400, detail="date_from and date_to must be valid datetimes")
@@ -41,13 +41,12 @@ class EnrolementService:
         # 5. Validate receipt_no string
         if not enrolement.receipt_no or not enrolement.receipt_no.strip():
             raise HTTPException(status_code=400, detail="receipt_no cannot be empty")  # :contentReference[oaicite:2]{index=2}
-
-        
-        
+        # Check for duplicate receipt_no
+        if self.db.query(Enrolement).filter(Enrolement.receipt_no == enrolement.receipt_no).first():
+            raise HTTPException(status_code=400, detail="Duplicate receipt_no is not allowed")
         
         # Create new instance from received data
         db_enrolement = Enrolement(
-            
             customer_id = customer_id,
             cps_zone  = enrolement.cps_zone,
             user_id      = enrolement.user_id,
