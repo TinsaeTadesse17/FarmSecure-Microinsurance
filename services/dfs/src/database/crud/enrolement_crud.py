@@ -14,7 +14,6 @@ class EnrolementService:
         # Check for duplicate customer ID
         # 1. Prevent duplicate enrolment
         if self.db.query(Enrolement).filter(Enrolement.customer_id == customer_id).first():
-            logger.warning("Customer already enrolled: %s", self.db.query(Enrolement).filter(Enrolement.customer_id == customer_id).first())
             raise HTTPException(status_code=400, detail="Customer already enrolled") 
 
         # 2. Validate integer fields
@@ -87,9 +86,10 @@ class EnrolementService:
         db_enroll = self.db.query(Enrolement).filter(Enrolement.enrolment_id == enrolement_id).first()
         if not db_enroll:
             raise HTTPException(status_code=404, detail="Enrolement not found")
-        
+        if db_enroll.status == "approved":
+            raise HTTPException(status_code=400, detail="Enrolement is already approved")
         db_enroll.status = "approved"
-
+        
         self.db.commit()
         self.db.refresh(db_enroll)
         return db_enroll
