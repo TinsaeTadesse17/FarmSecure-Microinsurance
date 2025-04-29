@@ -20,7 +20,7 @@ app.add_middleware(
 # Mount the enrollment router under '/enrollments'
 app.include_router(
     dfs_router,
-    prefix="/enrollments",
+    prefix=f"{settings.API_V1_STR}/enrollments",
     tags=["Enrollment"],
 )
 

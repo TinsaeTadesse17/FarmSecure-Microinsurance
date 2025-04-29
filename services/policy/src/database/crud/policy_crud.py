@@ -11,7 +11,7 @@ DFS_SERVICE_URL = settings.DFS_SERVICE_URL
 def fetch_enrollment(enrollment_id: int) -> dict:
     try:
         resp = httpx.get(
-            f"{DFS_SERVICE_URL}/api/enrollment/{enrollment_id}", timeout=5
+            f"{DFS_SERVICE_URL}/api/enrollments/{enrollment_id}", timeout=5
         )
         resp.raise_for_status()
         return resp.json()
