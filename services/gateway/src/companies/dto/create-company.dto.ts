@@ -1,4 +1,3 @@
-// src/company-management/dto/create-company.dto.ts
 export class CreateCompanyDto {
     name: string;
     licenseNo: string;

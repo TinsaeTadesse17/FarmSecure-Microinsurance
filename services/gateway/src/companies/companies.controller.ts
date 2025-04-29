@@ -1,4 +1,3 @@
-// src/company-management/company-management.controller.ts
 import { Controller, Get, Post, Put, Param, Body, Query, HttpException, HttpStatus } from '@nestjs/common';
 import { CompanyManagementService } from './companies.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
