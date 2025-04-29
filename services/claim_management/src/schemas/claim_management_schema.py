@@ -16,15 +16,11 @@ class ClaimStatusEnum(str, Enum):
 class ClaimBase(BaseModel):
     policy_id: int
     customer_id: int
-    grid_id: int
+    cps_zone: int
 
-class CropClaimCreate(ClaimBase):
+class NDVIData(BaseModel):
     ndvi_data: Dict[str, float]
     period: str
-
-class LivestockClaimCreate(ClaimBase):
-    ndvi_data: Dict[str, float]
-    month: str
 
 class ClaimReadSchema(ClaimBase):
     id: int
@@ -35,6 +31,9 @@ class ClaimReadSchema(ClaimBase):
     
     class Config:
         orm_mode = True
+
+class ErrorResponse(BaseModel):
+    detail: str
 
 class ClaimAuthorizeSchema(BaseModel):
     status: ClaimStatusEnum = ClaimStatusEnum.AUTHORIZED
