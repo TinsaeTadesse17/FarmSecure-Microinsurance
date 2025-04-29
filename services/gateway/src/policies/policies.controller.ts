@@ -10,22 +10,22 @@ export class PoliciesController {
     return this.policyService.createPolicy(payload);
   }
 
-  @Post('/policy:policyId/approve')
+  @Post('/policy/:policyId/approve')
   async approvePolicy(@Param('policyId') policyId: number) {
     return this.policyService.approvePolicy(policyId);
   }
 
-  @Post('/policy:policyId/reject')
+  @Post('/policy/:policyId/reject')
   async rejectPolicy(@Param('policyId') policyId: number) {
     return this.policyService.rejectPolicy(policyId);
   }
 
-  @Get('/policy:policyId')
+  @Get('/policy/:policyId')
   async getPolicy(@Param('policyId') policyId: number) {
     return this.policyService.getPolicy(policyId);
   }
 
-  @Get('/policy:policyId/details')
+  @Get('/policy/:policyId/details')
   async getPolicyDetails(@Param('policyId') policyId: number) {
     return this.policyService.getPolicyDetails(policyId);
   }
