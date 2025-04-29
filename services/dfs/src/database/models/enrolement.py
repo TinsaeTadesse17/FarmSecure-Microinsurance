@@ -1,6 +1,6 @@
 from enum import Enum as PyEnum
 from src.database.db import Base
-from sqlalchemy import (Column, Integer, Numeric, Date, String, ForeignKey)
+from sqlalchemy import (Column, Integer, Numeric, Date, String, ForeignKey, func)
 from sqlalchemy import Column, Integer, String, Date, Enum as SQLEnum
 
 from sqlalchemy.orm import relationship
@@ -31,3 +31,5 @@ class Enrolement(Base):
     receipt_no   = Column(String(10), nullable=False, unique=True)
     product_id   = Column(Integer,  nullable=False)
     status = Column(SQLEnum(EnrolementStatus), default=EnrolementStatus.pending, nullable=False)
+    cps_zone     = Column(Integer, nullable=False)
+    createdAt    = Column(Date, server_default=func.now(), nullable=False)
