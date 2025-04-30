@@ -13,14 +13,19 @@ import {
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 
 const USER_SERVICE_BASE_URL = 'http://user_service:8000/api/user';
 
+@ApiTags('User')
 @Controller('api/user')
 export class UsersController {
   constructor(private readonly http: HttpService) {}
 
   @Post('login')
+  @ApiOperation({ summary: 'Login user and return JWT access token' })
+  @ApiResponse({ status: 201, description: 'Login successful, returns token' })
+  @ApiResponse({ status: 401, description: 'Invalid username or password' })
   async login(@Body() body) {
     try {
       console.log("Logging in with body:", body);
@@ -36,6 +41,9 @@ export class UsersController {
   }
 
   @Get('me')
+  @ApiOperation({ summary: 'Gets user data' })
+  @ApiResponse({ status: 201, description: 'successful, returns data' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async getMe(@Headers('authorization') auth: string) {
     try {
       const res = await firstValueFrom(
@@ -50,6 +58,9 @@ export class UsersController {
   }
 
   @Put('update/:id')
+  @ApiOperation({ summary: 'Updates info' })
+  @ApiResponse({ status: 201, description: 'successful, returns updated data' })
+  @ApiResponse({ status: 401, description: 'Invalid' })
   async updateUser(@Param('id') id: string, @Body() body, @Headers('authorization') auth: string) {
     try {
       const res = await firstValueFrom(
@@ -64,6 +75,9 @@ export class UsersController {
   }
 
   @Post()
+  @ApiOperation({ summary: 'User creation' })
+  @ApiResponse({ status: 201, description: 'Creation successful, returns user' })
+  @ApiResponse({ status: 401, description: 'creation failed' })
   async createUser(@Body() body, @Headers('authorization') auth: string) {
     try {
       const res = await firstValueFrom(
