@@ -33,6 +33,7 @@ export class AuthService {
         sub: payload.sub,
         username: payload.username,
         role: payload.role,
+        company_id: payload.company_id,
       };
     } catch (err) {
       throw new UnauthorizedException('Invalid token');
