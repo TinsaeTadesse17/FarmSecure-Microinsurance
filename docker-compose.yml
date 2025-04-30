@@ -94,6 +94,17 @@ services:
     networks:
       - app_network
 
+  risk_service:
+    build: 
+      context: ./services/risk_management
+    container_name: risk_service
+    ports:
+      - "8002:8000"
+    environment:
+      CLAIM_SERVICE_URL: http://claim_service:8000/api/claim
+    networks:
+      - app_network
+
   product_tests:
     build:
       context: ./services/product
@@ -359,7 +370,7 @@ services:
       - "8004:8000"
     networks:
       - app_network
-
+  
   claim_db:
     image: postgres:16
     container_name: claim_db

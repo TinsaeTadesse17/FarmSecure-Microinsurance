@@ -1,0 +1,1 @@
+from src.routes.upload_ndvi import router as ndvi_router
