@@ -1,59 +1,41 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcryptjs';
+import axios from 'axios';
 
 @Injectable()
 export class AuthService {
-  private readonly authServiceUrl = process.env.AUTH_SERVICE_URL || 'http://auth_service:9000';
+  constructor(private readonly jwtService: JwtService) {}
 
-  constructor(
-    private readonly httpService: HttpService,
-    private readonly jwtService: JwtService,
-  ) {}
-
-  async validateUser(email: string, pass: string): Promise<any> {
+  async validateUser(username: string, password: string): Promise<any> {
     try {
-      // Fetch user from your Python microservice
-      const { data: user } = await firstValueFrom(
-        this.httpService.get(`${this.authServiceUrl}/api/users/email/${email}`)
-      );
+      const response = await axios.post('http://user-service:8000/api/user/login', {
+        username,
+        password,
+      });
 
-      if (!user) {
-        throw new UnauthorizedException('Invalid credentials');
-      }
-
-      // Compare passwords
-      const isMatch = await bcrypt.compare(pass, user.password);
-      if (!isMatch) {
-        throw new UnauthorizedException('Invalid credentials');
-      }
-
-      return user;
+      return response.data; // should return { access_token: ... }
     } catch (error) {
-      throw new UnauthorizedException('Authentication failed');
+      throw new UnauthorizedException('Invalid credentials');
     }
   }
 
-  async login(user: any) {
-    const payload = { 
-      sub: user.id, 
-      username: user.username,
-      roles: user.roles 
-    };
-    
+  async login(username: string, password: string) {
+    const result = await this.validateUser(username, password);
     return {
-      access_token: this.jwtService.sign(payload),
-      user: {
-        id: user.id,
-        username: user.username,
-        roles: user.roles
-      }
+      access_token: result.access_token,
     };
   }
 
-  async hashPassword(password: string): Promise<string> {
-    return bcrypt.hash(password, 10);
+  async validateToken(token: string): Promise<any> {
+    try {
+      const payload = this.jwtService.verify(token);
+      return {
+        sub: payload.sub,
+        username: payload.username,
+        role: payload.role,
+      };
+    } catch (err) {
+      throw new UnauthorizedException('Invalid token');
+    }
   }
 }

@@ -1,40 +1,24 @@
+// auth.guard.ts
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { JwtService } from '@nestjs/jwt';
+import { AuthService } from '../auth.service';
 
 @Injectable()
-export class AuthGuard implements CanActivate {
-  constructor(
-    private jwtService: JwtService,
-    private reflector: Reflector
-  ) {}
+export class JwtAuthGuard implements CanActivate {
+  constructor(private readonly authService: AuthService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const isPublic = this.reflector.getAllAndOverride<boolean>('isPublic', [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-
-    if (isPublic) return true;
-
     const request = context.switchToHttp().getRequest();
-    const token = this.extractToken(request);
+    const authHeader = request.headers.authorization;
 
-    if (!token) {
-      throw new UnauthorizedException();
-    }
+    if (!authHeader) throw new UnauthorizedException('Missing Authorization header');
 
-    try {
-      request.user = await this.jwtService.verifyAsync(token);
-    } catch {
-      throw new UnauthorizedException();
-    }
+    const [, token] = authHeader.split(' ');
 
+    if (!token) throw new UnauthorizedException('Invalid Authorization format');
+
+    const payload = await this.authService.validateToken(token);
+    request.user = payload; // Attach decoded user info to the request
     return true;
-  }
-
-  private extractToken(request: any): string | undefined {
-    const [type, token] = request.headers.authorization?.split(' ') ?? [];
-    return type === 'Bearer' ? token : undefined;
   }
 }
