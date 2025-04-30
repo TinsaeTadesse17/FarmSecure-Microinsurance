@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 
-const POLICY_SERVICE_BASE_URL = 'http://localhost:8009/api';
+const POLICY_SERVICE_BASE_URL = 'http://policy_service:8000/api';
 
 @Injectable()
 export class PoliciesService {
