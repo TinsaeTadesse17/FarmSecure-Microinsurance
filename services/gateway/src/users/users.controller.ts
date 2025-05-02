@@ -19,13 +19,16 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth//decorators/roles.decorator';
 import { Role } from '../auth/constants/roles.enum';
 import { JwtAuthGuard } from 'src/auth/guards/auth.guard';
+import { Public } from 'src/auth/decorators/public.decorator';
 const USER_SERVICE_BASE_URL = 'http://user_service:8000/api/user';
 
 @ApiTags('User')
+@ApiBearerAuth('access-token')
 @UseGuards(RolesGuard, JwtAuthGuard)
 @Controller('api/user')
 export class UsersController {
   constructor(private readonly http: HttpService) {}
+  @Public()
   @Post('login')
   @ApiOperation({ summary: 'Login user and return JWT access token' })
   @ApiResponse({ status: 201, description: 'Login successful, returns token' })
@@ -62,6 +65,7 @@ export class UsersController {
     }
   }
 
+  @Roles(Role.Admin, Role.IC, Role.Agent)
   @Put('update/:id')
   @ApiOperation({ summary: 'Updates info' })
   @ApiResponse({ status: 201, description: 'successful, returns updated data' })
@@ -79,6 +83,7 @@ export class UsersController {
     }
   }
 
+  @Roles(Role.Admin, Role.IC, Role.Agent)
   @Post()
   @ApiOperation({ summary: 'User creation' })
   @ApiResponse({ status: 201, description: 'Creation successful, returns user' })

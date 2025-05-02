@@ -1,15 +1,24 @@
-import { Controller, Get, Post, Put, Param, Body, Query, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Param, Body, Query, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
 import { CompanyManagementService } from './companies.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { CompanyResponseDto } from './dto/company-response.dto';
 import { CredentialResponseDto } from './dto/credential-response.dto';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import { Public } from 'src/auth/decorators/public.decorator';
+import { JwtAuthGuard } from 'src/auth/guards/auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { Role } from 'src/auth/constants/roles.enum';
 
+@ApiTags('Companies')
+@ApiBearerAuth('access-token')
+@UseGuards(RolesGuard, JwtAuthGuard)
 @Controller('api/companies')
 export class CompanyManagementController {
   constructor(private readonly companyManagementService: CompanyManagementService) {}
 
   // Endpoint to register a company.
+  @Public()
   @Post('register')
   @ApiOperation({ summary: 'Endpoint to register a company' })
   @ApiResponse({ status: 201, description: 'Login successful, returns token' })
@@ -23,6 +32,7 @@ export class CompanyManagementController {
   }
 
   // Endpoint to get a single company by ID.
+  @Roles(Role.IC, Role.Agent)
   @Get(':id')
   @ApiOperation({ summary: 'Endpoint to get a single company by ID' })
   @ApiResponse({ status: 200, description: 'Returns a single company' })
@@ -35,7 +45,8 @@ export class CompanyManagementController {
     }
   }
 
-  // Endpoint to list companies.
+  // Endpoint to list companies. admin
+  @Roles(Role.Admin)
   @Get()
   @ApiOperation({ summary: 'Endpoint to list companies' })
   @ApiResponse({ status: 200, description: 'Returns a list of companies' })
@@ -48,7 +59,8 @@ export class CompanyManagementController {
     }
   }
 
-  // Endpoint to approve a company (only updates status to "approved")
+  // Endpoint to approve a company (only updates status to "approved")admin
+  @Roles(Role.Admin)
   @Put(':id/approve')
   @ApiOperation({ summary: 'Endpoint to approve a company' })
   @ApiResponse({ status: 201, description: 'Company approved successfully' })
@@ -62,7 +74,8 @@ export class CompanyManagementController {
     }
   }
 
-  // Endpoint to generate credentials. It accepts a query parameter "role".
+  // Endpoint to generate credentials. It accepts a query parameter "role". admin
+  @Roles(Role.Admin)
   @Post(':id/credentials')
   @ApiOperation({ summary: 'Endpoint to generate credentials. It accepts a query parameter "role"' })
   @ApiResponse({ status: 201, description: 'Login successful, returns credentials' })
