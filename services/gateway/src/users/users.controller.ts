@@ -10,18 +10,22 @@ import {
   HttpException,
   HttpStatus,
   Inject,
+  UseGuards,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
-
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth//decorators/roles.decorator';
+import { Role } from '../auth/constants/roles.enum';
+import { JwtAuthGuard } from 'src/auth/guards/auth.guard';
 const USER_SERVICE_BASE_URL = 'http://user_service:8000/api/user';
 
 @ApiTags('User')
+@UseGuards(RolesGuard, JwtAuthGuard)
 @Controller('api/user')
 export class UsersController {
   constructor(private readonly http: HttpService) {}
-
   @Post('login')
   @ApiOperation({ summary: 'Login user and return JWT access token' })
   @ApiResponse({ status: 201, description: 'Login successful, returns token' })
@@ -40,6 +44,7 @@ export class UsersController {
     }
   }
 
+  @Roles(Role.Admin, Role.IC, Role.Agent)
   @Get('me')
   @ApiOperation({ summary: 'Gets user data' })
   @ApiResponse({ status: 201, description: 'successful, returns data' })
