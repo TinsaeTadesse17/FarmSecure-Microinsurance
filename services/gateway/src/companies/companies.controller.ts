@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Param, Body, Query, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Param, Body, Query, HttpException, HttpStatus, UseGuards, Logger } from '@nestjs/common';
 import { CompanyManagementService } from './companies.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { CompanyResponseDto } from './dto/company-response.dto';
@@ -16,6 +16,7 @@ import { Role } from 'src/auth/constants/roles.enum';
 @Controller('api/companies')
 export class CompanyManagementController {
   constructor(private readonly companyManagementService: CompanyManagementService) {}
+  private readonly logger = new Logger(CompanyManagementController.name);
 
   // Endpoint to register a company.
   @Public()
@@ -68,6 +69,7 @@ export class CompanyManagementController {
   @ApiResponse({ status: 404, description: 'Company not found' })
   async approveCompany(@Param('id') id: number): Promise<CompanyResponseDto> {
     try {
+      this.logger.debug(`Company ID to approve: ${id}`);
       return await this.companyManagementService.approveCompany(id);
     } catch (err) {
       throw new HttpException(err.message, err.status || HttpStatus.NOT_FOUND);
