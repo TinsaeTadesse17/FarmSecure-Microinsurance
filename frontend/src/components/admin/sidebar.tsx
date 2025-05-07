@@ -11,8 +11,8 @@ export default function Sidebar() {
         <Link href="/admin" className="block text-black hover:text-green-600">
           Pending Companies
         </Link>
-        <Link href="/users" className="block text-black hover:text-green-600">
-          Users
+        <Link href="/admin/dashboard" className="block text-black hover:text-green-600">
+          dashboard
         </Link>
         <Link href="/settings" className="block text-black hover:text-green-600">
           Settings

@@ -3,10 +3,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getCurrentUser, getToken, clearToken } from '@/lib/api/user';
 import { useRouter } from 'next/navigation';
+import AccountSettingsDialog from '@/components/common/account_setting';
 
 export default function AvatarMenu() {
   const [username, setUsername] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -50,7 +52,10 @@ export default function AvatarMenu() {
             Signed in as <strong>{username}</strong>
           </div>
           <button
-            onClick={() => router.push('/account')}
+            onClick={() => {
+              setDialogOpen(true);
+              setDropdownOpen(false);
+            }}
             className="block px-4 py-2 w-full text-left text-gray-700 hover:bg-gray-100"
           >
             Account Settings
@@ -62,6 +67,9 @@ export default function AvatarMenu() {
             Logout
           </button>
         </div>
+      )}
+      {dialogOpen && (
+        <AccountSettingsDialog onClose={() => setDialogOpen(false)} />
       )}
     </div>
   );
