@@ -3,9 +3,18 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { loginUser } from '@/lib/api/user';
+import { jwtDecode } from 'jwt-decode';
 
 interface LoginFormProps {
   onSwitch: () => void;
+}
+
+interface TokenPayload {
+  sub: string;
+  username: string;
+  role: string[] | string;
+  company_id: (string | null)[];
+  exp: number;
 }
 
 export default function LoginForm({ onSwitch }: LoginFormProps) {
@@ -21,12 +30,20 @@ export default function LoginForm({ onSwitch }: LoginFormProps) {
     setError('');
 
     try {
-      const { access_token } = await loginUser({
-        username,
-        password,
-      });
+      const { access_token } = await loginUser({ username, password });
       localStorage.setItem('token', access_token);
-      router.push('/dashboard'); // or wherever you want to redirect
+      const decoded = jwtDecode<TokenPayload>(access_token);
+      const roles = Array.isArray(decoded.role) ? decoded.role : [decoded.role];
+
+      if (roles.includes('admin')) {
+        router.push('/admin');
+      } else if (roles.includes('agent')) {
+        router.push('/agent');
+      } else if (roles.includes('ic')) {
+        router.push('/ic');
+      } else {
+        throw new Error('Unauthorized role');
+      }
     } catch (err: any) {
       setError(err.message || 'Login failed');
     } finally {
