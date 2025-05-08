@@ -1,31 +1,37 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Sidebar from '@/components/ic/sidebar';
 import AvatarMenu from '@/components/common/avatar';
 import CreateProductDialog from '@/components/ic/productDialog';
+import { getProducts, createProduct, Product, ProductCreate } from '@/lib/api/product';
 
 export default function ProductConfiguration() {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
 
-  const mockProducts = [
-    {
-      id: 1,
-      name: 'Crop Cover A',
-      ndviMin: 0.2,
-      ndviMax: 0.8,
-      premium: 150,
-      duration: 3,
-    },
-    {
-      id: 2,
-      name: 'Crop Cover B',
-      ndviMin: 0.4,
-      ndviMax: 0.9,
-      premium: 200,
-      duration: 6,
-    },
-  ];
+  const fetchProducts = async () => {
+    try {
+      const res = await getProducts();
+      setProducts(res);
+    } catch (err) {
+      console.error('Error fetching products:', err);
+    }
+  };
+
+  const handleCreate = async (newProduct: ProductCreate) => {
+    try {
+      await createProduct(newProduct);
+      await fetchProducts();
+      setDialogOpen(false);
+    } catch (err) {
+      console.error('Error creating product:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-gray-100 text-black">
@@ -50,27 +56,23 @@ export default function ProductConfiguration() {
             <thead>
               <tr className="bg-gray-100">
                 <th className="px-4 py-2 border">Name</th>
-                <th className="px-4 py-2 border">NDVI Min</th>
-                <th className="px-4 py-2 border">NDVI Max</th>
-                <th className="px-4 py-2 border">Premium</th>
-                <th className="px-4 py-2 border">Duration</th>
+                <th className="px-4 py-2 border">Type</th>
+                <th className="px-4 py-2 border">Commission Rate</th>
               </tr>
             </thead>
             <tbody>
-              {mockProducts.map((product) => (
+              {products.map((product) => (
                 <tr key={product.id}>
                   <td className="px-4 py-2 border">{product.name}</td>
-                  <td className="px-4 py-2 border">{product.ndviMin}</td>
-                  <td className="px-4 py-2 border">{product.ndviMax}</td>
-                  <td className="px-4 py-2 border">{product.premium}</td>
-                  <td className="px-4 py-2 border">{product.duration} months</td>
+                  <td className="px-4 py-2 border">{product.type}</td>
+                  <td className="px-4 py-2 border">{product.commission_rate}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
 
-        {dialogOpen && <CreateProductDialog onClose={() => setDialogOpen(false)} />}
+        {dialogOpen && <CreateProductDialog onClose={() => setDialogOpen(false)} onCreate={handleCreate} />}
       </main>
     </div>
   );

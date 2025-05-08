@@ -34,12 +34,12 @@ export default function PolicyManagement() {
         <div className="bg-white p-6 rounded shadow max-w-6xl mx-auto">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">Policy Management</h2>
-            <button
+            {/* <button
               onClick={() => setDialogOpen(true)}
               className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
             >
               Create Policy
-            </button>
+            </button> */}
           </div>
 
           {error && <p className="text-red-600 mb-4">{error}</p>}

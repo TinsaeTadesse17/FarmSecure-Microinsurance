@@ -4,69 +4,179 @@ import React, { useState } from 'react';
 
 interface CreateProductDialogProps {
   onClose: () => void;
+  onCreate: (data: any) => void;
 }
 
-export default function CreateProductDialog({ onClose }: CreateProductDialogProps) {
+export default function CreateProductDialog({ onClose, onCreate }: CreateProductDialogProps) {
+  const [companyId, setCompanyId] = useState('');
   const [name, setName] = useState('');
-  const [ndviMin, setNdviMin] = useState('');
-  const [ndviMax, setNdviMax] = useState('');
-  const [premium, setPremium] = useState('');
-  const [duration, setDuration] = useState('');
+  const [type, setType] = useState('crop');
+  const [elc, setElc] = useState('');
+  const [triggerPoint, setTriggerPoint] = useState('15');
+  const [exitPoint, setExitPoint] = useState('5');
+  const [commissionRate, setCommissionRate] = useState('');
+  const [load, setLoad] = useState('');
+  const [discount, setDiscount] = useState('');
+  const [fiscalYear, setFiscalYear] = useState('');
+  const [growingSeason, setGrowingSeason] = useState('');
+  const [cpsZoneId, setCpsZoneId] = useState('');
+  const [period, setPeriod] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log({ name, ndviMin, ndviMax, premium, duration });
-    onClose();
+
+    const newProduct = {
+      company_id: Number(companyId),
+      name,
+      type,
+      elc: Number(elc),
+      trigger_point: Number(triggerPoint),
+      exit_point: Number(exitPoint),
+      commission_rate: Number(commissionRate),
+      load: Number(load),
+      discount: Number(discount),
+      fiscal_year: fiscalYear,
+      growing_season: growingSeason,
+      cps_zone_id: Number(cpsZoneId),
+      period,
+    };
+
+    onCreate(newProduct);
   };
 
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white text-black p-6 rounded-md w-96 shadow-xl">
+      <div className="bg-white text-black p-6 rounded-md w-[480px] shadow-xl max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-semibold mb-4">Create Product</h2>
         <form onSubmit={handleSubmit}>
-          <label className="block mb-2 text-sm font-medium">Product Name</label>
-          <input
-            type="text"
-            className="w-full p-2 border border-gray-300 rounded mb-4"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+          {/* Fields grouped in pairs for layout */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium">Company ID</label>
+              <input
+                type="number"
+                className="w-full p-2 border border-gray-300 rounded"
+                value={companyId}
+                onChange={(e) => setCompanyId(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Product Name</label>
+              <input
+                type="text"
+                className="w-full p-2 border border-gray-300 rounded"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
 
-          <label className="block mb-2 text-sm font-medium">NDVI Min</label>
-          <input
-            type="number"
-            step="0.01"
-            className="w-full p-2 border border-gray-300 rounded mb-4"
-            value={ndviMin}
-            onChange={(e) => setNdviMin(e.target.value)}
-          />
+            <div>
+              <label className="block text-sm font-medium">Type</label>
+              <input
+                type="text"
+                className="w-full p-2 border border-gray-300 rounded"
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">ELC</label>
+              <input
+                type="number"
+                className="w-full p-2 border border-gray-300 rounded"
+                value={elc}
+                onChange={(e) => setElc(e.target.value)}
+              />
+            </div>
 
-          <label className="block mb-2 text-sm font-medium">NDVI Max</label>
-          <input
-            type="number"
-            step="0.01"
-            className="w-full p-2 border border-gray-300 rounded mb-4"
-            value={ndviMax}
-            onChange={(e) => setNdviMax(e.target.value)}
-          />
+            <div>
+              <label className="block text-sm font-medium">Trigger Point</label>
+              <input
+                type="number"
+                className="w-full p-2 border border-gray-300 rounded"
+                value={triggerPoint}
+                onChange={(e) => setTriggerPoint(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Exit Point</label>
+              <input
+                type="number"
+                className="w-full p-2 border border-gray-300 rounded"
+                value={exitPoint}
+                onChange={(e) => setExitPoint(e.target.value)}
+              />
+            </div>
 
-          <label className="block mb-2 text-sm font-medium">Premium</label>
-          <input
-            type="number"
-            className="w-full p-2 border border-gray-300 rounded mb-4"
-            value={premium}
-            onChange={(e) => setPremium(e.target.value)}
-          />
+            <div>
+              <label className="block text-sm font-medium">Commission Rate</label>
+              <input
+                type="number"
+                className="w-full p-2 border border-gray-300 rounded"
+                value={commissionRate}
+                onChange={(e) => setCommissionRate(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Load</label>
+              <input
+                type="number"
+                className="w-full p-2 border border-gray-300 rounded"
+                value={load}
+                onChange={(e) => setLoad(e.target.value)}
+              />
+            </div>
 
-          <label className="block mb-2 text-sm font-medium">Duration (months)</label>
-          <input
-            type="number"
-            className="w-full p-2 border border-gray-300 rounded mb-4"
-            value={duration}
-            onChange={(e) => setDuration(e.target.value)}
-          />
+            <div>
+              <label className="block text-sm font-medium">Discount</label>
+              <input
+                type="number"
+                className="w-full p-2 border border-gray-300 rounded"
+                value={discount}
+                onChange={(e) => setDiscount(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Fiscal Year</label>
+              <input
+                type="text"
+                className="w-full p-2 border border-gray-300 rounded"
+                value={fiscalYear}
+                onChange={(e) => setFiscalYear(e.target.value)}
+              />
+            </div>
 
-          <div className="flex justify-end space-x-2">
+            <div>
+              <label className="block text-sm font-medium">Growing Season</label>
+              <input
+                type="text"
+                className="w-full p-2 border border-gray-300 rounded"
+                value={growingSeason}
+                onChange={(e) => setGrowingSeason(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">CPS Zone ID</label>
+              <input
+                type="number"
+                className="w-full p-2 border border-gray-300 rounded"
+                value={cpsZoneId}
+                onChange={(e) => setCpsZoneId(e.target.value)}
+              />
+            </div>
+
+            <div className="col-span-2">
+              <label className="block text-sm font-medium">Period</label>
+              <input
+                type="text"
+                className="w-full p-2 border border-gray-300 rounded"
+                value={period}
+                onChange={(e) => setPeriod(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-2 mt-6">
             <button
               type="button"
               onClick={onClose}
