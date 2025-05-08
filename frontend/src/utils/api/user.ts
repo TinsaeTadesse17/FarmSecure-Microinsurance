@@ -1,6 +1,4 @@
-// src/lib/userService.ts
-
-const API_BASE =  'http://localhost:8003';
+const API_BASE = 'http://localhost:8003';
 
 export interface LoginRequest {
   username: string;
@@ -59,7 +57,6 @@ export async function loginUser(data: LoginRequest): Promise<TokenResponse> {
 
   return json as TokenResponse;
 }
-
 
 /**
  * 2. Create a new user
@@ -142,3 +139,30 @@ export function clearToken() {
   }
 }
 
+/**
+ * 8. Get users with IC role
+ */
+export async function getIcUsers(token: string): Promise<UserOut[]> {
+  const res = await fetch(`${API_BASE}/api/user/ics`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || res.statusText);
+  }
+  return (await res.json()) as UserOut[];
+}
+
+/**
+ * 9. Get agents for the current user's company
+ */
+export async function getAgentUsers(token: string): Promise<UserOut[]> {
+  const res = await fetch(`${API_BASE}/api/user/agents`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || res.statusText);
+  }
+  return (await res.json()) as UserOut[];
+}
