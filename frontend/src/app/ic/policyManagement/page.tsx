@@ -4,8 +4,8 @@ import React, { useEffect, useState } from 'react';
 import Sidebar from '@/components/ic/sidebar';
 import AvatarMenu from '@/components/common/avatar';
 import CreatePolicyDialog from '@/components/ic/policyDialog';
-import { listPolicies, updatePolicyStatus, Policy } from '@/utils/api/policy';
-import { FiPlus, FiRefreshCw, FiSearch, FiInfo, FiAlertCircle, FiCheck, FiX } from 'react-icons/fi';
+import { listPolicies, approvePolicy, rejectPolicy, Policy } from '@/utils/api/policy';
+import { FiPlus, FiRefreshCw, FiSearch, FiAlertCircle } from 'react-icons/fi';
 
 export default function PolicyManagement() {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -14,6 +14,10 @@ export default function PolicyManagement() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [statusDialog, setStatusDialog] = useState<{ open: boolean; policy: Policy | null }>({
+    open: false,
+    policy: null,
+  });
 
   useEffect(() => {
     fetchPolicies();
@@ -34,9 +38,16 @@ export default function PolicyManagement() {
   const handleUpdateStatus = async (policyId: number, newStatus: 'approved' | 'rejected') => {
     try {
       setUpdatingId(policyId);
-      await updatePolicyStatus(policyId, newStatus);
-      setPolicies(policies.map(policy => 
-        policy.policy_id === policyId ? { ...policy, status: newStatus } : policy
+      let updatedPolicy: Policy;
+
+      if (newStatus === 'approved') {
+        updatedPolicy = await approvePolicy(policyId);
+      } else {
+        updatedPolicy = await rejectPolicy(policyId);
+      }
+
+      setPolicies(policies.map(policy =>
+        policy.policy_id === policyId ? updatedPolicy : policy
       ));
     } catch (err: any) {
       setError(err.message || `Failed to ${newStatus} policy`);
@@ -64,7 +75,7 @@ export default function PolicyManagement() {
   };
 
   return (
-    <div className="flex min-h-screen bg-white-50">
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       <main className="flex-1 p-6 transition-all duration-300">
         <div className="flex justify-between items-center mb-6">
@@ -135,16 +146,15 @@ export default function PolicyManagement() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-emerald-800 uppercase tracking-wider">Fiscal Year</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-emerald-800 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-emerald-800 uppercase tracking-wider">Sum Insured</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-emerald-800 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-emerald-100">
                   {filteredPolicies.map((policy) => {
                     const totalSumInsured = policy.details?.reduce(
-                      (acc, detail) => acc + (detail.period_sum_insured || 0),
+                      (acc: any, detail: { period_sum_insured: any; }) => acc + (detail.period_sum_insured || 0),
                       0
                     ) ?? 0;
-                    
+
                     return (
                       <tr key={policy.policy_id} className="hover:bg-emerald-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-emerald-900">
@@ -157,41 +167,15 @@ export default function PolicyManagement() {
                           {policy.fiscal_year}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full capitalize ${getStatusColor(policy.status)}`}>
+                          <button
+                            onClick={() => setStatusDialog({ open: true, policy })}
+                            className={`px-2 py-1 text-xs font-medium rounded-full capitalize ${getStatusColor(policy.status)} cursor-pointer`}
+                          >
                             {policy.status}
-                          </span>
+                          </button>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-emerald-700">
                           ${totalSumInsured.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-emerald-800 flex space-x-2">
-                          {policy.status.toLowerCase() === 'pending' && (
-                            <>
-                              <button
-                                onClick={() => handleUpdateStatus(policy.policy_id, 'approved')}
-                                disabled={updatingId === policy.policy_id}
-                                className="p-1.5 text-emerald-600 hover:bg-emerald-100 rounded transition-colors"
-                                title="Approve policy"
-                              >
-                                {updatingId === policy.policy_id ? (
-                                  <FiRefreshCw className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <FiCheck className="w-4 h-4" />
-                                )}
-                              </button>
-                              <button
-                                onClick={() => handleUpdateStatus(policy.policy_id, 'rejected')}
-                                disabled={updatingId === policy.policy_id}
-                                className="p-1.5 text-red-600 hover:bg-red-100 rounded transition-colors"
-                                title="Reject policy"
-                              >
-                                <FiX className="w-4 h-4" />
-                              </button>
-                            </>
-                          )}
-                          <button className="p-1.5 text-emerald-600 hover:bg-emerald-100 rounded transition-colors">
-                            <FiInfo className="w-4 h-4" />
-                          </button>
                         </td>
                       </tr>
                     );
@@ -209,6 +193,45 @@ export default function PolicyManagement() {
         </div>
 
         {dialogOpen && <CreatePolicyDialog onClose={() => setDialogOpen(false)} />}
+
+        {statusDialog.open && statusDialog.policy && (
+          <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center">
+            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm border">
+              <h2 className="text-lg font-semibold text-emerald-800 mb-4">
+                Change Status for this policy
+              </h2>
+              <p className="text-sm text-gray-700 mb-6">
+                Choose the new status for this policy.
+              </p>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={async () => {
+                    await handleUpdateStatus(statusDialog.policy!.policy_id, 'approved');
+                    setStatusDialog({ open: false, policy: null });
+                  }}
+                  className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                >
+                  Approve
+                </button>
+                <button
+                  onClick={async () => {
+                    await handleUpdateStatus(statusDialog.policy!.policy_id, 'rejected');
+                    setStatusDialog({ open: false, policy: null });
+                  }}
+                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                >
+                  Reject
+                </button>
+                <button
+                  onClick={() => setStatusDialog({ open: false, policy: null })}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

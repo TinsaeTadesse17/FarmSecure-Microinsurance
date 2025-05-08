@@ -17,13 +17,13 @@ export default function Sidebar() {
         <Link href="/ic/policyManagement" className="block text-black hover:text-green-600">
           Policies
         </Link>
-        <Link href="/ic/refund" className="block text-black hover:text-green-600">
-          Refund
+        <Link href="/ic/enrollment" className="block text-black hover:text-green-600">
+          Enrollments
         </Link>
         <Link href="/ic/ndvi" className="block text-black hover:text-green-600">
           ndvi
         </Link>
-        <Link href="/ic/triggerDecision" className="block text-black hover:text-green-600">
+        {/* <Link href="/ic/triggerDecision" className="block text-black hover:text-green-600">
           trigger
         </Link>
         <Link href="/ic/calculatedClaims" className="block text-black hover:text-green-600">
@@ -37,7 +37,7 @@ export default function Sidebar() {
         </Link>
         <Link href="/ic/comission" className="block text-black hover:text-green-600">
           comission
-        </Link>
+        </Link> */}
         <Link href="/ic/ndviVis" className="block text-black hover:text-green-600">
           NDVI Visualisation
         </Link>

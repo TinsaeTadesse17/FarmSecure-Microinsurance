@@ -11,12 +11,6 @@ export default function Sidebar() {
         <Link href="/agent" className="block text-black hover:text-green-600">
           Enrollment
         </Link>
-        <Link href="/agent/premium" className="block text-black hover:text-green-600">
-          Premium
-        </Link>
-        <Link href="/agent/renrollment" className="block text-black hover:text-green-600">
-          renrollment
-        </Link>
         <Link href="/agent/policy" className="block text-black hover:text-green-600">
           policy
         </Link>

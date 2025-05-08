@@ -1,6 +1,6 @@
 // src/lib/api/policy.ts
 
-const API_BASE = 'http://localhost:8009/api'; // adjust as necessary
+const API_BASE = 'http://localhost:8009/api'; 
 
 export interface PolicyCreateRequest {
   enrollment_id: number;
