@@ -52,26 +52,20 @@ export class AuthService {
     }
   }
 
-  /**
-   * Validates and decodes a JWT token.
-   * @param token - The JWT token to validate
-   * @returns The decoded JwtPayload
-   */
   async validateToken(token: string): Promise<JwtPayload> {
     try {
-      // ✅ Decode and validate the token
       const payload = this.jwtService.verify<JwtPayload>(token);
-      console.log('✅ Decoded Payload in AuthService:', payload);
-  
-      // 🚫 Ensure payload has required fields
-      if (!payload.sub || !payload.username || !payload.role) {
-        console.error('🚫 Invalid token payload:', payload);
-        throw new UnauthorizedException('Invalid token payload: missing required fields');
+      
+      if (!payload.sub || !payload.username || !payload.role || !payload.exp) {
+        throw new UnauthorizedException('Invalid token payload');
       }
-  
+      
+      if (Date.now() >= payload.exp * 1000) {
+        throw new UnauthorizedException('Token expired');
+      }
+      
       return payload;
     } catch (err) {
-      console.error('🚫 Token validation error:', err.message);
       throw new UnauthorizedException('Invalid token');
     }
   }
