@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import Sidebar from '@/components/agent/sidebar';
 import AvatarMenu from '@/components/common/avatar';
-import { createEnrollment } from '@/lib/api/enrollment';
-import { getToken } from '@/lib/api/user';
+import { createEnrollment } from '@/utils/api/enrollment';
+import { getToken } from '@/utils/api/user';
 import { jwtDecode  } from 'jwt-decode';
 import EnrollmentList from '@/components/agent/enrollmentList';
 

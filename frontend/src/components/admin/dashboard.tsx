@@ -5,10 +5,10 @@ import {
   listCompanies,
   approveCompany,
   InsuranceCompanyResponse,
-} from '@/lib/api/company';
+} from '@/utils/api/company';
 import Sidebar from '@/components/admin/sidebar';
 import AvatarMenu from '@/components/common/avatar';
-import { getToken } from '@/lib/api/user';
+import { getToken } from '@/utils/api/user';
 
 export default function AdminDashboard() {
   const [pendingCompanies, setPendingCompanies] = useState<InsuranceCompanyResponse[]>([]);

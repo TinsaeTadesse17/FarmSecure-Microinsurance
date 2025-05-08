@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { InsuranceCompanyCreate, InsuranceCompanyResponse, registerCompany } from '@/lib/api/company';
+import { InsuranceCompanyCreate, InsuranceCompanyResponse, registerCompany } from '@/utils/api/company';
 
 interface RegisterFormProps {
   onSwitch: () => void;

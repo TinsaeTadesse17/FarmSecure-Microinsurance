@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { loginUser } from '@/lib/api/user';
+import { loginUser } from '@/utils/api/user';
 import { jwtDecode } from 'jwt-decode';
 
 interface LoginFormProps {

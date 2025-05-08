@@ -14,7 +14,7 @@ export default function Sidebar() {
         <Link href="/ic/productConfig" className="block text-black hover:text-green-600">
           Products
         </Link>
-        <Link href="/ic/polcyManagement" className="block text-black hover:text-green-600">
+        <Link href="/ic/policyManagement" className="block text-black hover:text-green-600">
           Policies
         </Link>
         <Link href="/ic/refund" className="block text-black hover:text-green-600">

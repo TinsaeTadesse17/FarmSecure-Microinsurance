@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Sidebar from '@/components/ic/sidebar';
 import AvatarMenu from '@/components/common/avatar';
 import CreateProductDialog from '@/components/ic/productDialog';
-import { getProducts, createProduct, Product, ProductCreate } from '@/lib/api/product';
+import { getProducts, createProduct, Product, ProductCreate } from '@/utils/api/product';
 
 export default function ProductConfiguration() {
   const [dialogOpen, setDialogOpen] = useState(false);

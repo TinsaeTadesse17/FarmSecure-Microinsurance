@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { approveEnrollment, rejectEnrollment, listEnrollments } from '@/lib/api/enrollment';
+import { approveEnrollment, rejectEnrollment, listEnrollments } from '@/utils/api/enrollment';
 
 interface Enrollment {
   enrolement_id: number;

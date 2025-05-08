@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { getCurrentUser, getToken, clearToken } from '@/lib/api/user';
+import { getCurrentUser, getToken, clearToken } from '@/utils/api/user';
 import { useRouter } from 'next/navigation';
 import AccountSettingsDialog from '@/components/common/account_setting';
 

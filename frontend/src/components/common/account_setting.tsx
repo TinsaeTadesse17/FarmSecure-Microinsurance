@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getCurrentUser, getToken, updateUserAccount } from '@/lib/api/user';
+import { getCurrentUser, getToken, updateUserAccount } from '@/utils/api/user';
 
 export default function AccountSettingsDialog({ onClose }: { onClose: () => void }) {
   const [username, setUsername] = useState('');

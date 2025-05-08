@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { createPolicy } from '@/lib/api/policy';
+import { createPolicy } from '@/utils/api/policy';
 
 interface CreatePolicyDialogProps {
   onClose: () => void;
