@@ -24,7 +24,7 @@ const USER_SERVICE_BASE_URL = 'http://user_service:8000/api/user';
 
 @ApiTags('User')
 @ApiBearerAuth('access-token')
-@UseGuards(RolesGuard, JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('api/user')
 export class UsersController {
   constructor(private readonly http: HttpService) {}

@@ -12,7 +12,7 @@ import { Role } from 'src/auth/constants/roles.enum';
 
 @ApiTags('Companies')
 @ApiBearerAuth('access-token')
-@UseGuards(RolesGuard, JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('api/companies')
 export class CompanyManagementController {
   constructor(private readonly companyManagementService: CompanyManagementService) {}

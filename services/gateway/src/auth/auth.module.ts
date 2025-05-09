@@ -1,23 +1,30 @@
+// auth.module.ts
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { AuthService } from './auth.service';
-import { JwtAuthGuard } from './guards/auth.guard';
-import { RolesGuard } from './guards/roles.guard';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { AuthService } from './auth.service';
+import { JwtAlgorithmPipe } from 'src/common/pipes/jwt-algorithm.pipe';
 
 @Module({
   imports: [
-    ConfigModule,
+    // Import ConfigModule to make ConfigService available
+    ConfigModule.forRoot(), // This is crucial
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get('JWT_SECRET'), // must match user service
-        signOptions: { expiresIn: '1h' },
+      useFactory: async (config: ConfigService) => ({
+        secret: config.get<string>('JWT_SECRET_KEY'),
+        signOptions: {
+          algorithm: config.get('JWT_ALGORITHM', 'HS256'),
+          expiresIn: config.get('JWT_EXPIRY_MINUTES', '60') + 'm',
+        },
       }),
       inject: [ConfigService],
     }),
   ],
-  providers: [AuthService, JwtAuthGuard, RolesGuard],
+  providers: [
+    AuthService,
+    JwtAlgorithmPipe, // Make sure the pipe is provided
+  ],
   exports: [AuthService],
 })
 export class AuthModule {}
