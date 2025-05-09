@@ -38,9 +38,9 @@ export default function Sidebar() {
         <Link href="/ic/comission" className="block text-black hover:text-green-600">
           comission
         </Link> */}
-        <Link href="/ic/ndviVis" className="block text-black hover:text-green-600">
+        {/* <Link href="/ic/ndviVis" className="block text-black hover:text-green-600">
           NDVI Visualisation
-        </Link>
+        </Link> */}
       </nav>
     </aside>
   );
