@@ -76,4 +76,32 @@ export class UsersController {
       throw new HttpException(err.response?.data || 'User creation failed', err.response?.status || 500);
     }
   }
+
+  @Get('ics')
+  async getIcUsers(@Headers('authorization') auth: string) {
+    try {
+      const res = await firstValueFrom(
+        this.http.get(`${USER_SERVICE_BASE_URL}/ics`, {
+          headers: { Authorization: auth },
+        }),
+      );
+      return res.data;
+    } catch (err) {
+      throw new HttpException(err.response?.data || 'Failed to fetch IC users', err.response?.status || 500);
+    }
+  }
+
+  @Get('agents')
+  async getAgentUsers(@Headers('authorization') auth: string) {
+    try {
+      const res = await firstValueFrom(
+        this.http.get(`${USER_SERVICE_BASE_URL}/agents`, {
+          headers: { Authorization: auth },
+        }),
+      );
+      return res.data;
+    } catch (err) {
+      throw new HttpException(err.response?.data || 'Failed to fetch agents', err.response?.status || 500);
+    }
+  }
 }
