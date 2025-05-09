@@ -21,6 +21,8 @@ export interface CreateUserResponse {
 }
 
 export interface UserOut {
+  created_at: string | number | Date;
+  email: any;
   user_id: number;
   username: string;
   role: string | string[];
@@ -61,7 +63,7 @@ export async function loginUser(data: LoginRequest): Promise<TokenResponse> {
 /**
  * 2. Create a new user
  */
-export async function createUser(data: UserCreate): Promise<CreateUserResponse> {
+export async function createUser(data: UserCreate, token?: string): Promise<CreateUserResponse> {
   const res = await fetch(`${API_BASE}/api/user/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

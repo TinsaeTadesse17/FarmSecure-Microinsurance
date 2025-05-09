@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Sidebar from '@/components/ic/sidebar';
 import AvatarMenu from '@/components/common/avatar';
 import * as XLSX from 'xlsx';
+import { uploadNDVIData } from '@/utils/api/ndvi';
 
 export default function UploadNDVIPage() {
   // =============== STATE MANAGEMENT ===============
@@ -11,6 +12,9 @@ export default function UploadNDVIPage() {
   const [fileName, setFileName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [ndviType, setNdviType] = useState<'crop' | 'livestock'>('crop');
+  const [period, setPeriod] = useState<string>('1');
 
   // =============== FILE HANDLER ===============
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,6 +56,50 @@ export default function UploadNDVIPage() {
     reader.readAsBinaryString(file);
   };
 
+  const handleSubmit = async () => {
+    if (!data.length || !fileName) {
+      setError('Please upload a valid file first');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      // Get the file again to send to the API
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      const file = await new Promise<File>((resolve) => {
+        fileInput.onchange = (e) => {
+          const files = (e.target as HTMLInputElement).files;
+          if (files) resolve(files[0]);
+        };
+        // Create a fake click event to trigger file selection
+        const clickEvent = new MouseEvent('click');
+        fileInput.dispatchEvent(clickEvent);
+      });
+
+      const response = await uploadNDVIData({
+        file,
+        period,
+        ndviType
+      });
+
+      if (response.success) {
+        setSuccess('NDVI data uploaded successfully!');
+        setData([]);
+        setFileName('');
+      } else {
+        setError(response.message || 'Failed to upload data');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // =============== RENDER ===============
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -73,6 +121,41 @@ export default function UploadNDVIPage() {
             <p className="text-sm text-gray-500 mb-4">
               Please upload an Excel file with CPS_ZONE and NDVI columns (200 rows required)
             </p>
+            
+            {/* Type and Period Selection */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label htmlFor="ndviType" className="block text-sm font-medium text-gray-700 mb-1">
+                  NDVI Type
+                </label>
+                <select
+                  id="ndviType"
+                  value={ndviType}
+                  onChange={(e) => setNdviType(e.target.value as 'crop' | 'livestock')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                >
+                  <option value="crop">Crop</option>
+                  <option value="livestock">Livestock</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="period" className="block text-sm font-medium text-gray-700 mb-1">
+                  Period (1-30)
+                </label>
+                <select
+                  id="period"
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                >
+                  {Array.from({ length: 30 }, (_, i) => i + 1).map((num) => (
+                    <option key={num} value={num.toString()}>
+                      {num}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
             
             {/* File Input */}
             <label className="flex flex-col items-center px-4 py-6 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:bg-gray-100 transition-colors">
@@ -103,6 +186,12 @@ export default function UploadNDVIPage() {
             
             {error && (
               <p className="mt-3 text-sm text-red-500">{error}</p>
+            )}
+
+            {success && (
+              <div className="mt-3 p-3 bg-green-50 text-green-700 rounded-md">
+                <p className="text-sm">{success}</p>
+              </div>
             )}
           </div>
 
@@ -144,7 +233,8 @@ export default function UploadNDVIPage() {
               {/* Submit Button */}
               <div className="mt-6 flex justify-end">
                 <button
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                  onClick={handleSubmit}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50"
                   disabled={isLoading || !!error}
                 >
                   {isLoading ? 'Uploading...' : 'Submit Data'}
