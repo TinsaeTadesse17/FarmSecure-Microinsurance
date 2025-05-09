@@ -67,7 +67,7 @@ export default function ProductConfiguration() {
               />
             </div>
 
-            {/* Refresh button next to search
+            Refresh button next to search
             <button
               onClick={fetchProducts}
               disabled={isLoading}
@@ -75,7 +75,7 @@ export default function ProductConfiguration() {
             >
               <FiRefreshCw className={`mr-2 ${isLoading ? 'animate-spin' : ''}`} />
            
-            </button> */}
+            </button>
 
             <AvatarMenu />
           </div>
