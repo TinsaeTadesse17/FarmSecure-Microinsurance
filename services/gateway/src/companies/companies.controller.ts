@@ -18,7 +18,6 @@ export class CompanyManagementController {
   constructor(private readonly companyManagementService: CompanyManagementService) {}
   private readonly logger = new Logger(CompanyManagementController.name);
 
-  // Endpoint to register a company.
   @Public()
   @Post('register')
   @ApiOperation({ summary: 'Endpoint to register a company' })
@@ -32,7 +31,6 @@ export class CompanyManagementController {
     }
   }
 
-  // Endpoint to get a single company by ID.
   @Roles(Role.IC, Role.Agent)
   @Get(':id')
   @ApiOperation({ summary: 'Endpoint to get a single company by ID' })
@@ -46,7 +44,6 @@ export class CompanyManagementController {
     }
   }
 
-  // Endpoint to list companies. admin
   @Roles(Role.Admin)
   @Get()
   @ApiOperation({ summary: 'Endpoint to list companies' })
@@ -60,7 +57,6 @@ export class CompanyManagementController {
     }
   }
 
-  // Endpoint to approve a company (only updates status to "approved")admin
   @Roles(Role.Admin)
   @Put(':id/approve')
   @ApiOperation({ summary: 'Endpoint to approve a company' })
@@ -76,7 +72,6 @@ export class CompanyManagementController {
     }
   }
 
-  // Endpoint to generate credentials. It accepts a query parameter "role". admin
   @Roles(Role.Admin)
   @Post(':id/credentials')
   @ApiOperation({ summary: 'Endpoint to generate credentials. It accepts a query parameter "role"' })

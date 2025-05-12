@@ -9,7 +9,6 @@ import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { Role } from '../constants/roles.enum';
 
-// roles.guard.ts
 @Injectable()
 export class RolesGuard implements CanActivate {
   private readonly logger = new Logger(RolesGuard.name);

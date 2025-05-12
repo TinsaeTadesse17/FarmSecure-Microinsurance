@@ -10,7 +10,6 @@ import { AuthService } from '../auth.service';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { JwtPayload } from '../jwt-payload.interface';
 
-// auth.guard.ts
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   private readonly logger = new Logger(JwtAuthGuard.name);
@@ -56,7 +55,6 @@ export class JwtAuthGuard implements CanActivate {
         roles: payload.role 
       });
 
-      // Normalize roles to ensure array format
       const roles = Array.isArray(payload.role) ? payload.role : [payload.role];
       
       request.user = {

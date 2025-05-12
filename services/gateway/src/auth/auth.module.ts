@@ -1,4 +1,3 @@
-// auth.module.ts
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -7,8 +6,7 @@ import { JwtAlgorithmPipe } from 'src/common/pipes/jwt-algorithm.pipe';
 
 @Module({
   imports: [
-    // Import ConfigModule to make ConfigService available
-    ConfigModule.forRoot(), // This is crucial
+    ConfigModule.forRoot(),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (config: ConfigService) => ({
@@ -23,7 +21,7 @@ import { JwtAlgorithmPipe } from 'src/common/pipes/jwt-algorithm.pipe';
   ],
   providers: [
     AuthService,
-    JwtAlgorithmPipe, // Make sure the pipe is provided
+    JwtAlgorithmPipe,
   ],
   exports: [AuthService],
 })
