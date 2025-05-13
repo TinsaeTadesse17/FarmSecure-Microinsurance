@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import Sidebar from '@/components/agent/sidebar';
+import Sidebar from '@/components/admin/sidebar';
 import AvatarMenu from '@/components/common/avatar';
 import { getIcUsers, updateUserAccount, UserOut, getToken } from '@/utils/api/user';
 

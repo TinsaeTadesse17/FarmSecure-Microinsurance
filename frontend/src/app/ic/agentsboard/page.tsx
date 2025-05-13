@@ -30,8 +30,10 @@ const AgentsPage: React.FC = () => {
   const [companyId, setCompanyId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreating, setIsCreating] = useState(false);
-  const [editingUserId, setEditingUserId] = useState<number | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserOut | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState('');
 
   useEffect(() => {
     const fetchAgents = async () => {
@@ -45,7 +47,6 @@ const AgentsPage: React.FC = () => {
 
       try {
         const agentData = await getAgentUsers(token);
-        // Sort by creation date (newest first)
         const sortedAgents = [...agentData].sort((a, b) => 
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
@@ -63,11 +64,12 @@ const AgentsPage: React.FC = () => {
   }, []);
 
   const filteredAgents = agents.data.filter(agent =>
-    agent.username.toLowerCase().includes(searchTerm.toLowerCase()) 
-    // (agent.email && agent.email.toLowerCase().includes(searchTerm.toLowerCase()))
+    agent.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleStatusChange = async (userId: number, newStatus: string) => {
+  const handleStatusChange = async () => {
+    if (!selectedUser || !selectedStatus) return;
+    
     const token = getToken();
     if (!token) {
       setAgents(prev => ({ ...prev, error: 'No authentication token found. Please log in.' }));
@@ -75,12 +77,14 @@ const AgentsPage: React.FC = () => {
     }
 
     try {
-      await updateUserAccount(userId, { status: newStatus }, token);
+      await updateUserAccount(selectedUser.user_id, { status: selectedStatus }, token);
       setAgents(prev => ({
         ...prev,
-        data: prev.data.map(u => (u.user_id === userId ? { ...u, status: newStatus } : u)),
+        data: prev.data.map(u => 
+          u.user_id === selectedUser.user_id ? { ...u, status: selectedStatus } : u
+        ),
       }));
-      setEditingUserId(null);
+      setShowStatusModal(false);
     } catch (error) {
       setAgents(prev => ({ ...prev, error: (error as Error).message }));
     }
@@ -98,7 +102,6 @@ const AgentsPage: React.FC = () => {
       setIsCreating(true);
       await createUser({ role: 'agent', company_id: companyId }, token);
       const updated = await getAgentUsers(token);
-      // Sort again after creation
       const sortedAgents = [...updated].sort((a, b) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
@@ -111,30 +114,14 @@ const AgentsPage: React.FC = () => {
   };
 
   const renderStatusPill = (user: UserOut) => {
-    if (editingUserId === user.user_id) {
-      return (
-        <div className="flex space-x-2">
-          {statusOptions.map(opt => (
-            <button
-              key={opt}
-              onClick={() => handleStatusChange(user.user_id, opt)}
-              className={`px-3 py-1 text-xs font-medium rounded-full border transition-colors ${
-                opt === 'approved' ? 'hover:bg-emerald-50 hover:text-emerald-700' :
-                opt === 'pending' ? 'hover:bg-amber-50 hover:text-amber-700' :
-                'hover:bg-rose-50 hover:text-rose-700'
-              }`}
-            >
-              {opt.charAt(0).toUpperCase() + opt.slice(1)}
-            </button>
-          ))}
-        </div>
-      );
-    }
-
     return (
       <div 
         className={`px-3 py-1 text-xs font-medium rounded-full border cursor-pointer ${statusColors[user.status as keyof typeof statusColors]}`}
-        onClick={() => setEditingUserId(user.user_id)}
+        onClick={() => {
+          setSelectedUser(user);
+          setSelectedStatus(user.status);
+          setShowStatusModal(true);
+        }}
       >
         {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
       </div>
@@ -164,17 +151,27 @@ const AgentsPage: React.FC = () => {
     );
 
     if (filteredAgents.length === 0) return (
-      <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
+      <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
         <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <h3 className="mt-2 text-sm font-medium text-gray-900">No agents found</h3>
         <p className="mt-1 text-sm text-gray-500">{searchTerm ? 'Try a different search term' : 'Create your first agent'}</p>
+        {!searchTerm && (
+          <div className="mt-6">
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
+            >
+              Create Agent
+            </button>
+          </div>
+        )}
       </div>
     );
 
     return (
-      <div className="overflow-hidden border border-gray-200 rounded-lg shadow-xs">
+      <div className="overflow-hidden border border-gray-200 rounded-lg shadow-sm">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -184,13 +181,15 @@ const AgentsPage: React.FC = () => {
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
-            
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Created
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredAgents.map(user => (
-              <tr key={user.user_id} className="hover:bg-gray-50 transition-colors duration-150">
-                <td className="px-6 py-4">
+              <tr key={user.user_id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="flex-shrink-0 h-10 w-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-700 font-medium border border-emerald-100">
                       {user.username.charAt(0).toUpperCase()}
@@ -201,10 +200,12 @@ const AgentsPage: React.FC = () => {
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-6 py-4 whitespace-nowrap">
                   {renderStatusPill(user)}
                 </td>
-              
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {new Date(user.created_at).toLocaleDateString()}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -226,9 +227,9 @@ const AgentsPage: React.FC = () => {
         </div>
         
         <div className="max-w-6xl mx-auto">
-          <div className="bg-white p-6 rounded-xl shadow-xs border border-gray-200">
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-              <div className="w-full sm:w-auto">
+              <div className="w-full sm:w-96">
                 <div className="relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <svg className="h-4 w-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
@@ -237,8 +238,8 @@ const AgentsPage: React.FC = () => {
                   </div>
                   <input
                     type="text"
-                    placeholder="Search agents by name or email..."
-                    className="block w-full pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
+                    placeholder="Search agents..."
+                    className="block w-full pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -268,14 +269,14 @@ const AgentsPage: React.FC = () => {
 
         {/* Create Agent Modal */}
         {showCreateModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full transform transition-all">
               <div className="p-6">
                 <div className="flex justify-between items-start">
                   <h3 className="text-lg font-medium text-gray-900">Create New Agent</h3>
                   <button
                     onClick={() => setShowCreateModal(false)}
-                    className="text-gray-400 hover:text-gray-500"
+                    className="text-gray-400 hover:text-gray-500 transition-colors"
                   >
                     <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -283,22 +284,84 @@ const AgentsPage: React.FC = () => {
                   </button>
                 </div>
                 <div className="mt-4">
-                  <p className="text-sm text-gray-500">Are you sure you want to create a new agent account?</p>
+                  <p className="text-sm text-gray-500">This will create a new agent account with default credentials.</p>
                 </div>
                 <div className="mt-6 flex justify-end space-x-3">
                   <button
                     type="button"
                     onClick={() => setShowCreateModal(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+                    className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
                     onClick={handleCreateAgent}
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
                   >
                     Create Agent
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Status Change Modal */}
+        {showStatusModal && selectedUser && (
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full transform transition-all">
+              <div className="p-6">
+                <div className="flex justify-between items-start">
+                  <h3 className="text-lg font-medium text-gray-900">Change Agent Status</h3>
+                  <button
+                    onClick={() => setShowStatusModal(false)}
+                    className="text-gray-400 hover:text-gray-500 transition-colors"
+                  >
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="mt-4">
+                  <p className="text-sm text-gray-500">
+                    Changing status for <span className="font-medium">{selectedUser.username}</span>
+                  </p>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {statusOptions.map(option => (
+                    <div key={option} className="flex items-center">
+                      <input
+                        id={`status-${option}`}
+                        name="status"
+                        type="radio"
+                        checked={selectedStatus === option}
+                        onChange={() => setSelectedStatus(option)}
+                        className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300"
+                      />
+                      <label
+                        htmlFor={`status-${option}`}
+                        className="ml-3 block text-sm font-medium text-gray-700 capitalize"
+                      >
+                        {option}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-6 flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowStatusModal(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleStatusChange}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
+                  >
+                    Update Status
                   </button>
                 </div>
               </div>

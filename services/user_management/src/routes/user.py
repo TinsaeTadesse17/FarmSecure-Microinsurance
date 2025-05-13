@@ -42,7 +42,6 @@ def create_user(
     if not user.company_id:
         raise HTTPException(status_code=400, detail="company_id is required for non-admin users.")
     
-    # Check if the company exists
     company = get_company(user.company_id)
     if not company:
         raise HTTPException(status_code=404, detail="Company not found.")
@@ -64,8 +63,7 @@ def create_user(
     db.commit()
     db.refresh(db_user)
 
-    # Send email notification
-    email_result = send_email_notification(
+    send_email_notification(
         to=company['email'],
         subject="Welcome to Agriteck MicroIncorance Platform",
         type="account_approval",
@@ -95,13 +93,11 @@ def update_user_account(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # 🛠 Safe role unpacking
     current_user_role = current_user.role[0] if isinstance(current_user.role, list) else current_user.role
     target_user_role = user.role[0] if isinstance(user.role, list) else user.role
 
     print(f"Editing user: {user_id} | Current User: {current_user.user_id} ({current_user_role}) → {target_user_role}")
 
-    #  Self-update
     if current_user.user_id == user.user_id:
         if updates.username:
             user.username = updates.username
@@ -110,21 +106,16 @@ def update_user_account(
             user.must_change_password = False
         if updates.status:
             raise HTTPException(status_code=403, detail="You can't change your own status.")
-
-    # Admin updates IC status
     elif current_user_role == "admin" and target_user_role == "ic":
         if updates.status:
             user.status = updates.status
         else:
             raise HTTPException(status_code=403, detail="Only status can be updated by admin on ICs.")
-
-    #  IC updates Agent status
     elif current_user_role == "ic" and target_user_role == "agent":
         if updates.status:
             user.status = updates.status
         else:
             raise HTTPException(status_code=403, detail="Only status can be updated by IC on Agents.")
-
     else:
         raise HTTPException(status_code=403, detail="You are not allowed to update this account.")
 
