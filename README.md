@@ -4,7 +4,7 @@ This project implements a comprehensive backend for a **Agteck Micro Insurance P
 
 ## 🚀 Project Overview
 
-The platform provides RESTful APIs for:
+The platform provides RESTful APIs for: 
 - Managing insurance companies and branches
 - Customer enrolment and policy generation
 - Product and configuration setup
