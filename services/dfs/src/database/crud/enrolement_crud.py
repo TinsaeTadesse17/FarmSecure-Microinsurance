@@ -44,6 +44,7 @@ class EnrolementService:
         # Check for duplicate receipt_no
         if self.db.query(Enrolement).filter(Enrolement.receipt_no == enrolement.receipt_no).first():
             raise HTTPException(status_code=400, detail="Duplicate receipt_no is not allowed")
+        
         # Create new instance from received data
         db_enrolement = Enrolement(
             customer_id = customer_id,

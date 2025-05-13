@@ -1,23 +1,28 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { HttpModule } from '@nestjs/axios';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
-import { UsersModule } from '../users/users.module';
-import { AuthGuard } from './guards/auth.guard';
-import { RolesGuard } from './guards/roles.guard';
+import { JwtAlgorithmPipe } from 'src/common/pipes/jwt-algorithm.pipe';
 
 @Module({
   imports: [
-    HttpModule,
-    forwardRef(() => UsersModule),
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'yourSecretKey',
-      signOptions: { expiresIn: '1h' },
+    ConfigModule.forRoot(),
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (config: ConfigService) => ({
+        secret: config.get<string>('JWT_SECRET_KEY'),
+        signOptions: {
+          algorithm: config.get('JWT_ALGORITHM', 'HS256'),
+          expiresIn: config.get('JWT_EXPIRY_MINUTES', '60') + 'm',
+        },
+      }),
+      inject: [ConfigService],
     }),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, AuthGuard, RolesGuard],
-  exports: [AuthService, AuthGuard, RolesGuard, JwtModule],
+  providers: [
+    AuthService,
+    JwtAlgorithmPipe,
+  ],
+  exports: [AuthService],
 })
 export class AuthModule {}

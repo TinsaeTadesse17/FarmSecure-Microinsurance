@@ -1,59 +1,32 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
+import { Injectable, UnauthorizedException, InternalServerErrorException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcryptjs';
+import axios from 'axios';
+import { JwtPayload } from './jwt-payload.interface';
+import { Role } from './constants/roles.enum';
+import { ConfigService } from '@nestjs/config';
+import { JwtAlgorithmPipe } from 'src/common/pipes/jwt-algorithm.pipe';
 
 @Injectable()
 export class AuthService {
-  private readonly authServiceUrl = process.env.AUTH_SERVICE_URL || 'http://auth_service:9000';
-
   constructor(
-    private readonly httpService: HttpService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
+    private readonly algorithmPipe: JwtAlgorithmPipe,
   ) {}
 
-  async validateUser(email: string, pass: string): Promise<any> {
+  async validateToken(token: string): Promise<JwtPayload> {
     try {
-      // Fetch user from your Python microservice
-      const { data: user } = await firstValueFrom(
-        this.httpService.get(`${this.authServiceUrl}/api/users/email/${email}`)
+      const algorithm = this.algorithmPipe.transform(
+        this.configService.get<string>('JWT_ALGORITHM', 'HS256')
       );
 
-      if (!user) {
-        throw new UnauthorizedException('Invalid credentials');
-      }
-
-      // Compare passwords
-      const isMatch = await bcrypt.compare(pass, user.password);
-      if (!isMatch) {
-        throw new UnauthorizedException('Invalid credentials');
-      }
-
-      return user;
+      return this.jwtService.verify(token, {
+        secret: this.configService.getOrThrow<string>('JWT_SECRET_KEY'),
+        algorithms: [algorithm],
+      });
     } catch (error) {
-      throw new UnauthorizedException('Authentication failed');
+      throw new UnauthorizedException('Invalid token');
     }
   }
-
-  async login(user: any) {
-    const payload = { 
-      sub: user.id, 
-      username: user.username,
-      roles: user.roles 
-    };
-    
-    return {
-      access_token: this.jwtService.sign(payload),
-      user: {
-        id: user.id,
-        username: user.username,
-        roles: user.roles
-      }
-    };
-  }
-
-  async hashPassword(password: string): Promise<string> {
-    return bcrypt.hash(password, 10);
-  }
 }
+

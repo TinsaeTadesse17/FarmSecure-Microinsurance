@@ -11,7 +11,6 @@ from src.schemas.claim_management_schema import (
 import time
 from src.database.crud.claim_management_crud import (
     create_claim,
-    get_claims,
     update_claim_status,
     update_claim_amount,
     get_claim,
@@ -190,11 +189,6 @@ async def create_livestock_claim(
         )
     
     return {"message": "Claims are being processed."}
-
-@router.get("/claims")
-def get_all_claims(db: Session = Depends(get_db)):
-    claims = get_claims(db)
-    return claims if claims else  []
 
 @router.get("/{claim_id}", responses={404: {"model": ErrorResponse}})
 def get_claim_endpoint(claim_id: int, db: Session = Depends(get_db)):

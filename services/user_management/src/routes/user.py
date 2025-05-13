@@ -15,10 +15,8 @@ import string
 from src.database.core.config import settings
 from src.services.email_service import send_email_notification
 from src.services.company_service import get_company
-from typing import List
 
 router = APIRouter(prefix="/api/user", tags=["user"])
-
 def generate_username():
     return "user_" + secrets.token_hex(4)
 
@@ -101,7 +99,7 @@ def update_user_account(
 
     print(f"Editing user: {user_id} | Current User: {current_user.user_id} ({current_user_role}) → {target_user_role}")
 
-    #  Self-update
+    # 🔒 Self-update
     if current_user.user_id == user.user_id:
         if updates.username:
             user.username = updates.username
@@ -111,14 +109,14 @@ def update_user_account(
         if updates.status:
             raise HTTPException(status_code=403, detail="You can't change your own status.")
 
-    # Admin updates IC status
+    # 🔐 Admin updates IC status
     elif current_user_role == "admin" and target_user_role == "ic":
         if updates.status:
             user.status = updates.status
         else:
             raise HTTPException(status_code=403, detail="Only status can be updated by admin on ICs.")
 
-    #  IC updates Agent status
+    # 🔐 IC updates Agent status
     elif current_user_role == "ic" and target_user_role == "agent":
         if updates.status:
             user.status = updates.status
@@ -137,27 +135,5 @@ def update_user_account(
 
     return user
 
-@router.get("/ics", response_model=List[user_schema.UserOut])
-def get_ic_users(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin"))
-):
-    ic_users = db.query(User).filter(User.role == "ic").all()
-    if not ic_users:
-        raise HTTPException(status_code=404, detail="No users with IC role found")
-    return ic_users
-
-@router.get("/agents", response_model=List[user_schema.UserOut])
-def get_agent_users(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("ic"))
-):
-    agent_users = db.query(User).filter(
-        User.role == "agent",
-        User.company_id == current_user.company_id
-    ).all()
-    if not agent_users:
-        raise HTTPException(status_code=404, detail="No agents found for your company")
-    return agent_users
 
 user_router = router

@@ -6,15 +6,11 @@ from datetime import datetime
 from ..models.policy import Policy, PolicyDetail
 from src.core.config import settings
 
-DFS_SERVICE_URL = settings.DFS_SERVICE_URL
+DFS_SERVICE_URL = settings.DFS_SERVICE_URL 
 
 def fetch_enrollment(enrollment_id: int) -> dict:
     try:
         resp = httpx.get(
-#             f"{DFS_SERVICE_URL}/enrollments/{enrollment_id}",
-#             params={"enrolement_id": enrollment_id},
-#             timeout=5
-
             f"{DFS_SERVICE_URL}/api/enrollments/{enrollment_id}", timeout=5
         )
         resp.raise_for_status()
@@ -73,6 +69,7 @@ def create_policy(db: Session, enrollment_id: int) -> Policy:
     db.refresh(policy)
     return policy
 
+
 def change_status(db: Session, policy_id: int, new_status: str) -> Policy:
     policy = db.query(Policy).get(policy_id)
     if not policy:
@@ -82,18 +79,22 @@ def change_status(db: Session, policy_id: int, new_status: str) -> Policy:
     db.refresh(policy)
     return policy
 
+
 def get_policy(db: Session, policy_id: int) -> Policy:
     policy = db.query(Policy).get(policy_id)
     if not policy:
         raise HTTPException(status_code=404, detail="Policy not found")
     return policy
 
+
 def list_policies(db: Session):
     return db.query(Policy).all()
+
 
 def get_policy_details(db: Session, policy_id: int):
     policy = get_policy(db, policy_id)
     return policy.details
+
 
 def list_policy_details(db: Session):
     details = db.query(PolicyDetail).all()

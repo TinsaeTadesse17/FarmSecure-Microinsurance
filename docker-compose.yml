@@ -8,8 +8,8 @@ services:
       POSTGRES_USER: ${COMPANY_DB_USER}
       POSTGRES_PASSWORD: ${COMPANY_DB_PASS}
       POSTGRES_DB: ${COMPANY_DB_NAME}
-    volumes:
-      - pgdata_company:/var/lib/postgresql/data
+    # volumes:
+      # - pgdata_company:/var/lib/postgresql/data
     ports:
       - "5444:5432"
     restart: always
@@ -90,17 +90,6 @@ services:
     environment:
       # at runtime, the app can read its DB URL here
       DATABASE_URL: postgresql://postgres:password@product_db:5432/productdb
-      CLAIM_SERVICE_URL: http://claim_service:8000/api/claim
-    networks:
-      - app_network
-
-  risk_service:
-    build: 
-      context: ./services/risk_management
-    container_name: risk_service
-    ports:
-      - "8002:8000"
-    environment:
       CLAIM_SERVICE_URL: http://claim_service:8000/api/claim
     networks:
       - app_network
@@ -370,7 +359,7 @@ services:
       - "8004:8000"
     networks:
       - app_network
-  
+
   claim_db:
     image: postgres:16
     container_name: claim_db
