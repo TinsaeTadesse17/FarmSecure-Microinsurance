@@ -4,21 +4,20 @@ from src.database.db import engine, Base, get_db
 from src.routes.user import user_router
 from src.database.seeder import seed_admin_user 
 from sqlalchemy.orm import Session
+from fastapi.middleware.cors import CORSMiddleware
 import logging
-from fastapi.middleware.cors import CORSMiddleware  
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="User Management Serivce")
 
-
 Base.metadata.create_all(bind=engine)
 
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
