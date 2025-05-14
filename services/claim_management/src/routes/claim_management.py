@@ -40,8 +40,16 @@ LIVESTOCK_TRIGGER = 1.5
 LIVESTOCK_EXIT = 0.5
 LIVESTOCK_MP_PERCENT = 0.1  # Define minimum payment percentage
 
+
+timeout = httpx.Timeout(
+    connect=5.0,   # max time to connect
+    read=30.0,     # max time to read a response
+    write=5.0,     # max time to write the request
+    pool=None      # use default pool timeout
+)
+
 async def fetch_policy_details():
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=timeout) as client:
         try:
             response = await client.get(
                 f"{POLICY_SERVICE_BASE_URL}/api/policies/details",
