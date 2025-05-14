@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { jwtDecode } from 'jwt-decode';
 import AdminDashboard from '@/components/admin/dashboard';
+import { Sprout } from 'lucide-react';
 
 interface TokenPayload {
   sub: string;
@@ -44,8 +45,26 @@ export default function DashboardPage() {
   }, [router]);
 
   if (loading) {
-    return <div className="p-6">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-[#f9f8f3] flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin-slow mx-auto">
+            <Sprout className="w-12 h-12 text-[#8ba77f]" />
+          </div>
+          <p className="text-[#3a584e] font-medium">
+            Cultivating your admin dashboard...
+          </p>
+          <span className="text-sm text-[#7a938f] block">
+            Securely growing your access permissions
+          </span>
+        </div>
+      </div>
+    );
   }
 
-  return <AdminDashboard />;
+  return (
+    <div className="min-h-screen bg-[#f9f8f3] text-[#3a584e]">
+      <AdminDashboard />
+    </div>
+  );
 }
