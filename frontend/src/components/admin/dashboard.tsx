@@ -9,11 +9,12 @@ import {
 import Sidebar from '@/components/admin/sidebar';
 import AvatarMenu from '@/components/common/avatar';
 import { getToken } from '@/utils/api/user';
-import { Loader2, ClipboardList, Sprout } from 'lucide-react';
+import { Loader2, ClipboardList, Sprout, Check } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [pendingCompanies, setPendingCompanies] = useState<InsuranceCompanyResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCompany, setSelectedCompany] = useState<InsuranceCompanyResponse | null>(null);
 
   useEffect(() => {
     async function fetchCompanies() {
@@ -33,6 +34,48 @@ export default function AdminDashboard() {
 
     fetchCompanies();
   }, []);
+
+  const ApprovalModal = () => (
+    <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl border border-[#e0e7d4] p-6 w-full max-w-md shadow-xl">
+        <div className="flex items-center gap-3 mb-4">
+          <ClipboardList className="w-8 h-8 text-[#8ba77f]" />
+          <h3 className="text-xl font-semibold text-[#3a584e]">
+            Confirm Approval
+          </h3>
+        </div>
+        
+        <p className="text-[#7a938f] mb-6">
+          Are you sure you want to approve <span className="font-medium text-[#3a584e]">{selectedCompany?.name}</span>?
+        </p>
+
+        <div className="flex gap-3 justify-end">
+          <button
+            onClick={() => setSelectedCompany(null)}
+            className="px-4 py-2 text-[#7a938f] hover:text-[#3a584e] rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={async () => {
+              if (!selectedCompany) return;
+              try {
+                await approveCompany(selectedCompany.id);
+                setPendingCompanies(prev => prev.filter(c => c.id !== selectedCompany.id));
+                setSelectedCompany(null);
+              } catch (err) {
+                alert(`Approval failed: ${(err as Error).message}`);
+              }
+            }}
+            className="px-4 py-2 bg-[#8ba77f] hover:bg-[#7a937f] text-white rounded-lg transition-colors flex items-center gap-2"
+          >
+            <Check className="h-5 w-5" />
+            Confirm Approval
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="flex min-h-screen bg-[#f9f8f3] text-[#2c423f]">
@@ -59,8 +102,18 @@ export default function AdminDashboard() {
 
         <div className="bg-white rounded-xl border border-[#e0e7d4] p-6 shadow-sm">
           {loading ? (
-            <div className="flex justify-center items-center h-32">
-              <Loader2 className="h-8 w-8 text-[#8ba77f] animate-spin" />
+            <div className="min-h-screen bg-[#f9f8f3] flex items-center justify-center">
+              <div className="text-center space-y-4">
+                <div className="animate-spin-slow mx-auto">
+                  <Sprout className="w-12 h-12 text-[#8ba77f]" />
+                </div>
+                <p className="text-[#3a584e] font-medium">
+                  Cultivating your admin dashboard...
+                </p>
+                <span className="text-sm text-[#7a938f] block">
+                  Securely growing your access permissions
+                </span>
+              </div>
             </div>
           ) : pendingCompanies.length === 0 ? (
             <div className="text-center py-8">
@@ -83,30 +136,9 @@ export default function AdminDashboard() {
                   <p className="text-[#7a938f] mb-4 break-all">{company.email}</p>
                   <button
                     className="w-full py-2 bg-[#8ba77f] hover:bg-[#7a937f] text-white rounded-lg transition-colors flex items-center justify-center gap-2"
-                    onClick={async () => {
-                      const confirmed = window.confirm(`Approve "${company.name}"?`);
-                      if (!confirmed) return;
-
-                      try {
-                        await approveCompany(company.id);
-                        setPendingCompanies((prev) => prev.filter((c) => c.id !== company.id));
-                      } catch (err) {
-                        alert(`Approval failed: ${(err as Error).message}`);
-                      }
-                    }}
+                    onClick={() => setSelectedCompany(company)}
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                    <Check className="h-5 w-5" />
                     Approve
                   </button>
                 </div>
@@ -114,6 +146,8 @@ export default function AdminDashboard() {
             </div>
           )}
         </div>
+
+        {selectedCompany && <ApprovalModal />}
       </main>
     </div>
   );
