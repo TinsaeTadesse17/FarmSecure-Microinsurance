@@ -8,6 +8,13 @@ from src.core.config import settings
 # Base URL for the claim service
 CLAIM_SERVICE_BASE_URL = settings.CLAIM_SERVICE_URL
 
+timeout = httpx.Timeout(
+    connect=5.0,   # max time to connect
+    read=30.0,     # max time to read a response
+    write=5.0,     # max time to write the request
+    pool=None      # use default pool timeout
+)
+
 router = APIRouter()
 
 @router.post("/upload_ndvi")
@@ -60,7 +67,7 @@ async def upload_ndvi(
     # 5. Forward to claim service
     payload = {"ndvi_data": cps_data, "period": period}
     url = f"{CLAIM_SERVICE_BASE_URL}/claims/{ndvi_type}"
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=timeout) as client:
         resp = await client.post(url, json=payload)
     if resp.status_code not in {200, 201, 204}:
         raise HTTPException(resp.status_code, f"Claim service error: {resp.text}")
