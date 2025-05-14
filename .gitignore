@@ -1,1 +1,16 @@
-.env*
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+dist/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+env/
+venv/
+
+# Environment Variables
+.env
