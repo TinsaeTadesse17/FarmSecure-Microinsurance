@@ -10,6 +10,7 @@ import Sidebar from '@/components/admin/sidebar';
 import AvatarMenu from '@/components/common/avatar';
 import { getToken } from '@/utils/api/user';
 import { Dialog, Transition } from '@headlessui/react';
+import { Loader2, ClipboardList, Sprout } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [pendingCompanies, setPendingCompanies] = useState<InsuranceCompanyResponse[]>([]);
@@ -54,115 +55,85 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 text-gray-800">
+    <div className="flex min-h-screen bg-[#f9f8f3] text-[#2c423f]">
       <Sidebar />
-      <main className="flex-1 p-6">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl text-black">Pending Companies</h1>
-          <AvatarMenu />
+      
+      <main className="flex-1 p-8">
+        <div className="flex justify-between items-start mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-[#3a584e] flex items-center gap-3">
+              <ClipboardList className="w-8 h-8 text-[#8ba77f]" />
+              Company Approvals
+              <span className="ml-4 text-sm font-normal bg-[#eef4e5] px-3 py-1 rounded-full">
+                Pending Registrations
+              </span>
+            </h1>
+            <p className="mt-2 text-[#7a938f] max-w-2xl">
+              Manage insurance company approvals • Last updated 2h ago
+            </p>
+          </div>
+          <div className="flex gap-4">
+            <AvatarMenu />
+          </div>
         </div>
 
-        <section className="bg-white shadow rounded-lg p-6 max-w-6xl mx-auto">
-          <h2 className="text-xl font-medium mb-4 text-black">
-            Companies Awaiting Approval
-          </h2>
-
+        <div className="bg-white rounded-xl border border-[#e0e7d4] p-6 shadow-sm">
           {loading ? (
-            <div className="flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            <div className="flex justify-center items-center h-32">
+              <Loader2 className="h-8 w-8 text-[#8ba77f] animate-spin" />
             </div>
           ) : pendingCompanies.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-500 text-lg">No pending companies for approval</p>
+              <Sprout className="mx-auto h-12 w-12 text-[#7a938f] mb-4" />
+              <p className="text-[#7a938f]">No pending approvals found</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {pendingCompanies.map((company) => (
-                    <tr key={company.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm text-gray-900">{company.id}</td>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{company.name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{company.email}</td>
-                      <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => openModal(company)}
-                          className="px-3 py-1 text-sm rounded-md bg-green-600 text-white hover:bg-green-700"
-                        >
-                          Approve
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {pendingCompanies.map((company) => (
+                <div 
+                  key={company.id}
+                  className="bg-[#f9f8f3] p-6 rounded-xl border border-[#e0e7d4] hover:shadow-lg transition-all group"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-sm font-medium text-[#7a938f] bg-[#eef4e5] px-3 py-1 rounded-full">
+                      ID: {company.id}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-semibold text-[#3a584e] mb-2">{company.name}</h3>
+                  <p className="text-[#7a938f] mb-4 break-all">{company.email}</p>
+                  <button
+                    className="w-full py-2 bg-[#8ba77f] hover:bg-[#7a937f] text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                    onClick={async () => {
+                      const confirmed = window.confirm(`Approve "${company.name}"?`);
+                      if (!confirmed) return;
+
+                      try {
+                        await approveCompany(company.id);
+                        setPendingCompanies((prev) => prev.filter((c) => c.id !== company.id));
+                      } catch (err) {
+                        alert(`Approval failed: ${(err as Error).message}`);
+                      }
+                    }}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Approve
+                  </button>
+                </div>
+              ))}
             </div>
           )}
-        </section>
-
-        <Transition appear show={isModalOpen} as={Fragment}>
-          <Dialog as="div" className="relative z-10" onClose={() => setIsModalOpen(false)}>
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0"
-              enterTo="opacity-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100"
-              leaveTo="opacity-0"
-            >
-              <div className="fixed inset-0 bg-black bg-transparent" />
-            </Transition.Child>
-
-            <div className="fixed inset-0 overflow-y-auto">
-              <div className="flex min-h-full items-center justify-center p-4">
-                <Transition.Child
-                  as={Fragment}
-                  enter="ease-out duration-300"
-                  enterFrom="opacity-0 scale-95"
-                  enterTo="opacity-100 scale-100"
-                  leave="ease-in duration-200"
-                  leaveFrom="opacity-100 scale-100"
-                  leaveTo="opacity-0 scale-95"
-                >
-                  <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 shadow-xl transition-all">
-                    <Dialog.Title className="text-lg font-medium text-gray-900">
-                      Confirm Approval
-                    </Dialog.Title>
-                    <div className="mt-2">
-                      <p className="text-sm text-gray-500">
-                        Are you sure you want to approve{' '}
-                        <span className="font-semibold">{selectedCompany?.name}</span>?
-                      </p>
-                    </div>
-                    <div className="mt-4 flex justify-end space-x-3">
-                      <button
-                        className="px-4 py-2 text-sm bg-gray-200 text-gray-800 rounded-md"
-                        onClick={() => setIsModalOpen(false)}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        className="px-4 py-2 text-sm bg-green-600 text-white rounded-md"
-                        onClick={handleApprove}
-                      >
-                        Approve
-                      </button>
-                    </div>
-                  </Dialog.Panel>
-                </Transition.Child>
-              </div>
-            </div>
-          </Dialog>
-        </Transition>
+        </div>
       </main>
     </div>
   );

@@ -5,10 +5,9 @@ import { CreateCompanyDto } from './dto/create-company.dto';
 import { CompanyResponseDto } from './dto/company-response.dto';
 import { CredentialResponseDto } from './dto/credential-response.dto';
 
-const COMPANIES_BASE_URL = 'http://company_service:8000/companies'; // Adjust this URL to point to your microservice
+const COMPANIES_BASE_URL = 'http://company_service:8000/companies';
 @Injectable()
 export class CompanyManagementService {
-  // Adjust the base URL to point to the actual microservice. For example:
   private readonly baseUrl = `${COMPANIES_BASE_URL}`;
 
   constructor(private readonly httpService: HttpService) {}

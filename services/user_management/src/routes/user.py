@@ -18,7 +18,6 @@ from src.services.company_service import get_company
 from typing import List
 
 router = APIRouter(prefix="/api/user", tags=["user"])
-
 def generate_username():
     return "user_" + secrets.token_hex(4)
 
@@ -127,6 +126,17 @@ def get_user_info(current_user: User = Depends(get_current_active_user)):
     print(f"Returning current user: ID {current_user.user_id}, username: {current_user.username}")
     return current_user
 
+@router.get("/ics", response_model=List[user_schema.UserOut])
+def get_ic_users(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin"))
+):
+    ic_users = db.query(User).filter(User.role == "ic").all()
+    if not ic_users:
+        raise HTTPException(status_code=404, detail="No users with IC role found")
+    return ic_users
+
+
 @router.put("/update/{user_id}", response_model=user_schema.UserOut)
 def update_user_account(
     user_id: int,
@@ -173,15 +183,6 @@ def update_user_account(
 
     return user
 
-@router.get("/ics", response_model=List[user_schema.UserOut])
-def get_ic_users(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin"))
-):
-    ic_users = db.query(User).filter(User.role == "ic").all()
-    if not ic_users:
-        raise HTTPException(status_code=404, detail="No users with IC role found")
-    return ic_users
 
 @router.get("/agents", response_model=List[user_schema.UserOut])
 def get_agent_users(

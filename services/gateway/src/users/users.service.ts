@@ -6,7 +6,7 @@ import { AxiosError } from 'axios';
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
-  private readonly baseUrl = process.env.USER_SERVICE_URL || 'http://user_service:9000';
+  private readonly baseUrl = process.env.USER_SERVICE_URL || 'http://user_service:8000';
 
   constructor(private readonly httpService: HttpService) {}
 
