@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Fragment } from 'react';
 import {
   listCompanies,
   approveCompany,
@@ -10,10 +10,12 @@ import Sidebar from '@/components/admin/sidebar';
 import AvatarMenu from '@/components/common/avatar';
 import { getToken } from '@/utils/api/user';
 import { Loader2, ClipboardList, Sprout, Check } from 'lucide-react';
+import { Dialog, Transition } from '@headlessui/react';
 
 export default function AdminDashboard() {
   const [pendingCompanies, setPendingCompanies] = useState<InsuranceCompanyResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<InsuranceCompanyResponse | null>(null);
 
   useEffect(() => {

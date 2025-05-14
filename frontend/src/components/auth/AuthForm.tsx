@@ -100,6 +100,7 @@ export default function LoginForm({ onSwitch }: LoginFormProps) {
             className="w-full pl-10 pr-4 py-3 border border-[#e0e7d4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] transition-colors"
             autoComplete="username"
           />
+
         </div>
       </div>
 
@@ -123,6 +124,7 @@ export default function LoginForm({ onSwitch }: LoginFormProps) {
             className="w-full pl-10 pr-12 py-3 border border-[#e0e7d4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] transition-colors"
             autoComplete="current-password"
           />
+
           <button
             type="button"
             className="absolute inset-y-0 right-0 pr-3 flex items-center"

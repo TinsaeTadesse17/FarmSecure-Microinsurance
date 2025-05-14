@@ -13,7 +13,7 @@ from src.database.core.auth import (
 import secrets
 import string
 from src.database.core.config import settings
-from src.services.email_service import send_email_notification
+from src.services.email_service import send_email_notification, send_another_email_notification
 from src.services.company_service import get_company
 from typing import List
 
@@ -41,7 +41,6 @@ def create_user(
     if not user.company_id:
         raise HTTPException(status_code=400, detail="company_id is required for non-admin users.")
     
-    # Check if the company exists
     company = get_company(user.company_id)
     if not company:
         raise HTTPException(status_code=404, detail="Company not found.")
@@ -63,8 +62,7 @@ def create_user(
     db.commit()
     db.refresh(db_user)
 
-    # Send email notification
-    email_result = send_email_notification(
+    send_email_notification(
         to=company['email'],
         subject="Welcome to Agriteck MicroIncorance Platform",
         type="account_approval",
@@ -75,7 +73,52 @@ def create_user(
     return {
         "username": generated_username,
         "password": generated_password,
-        "company_id": db_user.company_id
+        "company_id": db_user.company_id,
+        "role": user.role
+    }
+
+@router.post("/agent", response_model=dict)
+def create_user(
+    user: user_schema.UserCreate,
+    db: Session = Depends(get_db),
+):
+    if not user.company_id:
+        raise HTTPException(status_code=400, detail="company_id is required for non-admin users.")
+    
+    company = get_company(user.company_id)
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found.")
+
+    generated_username = generate_username()
+    generated_password = generate_password()
+    hashed_pw = hash_password(generated_password)
+
+    db_user = User(
+        username=generated_username,
+        password=hashed_pw,
+        role=user.role,
+        company_id=user.company_id,
+        status="pending",
+        must_change_password=True
+    )
+
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+
+    send_another_email_notification(
+        to=user.email,
+        subject="Welcome to Agriteck MicroIncorance Platform",
+        type="agent_account",
+        username=generated_username,
+        password=generated_password
+    )
+
+    return {
+        "username": generated_username,
+        "password": generated_password,
+        "company_id": db_user.company_id, 
+        "role": user.role
     }
 
 @router.get("/me", response_model=user_schema.UserOut)
@@ -105,13 +148,11 @@ def update_user_account(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # 🛠 Safe role unpacking
     current_user_role = current_user.role[0] if isinstance(current_user.role, list) else current_user.role
     target_user_role = user.role[0] if isinstance(user.role, list) else user.role
 
     print(f"Editing user: {user_id} | Current User: {current_user.user_id} ({current_user_role}) → {target_user_role}")
 
-    # 🔒 Self-update
     if current_user.user_id == user.user_id:
         if updates.username:
             user.username = updates.username
@@ -120,21 +161,16 @@ def update_user_account(
             user.must_change_password = False
         if updates.status:
             raise HTTPException(status_code=403, detail="You can't change your own status.")
-
-    # 🔐 Admin updates IC status
     elif current_user_role == "admin" and target_user_role == "ic":
         if updates.status:
             user.status = updates.status
         else:
             raise HTTPException(status_code=403, detail="Only status can be updated by admin on ICs.")
-
-    # 🔐 IC updates Agent status
     elif current_user_role == "ic" and target_user_role == "agent":
         if updates.status:
             user.status = updates.status
         else:
             raise HTTPException(status_code=403, detail="Only status can be updated by IC on Agents.")
-
     else:
         raise HTTPException(status_code=403, detail="You are not allowed to update this account.")
 
@@ -147,5 +183,18 @@ def update_user_account(
 
     return user
 
+
+@router.get("/agents", response_model=List[user_schema.UserOut])
+def get_agent_users(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("ic"))
+):
+    agent_users = db.query(User).filter(
+        User.role == "agent",
+        User.company_id == current_user.company_id
+    ).all()
+    if not agent_users:
+        raise HTTPException(status_code=404, detail="No agents found for your company")
+    return agent_users
 
 user_router = router

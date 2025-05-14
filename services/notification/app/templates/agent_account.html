@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Welcome to Agteck Microinsurance Partner Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --primary: #364957;
+      --accent: #FF8A00;
+      --bg: #f5f7f9;
+      --surface: #ffffff;
+      --text-dark: #2d3748;
+      --text-light: #4a5568;
+      --border: #eaeaea;
+    }
+    body {
+      margin: 0; padding: 0;
+      background: var(--bg);
+      font-family: 'Montserrat', Arial, sans-serif;
+      color: var(--text-light);
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 600px; width: 100%;
+      margin: 20px auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    /* Header */
+    .header {
+      background: var(--primary);
+      text-align: center;
+      padding: 30px 20px;
+    }
+    .header img {
+      max-width: 100px;
+      height: auto;
+    }
+    /* Optional Hero */
+    .hero img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    /* Content */
+    .content {
+      padding: 30px 20px;
+    }
+    .content h2 {
+      color: var(--primary);
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    .content p {
+      font-size: 16px;
+      color: var(--text-dark);
+      margin-bottom: 20px;
+    }
+    /* Credentials */
+    .credentials-box {
+      border-left: 4px solid var(--accent);
+      background: var(--bg);
+      padding: 24px;
+      border-radius: 8px;
+      margin: 30px 0;
+    }
+    .credential-item + .credential-item {
+      margin-top: 18px;
+    }
+    .credentials-label {
+      display: block;
+      font-size: 14px;
+      text-transform: uppercase;
+      color: var(--text-light);
+      margin-bottom: 5px;
+      letter-spacing: 0.5px;
+    }
+    .credentials-value {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-dark);
+      word-break: break-all;
+    }
+    /* CTA */
+    .cta {
+      text-align: center;
+      margin-top: 30px;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff !important;
+      text-decoration: none !important;
+      display: inline-block;
+      font-weight: 700;
+      font-size: 16px;
+      line-height: 1.2;
+      padding: 14px 32px;
+      border-radius: 6px;
+      min-width: 180px;
+    }
+    .btn-primary:hover {
+      background: #e67a00;
+    }
+    .support-link {
+      display: block;
+      margin-top: 12px;
+      font-size: 14px;
+      color: var(--primary);
+      text-decoration: none;
+    }
+    /* Footer */
+    .footer {
+      background: #eef1f3;
+      text-align: center;
+      padding: 25px 20px;
+      font-size: 13px;
+      color: var(--text-light);
+      border-top: 3px solid var(--primary);
+    }
+    .footer .social a {
+      margin: 0 8px;
+      display: inline-block;
+      opacity: 0.75;
+      transition: opacity 0.2s ease;
+    }
+    .footer .social a:hover { opacity: 1; }
+    .footer .social img {
+      width: 24px; height: 24px;
+      filter: grayscale(100%) contrast(120%);
+    }
+    .footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    @media only screen and (max-width: 480px) {
+      .content h2 { font-size: 22px; }
+      .content p  { font-size: 15px; }
+      .btn-primary { width: 100% !important; box-sizing: border-box; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <img src="https://via.placeholder.com/100x40?text=Agteck+Logo" alt="Agteck Logo">
+    </div>
+
+    <!-- Optional Hero (uncomment to use) -->
+    <!--
+    <div class="hero">
+      <img src="https://via.placeholder.com/600x200?text=Welcome+Aboard" alt="Welcome aboard illustration">
+    </div>
+    -->
+
+    <!-- Main Content -->
+    <div class="content">
+      <h2>🎉 Welcome Aboard! Your Portal Access is Ready.</h2>
+      <p>Please find your login credentials below:</p>
+
+      <div class="credentials-box">
+        <div class="credential-item">
+          <span class="credentials-label">Username</span>
+          <span class="credentials-value">{{username}}</span>
+        </div>
+        <div class="credential-item">
+          <span class="credentials-label">Password</span>
+          <span class="credentials-value">{{password}}</span>
+        </div>
+      </div>
+
+      <div class="cta">
+        <a href="{{ portal_link }}" class="btn-primary">Access Partner Portal Now</a>
+        <a href="#" class="support-link">Need help? Visit our Help Center</a>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="social">
+        <a href="[FACEBOOK_URL]" target="_blank" aria-label="Facebook">
+          <img src="https://cdn.simpleicons.org/facebook/3B5998" alt="Facebook">
+        </a>
+        <a href="[LINKEDIN_URL]" target="_blank" aria-label="LinkedIn">
+          <img src="https://cdn.simpleicons.org/linkedin/0077B5" alt="LinkedIn">
+        </a>
+        <a href="[TWITTER_URL]" target="_blank" aria-label="X">
+          <img src="https://cdn.simpleicons.org/x/000000" alt="X">
+        </a>
+      </div>
+      <p>Agteck Microinsurance – A Kifiya Financial Technologies Company</p>
+      <p>© 2025 Agteck Microinsurance. All rights reserved.</p>
+      <p><a href="mailto:support@agteck.com">support@agteck.com</a> | <a href="#unsubscribe">Unsubscribe</a></p>
+    </div>
+
+  </div>
+</body>
+</html>
