@@ -4,6 +4,7 @@ from typing import Optional
 class UserCreate(BaseModel):
     role: str
     company_id: Optional[int] = None  # Required for non-admins
+    email: Optional[str] = None  # Required for agents
 
 class UserOut(BaseModel):
     user_id: int

@@ -21,6 +21,7 @@ def render_notification(notification: NotificationUnion) -> str:
     template_map = {
         'account_approval': 'account_approval.html',
         'account_rejection': 'account_rejection.html',
+        'agent_account': 'agent_account.html',
     }
     
     try:

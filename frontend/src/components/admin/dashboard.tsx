@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Fragment } from 'react';
 import {
   listCompanies,
   approveCompany,
@@ -9,11 +9,14 @@ import {
 import Sidebar from '@/components/admin/sidebar';
 import AvatarMenu from '@/components/common/avatar';
 import { getToken } from '@/utils/api/user';
+import { Dialog, Transition } from '@headlessui/react';
 import { Loader2, ClipboardList, Sprout } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [pendingCompanies, setPendingCompanies] = useState<InsuranceCompanyResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState<InsuranceCompanyResponse | null>(null);
 
   useEffect(() => {
     async function fetchCompanies() {
@@ -33,6 +36,23 @@ export default function AdminDashboard() {
 
     fetchCompanies();
   }, []);
+
+  const handleApprove = async () => {
+    if (!selectedCompany) return;
+
+    try {
+      await approveCompany(selectedCompany.id);
+      setPendingCompanies((prev) => prev.filter((c) => c.id !== selectedCompany.id));
+      setIsModalOpen(false);
+    } catch (err) {
+      alert(`Failed to approve company: ${(err as Error).message}`);
+    }
+  };
+
+  const openModal = (company: InsuranceCompanyResponse) => {
+    setSelectedCompany(company);
+    setIsModalOpen(true);
+  };
 
   return (
     <div className="flex min-h-screen bg-[#f9f8f3] text-[#2c423f]">

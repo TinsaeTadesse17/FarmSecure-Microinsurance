@@ -10,6 +10,7 @@ export interface TokenResponse {
 }
 
 export interface UserCreate {
+  email?: string;       // optional now
   role: string;
   company_id: number;
 }
@@ -75,6 +76,29 @@ export async function createUser(data: UserCreate, token?: string): Promise<Crea
   }
   return (await res.json()) as CreateUserResponse;
 }
+
+/**
+ * 2. Create a new user(agent)
+ */
+
+export async function createAgentUser(data: UserCreate, token?: string): Promise<CreateUserResponse> {
+  const res = await fetch(`${API_BASE}/api/user/agent`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || res.statusText);
+  }
+
+  return (await res.json()) as CreateUserResponse;
+}
+
 
 /**
  * 3. Get current logged-in user
