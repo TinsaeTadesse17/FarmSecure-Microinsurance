@@ -8,7 +8,7 @@ export default function AuthPage() {
   const [showLogin, setShowLogin] = useState(true);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-teal-50 to-green-100 p-4">
+        <div className="flex items-center justify-center min-h-screen bg-[#f9f8f3] text-[#2c423f] p-4">
       {showLogin ? (
         <LoginForm onSwitch={() => setShowLogin(false)} />
       ) : (

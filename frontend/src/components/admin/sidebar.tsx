@@ -22,7 +22,6 @@ export default function Sidebar() {
           <LayoutDashboard className="w-5 h-5" />
           Dashboard
         </Link>
-        
         <Link
           href="/admin"
           className="flex items-center gap-3 p-3 rounded-lg text-[#5a736e] hover:bg-[#eef4e5] hover:text-[#3a584e] transition-all"
@@ -38,9 +37,17 @@ export default function Sidebar() {
           <Users className="w-5 h-5" />
           User Management
         </Link>
+        <Link
+          href="#"
+          className="flex items-center gap-3 p-3 rounded-lg text-[#5a736e] hover:bg-[#eef4e5] hover:text-[#3a584e] transition-all cursor-pointer"
+          tabIndex={0}
+        >
+          <Sprout className="w-5 h-5" />
+          NDVI Upload
+        </Link>
       </nav>
 
-      <div className="mt-8 pt-6 border-t border-[#e0e7d4]">
+      <div className="mt-90 pt-6 border-t border-[#e0e7d4]">
         <div className="text-sm text-[#7a938f] px-3">
           &copy; 2025 AgriTeck. All rights reserved.
         </div>
