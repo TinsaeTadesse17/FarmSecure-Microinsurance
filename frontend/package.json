@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@mantine/core": "^8.0.0",
+    "@tabler/icons-react": "^3.31.0",
     "axios": "^1.9.0",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.510.0",
@@ -21,6 +23,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/next": "^8.0.7",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
