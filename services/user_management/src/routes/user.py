@@ -13,7 +13,7 @@ from src.database.core.auth import (
 import secrets
 import string
 from src.database.core.config import settings
-from src.services.email_service import send_email_notification
+from src.services.email_service import send_email_notification, send_another_email_notification
 from src.services.company_service import get_company
 from typing import List
 
@@ -74,7 +74,52 @@ def create_user(
     return {
         "username": generated_username,
         "password": generated_password,
-        "company_id": db_user.company_id
+        "company_id": db_user.company_id,
+        "role": user.role
+    }
+
+@router.post("/agent", response_model=dict)
+def create_user(
+    user: user_schema.UserCreate,
+    db: Session = Depends(get_db),
+):
+    if not user.company_id:
+        raise HTTPException(status_code=400, detail="company_id is required for non-admin users.")
+    
+    company = get_company(user.company_id)
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found.")
+
+    generated_username = generate_username()
+    generated_password = generate_password()
+    hashed_pw = hash_password(generated_password)
+
+    db_user = User(
+        username=generated_username,
+        password=hashed_pw,
+        role=user.role,
+        company_id=user.company_id,
+        status="pending",
+        must_change_password=True
+    )
+
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+
+    send_another_email_notification(
+        to=user.email,
+        subject="Welcome to Agriteck MicroIncorance Platform",
+        type="agent_account",
+        username=generated_username,
+        password=generated_password
+    )
+
+    return {
+        "username": generated_username,
+        "password": generated_password,
+        "company_id": db_user.company_id, 
+        "role": user.role
     }
 
 @router.get("/me", response_model=user_schema.UserOut)
