@@ -17,10 +17,12 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-# Copy application code
+# Copy application code (including entrypoint.sh)
 COPY . .
 
-# Install wait-for-db script
-RUN chmod +x entrypoint.sh
+# Ensure Unix line endings and make entrypoint executable
+RUN apt-get update && apt-get install -y dos2unix \
+    && dos2unix entrypoint.sh \
+    && chmod +x entrypoint.sh
 
 CMD ["./entrypoint.sh"]
