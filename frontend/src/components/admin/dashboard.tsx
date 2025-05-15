@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, Fragment } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   listCompanies,
   approveCompany,
@@ -8,15 +8,16 @@ import {
 } from '@/utils/api/company';
 import Sidebar from '@/components/admin/sidebar';
 import AvatarMenu from '@/components/common/avatar';
+import CompanyDetailModal from '@/components/admin/companyDetail';
 import { getToken } from '@/utils/api/user';
 import { Loader2, ClipboardList, Sprout, Check } from 'lucide-react';
-import { Dialog, Transition } from '@headlessui/react';
 
 export default function AdminDashboard() {
   const [pendingCompanies, setPendingCompanies] = useState<InsuranceCompanyResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<InsuranceCompanyResponse | null>(null);
+  const [detailCompanyId, setDetailCompanyId] = useState<number | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     async function fetchCompanies() {
@@ -38,7 +39,7 @@ export default function AdminDashboard() {
   }, []);
 
   const ApprovalModal = () => (
-    <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl border border-[#e0e7d4] p-6 w-full max-w-md shadow-xl">
         <div className="flex items-center gap-3 mb-4">
           <ClipboardList className="w-8 h-8 text-[#8ba77f]" />
@@ -48,7 +49,8 @@ export default function AdminDashboard() {
         </div>
         
         <p className="text-[#7a938f] mb-6">
-          Are you sure you want to approve <span className="font-medium text-[#3a584e]">{selectedCompany?.name}</span>?
+          Are you sure you want to approve{' '}
+          <span className="font-medium text-[#3a584e]">{selectedCompany?.name}</span>?
         </p>
 
         <div className="flex gap-3 justify-end">
@@ -82,7 +84,7 @@ export default function AdminDashboard() {
   return (
     <div className="flex min-h-screen bg-[#f9f8f3] text-[#2c423f]">
       <Sidebar />
-      
+
       <main className="flex-1 p-8">
         <div className="flex justify-between items-start mb-8">
           <div>
@@ -97,9 +99,7 @@ export default function AdminDashboard() {
               Manage insurance company approvals • Last updated 2h ago
             </p>
           </div>
-          <div className="flex gap-4">
-            <AvatarMenu />
-          </div>
+          <AvatarMenu />
         </div>
 
         <div className="bg-white rounded-xl border border-[#e0e7d4] p-6 shadow-sm">
@@ -125,9 +125,13 @@ export default function AdminDashboard() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {pendingCompanies.map((company) => (
-                <div 
+                <div
                   key={company.id}
-                  className="bg-[#f9f8f3] p-6 rounded-xl border border-[#e0e7d4] hover:shadow-lg transition-all group"
+                  className="bg-[#f9f8f3] p-6 rounded-xl border border-[#e0e7d4] hover:shadow-lg transition-all group cursor-pointer"
+                  onClick={() => {
+                    setDetailCompanyId(company.id);
+                    setShowDetails(true);
+                  }}
                 >
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-sm font-medium text-[#7a938f] bg-[#eef4e5] px-3 py-1 rounded-full">
@@ -136,9 +140,13 @@ export default function AdminDashboard() {
                   </div>
                   <h3 className="text-xl font-semibold text-[#3a584e] mb-2">{company.name}</h3>
                   <p className="text-[#7a938f] mb-4 break-all">{company.email}</p>
+                  
                   <button
                     className="w-full py-2 bg-[#8ba77f] hover:bg-[#7a937f] text-white rounded-lg transition-colors flex items-center justify-center gap-2"
-                    onClick={() => setSelectedCompany(company)}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent triggering modal
+                      setSelectedCompany(company);
+                    }}
                   >
                     <Check className="h-5 w-5" />
                     Approve
@@ -150,6 +158,15 @@ export default function AdminDashboard() {
         </div>
 
         {selectedCompany && <ApprovalModal />}
+
+        <CompanyDetailModal
+          companyId={detailCompanyId}
+          open={showDetails}
+          onClose={() => {
+            setShowDetails(false);
+            setDetailCompanyId(null);
+          }}
+        />
       </main>
     </div>
   );
