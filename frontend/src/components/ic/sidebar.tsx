@@ -61,7 +61,7 @@ export default function Sidebar() {
 
       <div className="mt-20 pt-6 border-t border-[#e0e7d4]">
         <div className="text-sm text-[#7a938f] px-3">
-          &copy; 2025 InsureChain. All rights reserved.
+          &copy; 2025 AgriTeck. All rights reserved.
         </div>
       </div>
     </aside>

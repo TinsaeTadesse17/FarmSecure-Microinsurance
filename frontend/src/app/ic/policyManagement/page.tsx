@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Sidebar from '@/components/ic/sidebar';
 import AvatarMenu from '@/components/common/avatar';
 import CreatePolicyDialog from '@/components/ic/policyDialog';
+import PolicyDetailModal from '@/components/ic/policyDetail';
 import { listPolicies, approvePolicy, rejectPolicy, Policy } from '@/utils/api/policy';
 import { FiPlus, FiRefreshCw, FiSearch, FiAlertCircle } from 'react-icons/fi';
 
@@ -18,6 +19,7 @@ export default function PolicyManagement() {
     open: false,
     policy: null,
   });
+  const [selectedPolicyId, setSelectedPolicyId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchPolicies();
@@ -156,26 +158,33 @@ export default function PolicyManagement() {
                     ) ?? 0;
 
                     return (
-                      <tr key={policy.policy_id} className="hover:bg-emerald-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-emerald-900">
+                      <tr
+                        key={policy.policy_id}
+                        className="hover:bg-emerald-50 transition-colors cursor-pointer"
+                        onClick={() => setSelectedPolicyId(policy.policy_id)}
+                      >
+                        <td className="px-6 py-4 text-sm font-medium text-emerald-900">
                           {policy.policy_id}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-emerald-800">
+                        <td className="px-6 py-4 text-sm text-emerald-800">
                           {policy.policy_no || '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-emerald-800">
+                        <td className="px-6 py-4 text-sm text-emerald-800">
                           {policy.fiscal_year}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <button
-                            onClick={() => setStatusDialog({ open: true, policy })}
-                            className={`px-2 py-1 text-xs font-medium rounded-full capitalize ${getStatusColor(policy.status)} cursor-pointer`}
-                          >
+                        <td
+                          className="px-6 py-4"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setStatusDialog({ open: true, policy });
+                          }}
+                        >
+                          <button className={`px-2 py-1 text-xs font-medium rounded-full capitalize ${getStatusColor(policy.status)} cursor-pointer`}>
                             {policy.status}
                           </button>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-emerald-700">
-                          ${totalSumInsured.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        <td className="px-6 py-4 text-sm font-medium text-emerald-700">
+                          ${totalSumInsured.toFixed(2)}
                         </td>
                       </tr>
                     );
@@ -231,6 +240,13 @@ export default function PolicyManagement() {
               </div>
             </div>
           </div>
+        )}
+
+        {selectedPolicyId && (
+          <PolicyDetailModal
+            policyId={selectedPolicyId}
+            onClose={() => setSelectedPolicyId(null)}
+          />
         )}
       </main>
     </div>
