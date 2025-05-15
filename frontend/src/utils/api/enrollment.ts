@@ -24,7 +24,7 @@ export interface EnrollmentPayload extends CustomerInfo {
 export interface EnrollmentResponse {
   enrolement_id: number;
   customer_id: number;
-  customer: CustomerInfo; // 👈 Add this
+  customer: CustomerInfo; 
   createdAt: string;
   user_id: number;
   status: string;

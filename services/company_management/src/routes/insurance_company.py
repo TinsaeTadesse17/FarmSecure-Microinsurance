@@ -31,9 +31,26 @@ def read_companies(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)
 def update_company(company_id: int, db: Session = Depends(get_db)):
     service = InsuranceCompanyService(db)
     db_company = service.update_company(company_id)
+
     if db_company is None:
         raise HTTPException(status_code=404, detail="Company not found")
 
+    # Make sure the user account is created successfully
+    url = f"{settings.USER_SERVICE_URL}/api/user/"
+    payload = {
+        "company_id": company_id,
+        "role": "ic"
+    }
+
+    try:
+        response = httpx.post(url, json=payload)
+        response.raise_for_status()  # raise error if not 200
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=503, detail=f"Failed to contact user service: {str(e)}")
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=response.status_code, detail=f"User service error: {response.text}")
+
+    # Return full company response
     return db_company
 
 @router.post("/{company_id}/credentials", response_model=schemas.CrediencialResponse)

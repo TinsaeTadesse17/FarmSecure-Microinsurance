@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 import logging
+
 from src.database.db import engine, Base
 from src.database.models.product import ProductConfig
 from src.database.models.excel_ingest import (
@@ -20,11 +22,19 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Product Configuration Service")
 
-# Include product router
+# Enable CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Change to your frontend domain in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include routers
 app.include_router(product_router, prefix="/api")
 app.include_router(excel_router, prefix="/api", tags=["Excel-Ingest"])
 app.include_router(ndvi_router, prefix="/api", tags=["NDVI"])
-
 
 # Global Exception Handler
 @app.exception_handler(Exception)

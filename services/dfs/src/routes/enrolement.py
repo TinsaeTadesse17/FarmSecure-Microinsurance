@@ -4,17 +4,16 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from src.database.crud.enrolement_crud import EnrolementService
 from src.database.crud.customer_crud import CustomerService
-from src.schemas.enrolement_schema import EnrolementRequest, EnrolementResponse
+from src.schemas.enrolement_schema import EnrolementRequest, EnrolementResponse, CustomerResponse
 from src.database.db import get_db
 from src.schemas.customer_schema import CustomerRequest
 from src.core.config import settings
 import httpx
+from src.database.models.customer import Customer
 
 POLICY_SERVICE_URL = settings.POLICY_SERVICE_URL + '/api'
 
 router = APIRouter()
-
-
 
 @router.post("/", response_model=EnrolementResponse, status_code=201)
 def create_enrolement(
@@ -42,9 +41,15 @@ def create_enrolement(
     enroll_id = enroll_json["enrolement_id"]
     createdAt = enroll_json["createdAt"]
     enroll = EnrolementResponse(
-
         enrolement_id=enroll_id,
         customer_id=customer_id,
+        customer=CustomerResponse(
+            f_name=enrolement.f_name,
+            m_name=enrolement.m_name,
+            l_name=enrolement.l_name,
+            account_no=enrolement.account_no,
+            account_type=enrolement.account_type,
+        ),
         createdAt=createdAt,
         user_id=enrolement.user_id,
         status="pending",
@@ -67,10 +72,20 @@ def read_enrolement(
 ):
     service = EnrolementService(db)
     db_enr = service.get_enrolement(enrollment_id)
+    if not db_enr:
+        raise HTTPException(status_code=404, detail="Enrollment not found")
+    db_customer = db.query(Customer).filter(Customer.customer_id == db_enr.customer_id).first()
     result = EnrolementResponse(
         enrolement_id=db_enr.enrolment_id,
-        createdAt=db_enr.createdAt,
         customer_id=db_enr.customer_id,
+        customer=CustomerResponse(
+            f_name=db_customer.f_name,
+            m_name=db_customer.m_name,
+            l_name=db_customer.l_name,
+            account_no=db_customer.account_no,
+            account_type=db_customer.account_type,
+        ),
+        createdAt=db_enr.createdAt,
         user_id=db_enr.user_id,
         status=db_enr.status,
         ic_company_id=db_enr.ic_company_id,
@@ -83,23 +98,28 @@ def read_enrolement(
         product_id=db_enr.product_id,
         cps_zone=db_enr.cps_zone
     )
-    if not db_enr:
-        raise HTTPException(status_code=404, detail="Enrollment not found")
     return result
 
 @router.get("/", response_model=list[EnrolementResponse])
 def list_enrolements(
-
     db: Session = Depends(get_db)
 ):
     service = EnrolementService(db)
     enrollments =  service.get_enrolements()
     result = []
     for db_enr in enrollments:
+        db_customer = db.query(Customer).filter(Customer.customer_id == db_enr.customer_id).first()
         enrol = EnrolementResponse(
             enrolement_id=db_enr.enrolment_id,
-            createdAt=db_enr.createdAt,
             customer_id=db_enr.customer_id,
+            customer=CustomerResponse(
+                f_name=db_customer.f_name,
+                m_name=db_customer.m_name,
+                l_name=db_customer.l_name,
+                account_no=db_customer.account_no,
+                account_type=db_customer.account_type,
+            ),
+            createdAt=db_enr.createdAt,
             user_id=db_enr.user_id,
             status=db_enr.status,
             ic_company_id=db_enr.ic_company_id,

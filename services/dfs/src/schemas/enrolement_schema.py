@@ -1,6 +1,13 @@
 from datetime import datetime
 from pydantic import BaseModel
 
+class CustomerResponse(BaseModel):
+    f_name: str
+    m_name: str
+    l_name: str
+    account_no: str
+    account_type: str
+
 class EnrolementRequest(BaseModel):
     f_name: str
     m_name: str
@@ -22,6 +29,7 @@ class EnrolementRequest(BaseModel):
 class EnrolementResponse(BaseModel):
     enrolement_id: int
     customer_id: int
+    customer: CustomerResponse
     createdAt: datetime = None
     user_id:int
     status: str

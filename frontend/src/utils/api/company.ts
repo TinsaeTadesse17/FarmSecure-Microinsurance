@@ -48,7 +48,7 @@ export async function getCompany(id: number) {
 }
 
 // 3. List companies (with pagination)
-export async function listCompanies(skip = 0, limit = 10) {
+export async function listCompanies(skip = 0, limit = 1000) {
   const res = await fetch(`${API_BASE}/?skip=${skip}&limit=${limit}`);
   if (!res.ok) throw new Error(`List companies failed: ${res.statusText}`);
   return (await res.json()) as InsuranceCompanyResponse[];
