@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { jwtDecode } from 'jwt-decode';
 import IcDashboard from '@/components/ic/dashboard';
+import { RefreshCw } from 'lucide-react';
 
 interface TokenPayload {
   sub: string;
@@ -26,6 +27,11 @@ export default function DashboardPage() {
 
     try {
       const decoded = jwtDecode<TokenPayload>(token);
+      
+      // Check token expiration
+      if (Date.now() >= decoded.exp * 1000) {
+        throw new Error('Token expired');
+      }
 
       const isAdmin = Array.isArray(decoded.role)
         ? decoded.role.includes('ic')
@@ -38,14 +44,26 @@ export default function DashboardPage() {
 
       setLoading(false);
     } catch (err) {
-      console.error('Invalid token:', err);
+      console.error('Authentication error:', err);
       router.replace('/login');
     }
   }, [router]);
 
   if (loading) {
-    return <div className="p-6">Loading...</div>;
+    return (
+      <div className="flex min-h-screen bg-[#f9f8f3] items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-[#3a584e]">
+          <RefreshCw className="w-12 h-12 animate-spin text-[#8ba77f]" />
+          <p className="text-lg font-medium">Verifying Session...</p>
+          <p className="text-sm text-[#7a938f]">Checking authorization credentials</p>
+        </div>
+      </div>
+    );
   }
 
-  return <IcDashboard />;
+  return (
+    <div className="min-h-screen bg-[#f9f8f3] text-[#2c423f]">
+      <IcDashboard />
+    </div>
+  );
 }
