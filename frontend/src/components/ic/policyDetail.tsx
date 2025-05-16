@@ -16,10 +16,36 @@ const PolicyDetailModal: React.FC<Props> = ({ policyId, onClose }) => {
   const [enrollment, setEnrollment] = useState<any>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
+    useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const policyData = await getPolicy(policyId);
+        setPolicy(policyData);
+        const enrollmentData = await getEnrollment(policyData.enrollment_id);
+        setEnrollment(enrollmentData);
+      } catch (err) {
+        console.error('Error loading policy details:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [policyId]);
+
   // Keep existing useEffect and data fetching logic unchanged
 
   const handlePrint = () => {
-    // Keep existing print logic unchanged
+    if (!contentRef.current) return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write('<html><head><title>Policy Detail</title>');
+    printWindow.document.write('<style>body{font-family:sans-serif;padding:20px;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #ddd;padding:12px;text-align:left;} th{background:#f8f8f8;} .print-section{margin-bottom:20px;}</style>');
+    printWindow.document.write('</head><body>');
+    printWindow.document.write(contentRef.current.innerHTML);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.print();
   };
 
   if (loading) {
