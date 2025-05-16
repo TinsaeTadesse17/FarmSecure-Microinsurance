@@ -1,8 +1,8 @@
 'use client';
-
 import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/ic/sidebar';
 import AvatarMenu from '@/components/common/avatar';
+import { Sprout, ClipboardList } from 'lucide-react';
 import {
   listEnrollments,
   approveEnrollment,
@@ -26,7 +26,6 @@ export default function EnrollmentManagementPage() {
         setLoading(false);
       }
     };
-
     fetchEnrollments();
   }, []);
 
@@ -65,99 +64,113 @@ export default function EnrollmentManagementPage() {
     return date.toLocaleDateString();
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'approved':
-        return 'bg-green-100 text-green-800';
-      case 'rejected':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-yellow-100 text-yellow-800';
-    }
+  const statusStyles = {
+    approved: 'bg-emerald-100/80 text-emerald-800 border-emerald-200',
+    rejected: 'bg-rose-100/80 text-rose-800 border-rose-200',
+    pending: 'bg-amber-100/80 text-amber-800 border-amber-200',
   };
 
   return (
-    <div className="flex min-h-screen bg-white text-black">
+    <div className="flex min-h-screen bg-[#f9f8f3] text-[#2c423f]">
       <Sidebar />
-      <main className="flex-1 p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-green-800">Enrollment Management</h1>
+      <main className="flex-1 p-8">
+        <div className="flex justify-between items-start mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-[#3a584e] flex items-center gap-3">
+              <ClipboardList className="w-8 h-8 text-[#8ba77f]" />
+              Enrollment Management
+              <span className="ml-4 text-sm font-normal bg-[#eef4e5] px-3 py-1 rounded-full">
+                Policy Approvals
+              </span>
+            </h1>
+            <p className="mt-2 text-[#7a938f]">Review and manage policy enrollments</p>
+          </div>
           <AvatarMenu />
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center h-full">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-600"></div>
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#8ba77f]" />
           </div>
         ) : error ? (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-            <strong className="font-bold">Error: </strong>
-            <span className="block sm:inline">{error}</span>
+          <div className="bg-rose-50 border-l-4 border-rose-500 p-4 mb-6 rounded-lg">
+            <div className="flex items-center">
+              <svg className="h-5 w-5 text-rose-500 mr-3" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
+              </svg>
+              <p className="text-sm text-rose-700">{error}</p>
+            </div>
           </div>
         ) : (
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-green-100 max-w-6xl mx-auto">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-green-50">
-                  <tr>
-                    <th className="px-6 py-3 font-semibold text-green-800"> </th>
-                    <th className="px-6 py-3 font-semibold text-green-800">Customer</th>
-                    <th className="px-6 py-3 font-semibold text-green-800">Premium</th>
-                    <th className="px-6 py-3 font-semibold text-green-800">Sum Insured</th>
-                    <th className="px-6 py-3 font-semibold text-green-800">Period</th>
-                    <th className="px-6 py-3 font-semibold text-green-800">Status</th>
-                    <th className="px-6 py-3 font-semibold text-green-800 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-green-100">
-                  {enrollments.map((enrollment, index) => (
-                    <tr key={enrollment.enrolement_id} className="hover:bg-green-50">
-                      <td className="px-6 py-4">{index + 1}</td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">
-                          {enrollment.customer?.f_name} {enrollment.customer?.m_name} {enrollment.customer?.l_name}
-                        </div>
-                        <div className="text-xs text-gray-500">ID: {enrollment.customer_id}</div>
-                      </td>
-                      <td className="px-6 py-4">${enrollment.premium.toFixed(2)}</td>
-                      <td className="px-6 py-4">${enrollment.sum_insured.toFixed(2)}</td>
-                      <td className="px-6 py-4">
-                        {formatDate(enrollment.date_from)} - {formatDate(enrollment.date_to)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(enrollment.status)}`}>
-                          {enrollment.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right space-x-2">
-                        {enrollment.status.toLowerCase() === 'pending' && (
-                          <>
-                            <button
-                              onClick={() => handleApprove(enrollment.enrolement_id)}
-                              className="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700 text-sm font-medium"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => handleReject(enrollment.enrolement_id)}
-                              className="px-3 py-1 rounded bg-white text-green-600 border border-green-600 hover:bg-green-50 text-sm font-medium"
-                            >
-                              Reject
-                            </button>
-                          </>
-                        )}
-                      </td>
+          <div className="max-w-6xl mx-auto">
+            <div className="bg-white p-6 rounded-xl border border-[#e0e7d4] shadow-sm">
+              <div className="overflow-hidden border border-[#e0e7d4] rounded-xl">
+                <table className="min-w-full divide-y divide-[#e0e7d4]">
+                  <thead className="bg-[#f9f8f3]">
+                    <tr>
+                      <th className="px-6 py-4 text-sm font-semibold text-[#3a584e] text-left">Customer</th>
+                      <th className="px-6 py-4 text-sm font-semibold text-[#3a584e] text-left">Premium</th>
+                      <th className="px-6 py-4 text-sm font-semibold text-[#3a584e] text-left">Coverage</th>
+                      <th className="px-6 py-4 text-sm font-semibold text-[#3a584e] text-left">Period</th>
+                      <th className="px-6 py-4 text-sm font-semibold text-[#3a584e] text-left">Status</th>
+                      <th className="px-6 py-4 text-sm font-semibold text-[#3a584e] text-right">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {enrollments.length === 0 && (
-              <div className="text-center py-8 text-green-800">
-                <p>No enrollments found</p>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-[#e0e7d4]">
+                    {enrollments.map((enrollment) => (
+                      <tr key={enrollment.enrolement_id} className="hover:bg-[#f9f8f3] transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-medium text-[#3a584e]">
+                            {enrollment.customer?.f_name} {enrollment.customer?.m_name && `${enrollment.customer.m_name} `}{enrollment.customer?.l_name}
+                          </div>
+                          <div className="text-xs text-[#7a938f]">ID: {enrollment.customer_id}</div>
+                        </td>
+                        <td className="px-6 py-4 text-[#3a584e]">
+                          ${enrollment.premium.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="px-6 py-4 text-[#3a584e]">
+                          ${enrollment.sum_insured.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="px-6 py-4 text-[#3a584e]">
+                          {formatDate(enrollment.date_from)} – {formatDate(enrollment.date_to)}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-3 py-1 text-sm rounded-full border ${statusStyles[enrollment.status.toLowerCase() as keyof typeof statusStyles]}`}>
+                            {enrollment.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right space-x-2">
+                          {enrollment.status.toLowerCase() === 'pending' && (
+                            <>
+                              <button
+                                onClick={() => handleApprove(enrollment.enrolement_id)}
+                                className="px-3 py-1.5 bg-[#8ba77f] text-white rounded-lg hover:bg-[#7a937f] text-sm font-medium transition-colors"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleReject(enrollment.enrolement_id)}
+                                className="px-3 py-1.5 bg-white text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-50 text-sm font-medium transition-colors"
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            )}
+
+              {enrollments.length === 0 && (
+                <div className="text-center py-12 bg-[#f9f8f3] rounded-lg border-2 border-dashed border-[#e0e7d4]">
+                  <Sprout className="mx-auto h-12 w-12 text-[#7a938f]" />
+                  <h3 className="mt-4 text-lg font-medium text-[#3a584e]">No pending enrollments</h3>
+                  <p className="mt-2 text-sm text-[#7a938f]">All enrollment requests are processed</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </main>
