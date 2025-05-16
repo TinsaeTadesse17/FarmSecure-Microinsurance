@@ -7,9 +7,10 @@ import * as XLSX from 'xlsx';
 import { uploadNDVIData } from '@/utils/api/ndvi';
 import { fetchAllClaims } from '@/utils/api/claim';
 import ClaimsList from '@/components/ic/claimList';
+import { Upload, FileText, Sprout, Clock, AlertCircle } from 'lucide-react';
 
 export default function UploadNDVIPage() {
-  const [data, setData] = useState<any[]>([]);
+    const [data, setData] = useState<any[]>([]);
   const [fileName, setFileName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -150,119 +151,168 @@ export default function UploadNDVIPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-[#f9f8f3] text-[#2c423f]">
       <Sidebar />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-start mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">NDVI Data Upload</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Upload and process NDVI data for analysis
+            <h1 className="text-3xl font-bold text-[#3a584e] flex items-center gap-3">
+              <Sprout className="w-8 h-8 text-[#8ba77f]" />
+              NDVI Data Upload
+              <span className="ml-4 text-sm font-normal bg-[#eef4e5] px-3 py-1 rounded-full">
+                Insurance Cooperative
+              </span>
+            </h1>
+            <p className="mt-2 text-[#7a938f]">
+              Upload and process NDVI data for agricultural insurance analysis
             </p>
           </div>
           <AvatarMenu />
         </div>
 
         {/* Upload Card */}
-        <div className="bg-white p-4 md:p-6 rounded-lg shadow-md max-w-4xl mx-auto mb-6">
-          <div className="mb-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-800">Upload Data</h2>
-                <p className="text-sm text-gray-500 mt-1">Supported formats: .xlsx, .xls (Max 5MB)</p>
+        <div className="bg-white rounded-xl border border-[#e0e7d4] p-6 shadow-sm mb-8 max-w-4xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+            <div className="space-y-1">
+              <h2 className="text-xl font-semibold text-[#3a584e] flex items-center gap-2">
+                <FileText className="w-5 h-5 text-[#8ba77f]" />
+                Data Upload
+              </h2>
+              <p className="text-sm text-[#7a938f]">Supported formats: .xlsx, .xls (Max 5MB)</p>
+            </div>
+            
+            <div className="flex gap-3 w-full md:w-auto">
+              <div className="flex-1 min-w-[160px]">
+                <label className="block text-sm text-[#7a938f] mb-1">NDVI Type</label>
+                <select
+                  value={ndviType}
+                  onChange={(e) => setNdviType(e.target.value as 'crop' | 'livestock')}
+                  className="w-full bg-[#eef4e5] border border-[#e0e7d4] text-[#3a584e] px-3 py-2 rounded-lg text-sm focus:ring-2 focus:ring-[#8ba77f]"
+                >
+                  <option value="crop">Crop</option>
+                  <option value="livestock">Livestock</option>
+                </select>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 mt-3 md:mt-0">
-                <div className="min-w-[160px]">
-                  <label htmlFor="ndviType" className="block text-sm font-medium text-gray-700 mb-1">NDVI Type</label>
-                  <select
-                    id="ndviType"
-                    value={ndviType}
-                    onChange={(e) => setNdviType(e.target.value as 'crop' | 'livestock')}
-                    className="w-full text-black px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm"
-                  >
-                    <option value="crop">Crop</option>
-                    <option value="livestock">Livestock</option>
-                  </select>
-                </div>
-                <div className="min-w-[120px]">
-                  <label htmlFor="period" className="block text-sm font-medium text-gray-700 mb-1">Period</label>
-                  <select
-                    id="period"
-                    value={period}
-                    onChange={(e) => setPeriod(e.target.value)}
-                    className="w-full text-black px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm"
-                  >
-                    {Array.from({ length: 30 }, (_, i) => i + 1).map((num) => (
-                      <option key={num} value={num.toString()}>{num}</option>
-                    ))}
-                  </select>
-                </div>
+              
+              <div className="flex-1 min-w-[120px]">
+                <label className="block text-sm text-[#7a938f] mb-1">Period</label>
+                <select
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value)}
+                  className="w-full bg-[#eef4e5] border border-[#e0e7d4] text-[#3a584e] px-3 py-2 rounded-lg text-sm focus:ring-2 focus:ring-[#8ba77f]"
+                >
+                  {Array.from({ length: 30 }, (_, i) => (
+                    <option key={i+1} value={(i+1).toString()}>{i+1}</option>
+                  ))}
+                </select>
               </div>
             </div>
+          </div>
 
-            <input
-              id="fileInput"
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleFileUpload}
-              className="hidden"
-              disabled={isLoading}
-            />
+          <input
+            id="fileInput"
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleFileUpload}
+            className="hidden"
+            disabled={isLoading}
+          />
 
-            <label
-              htmlFor="fileInput"
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              className={`flex flex-col items-center justify-center p-6 md:p-8 rounded-lg border-2 border-dashed ${
-                isDragging ? 'border-green-500 bg-green-50' : 'border-gray-300'
-              } cursor-pointer ${isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:border-green-500 hover:bg-green-50'}`}
-            >
-              <div className="text-center">
-                <p className="text-sm font-medium">{isLoading ? 'Processing...' : 'Click or drag and drop a file'}</p>
-                <p className="text-xs text-gray-500">File must include CPS_ZONE and NDVI columns</p>
+          <label
+            htmlFor="fileInput"
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`block group transition-all ${
+              isLoading ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer hover:bg-[#f5f3eb]'
+            }`}
+          >
+            <div className={`p-8 rounded-xl border-2 border-dashed ${
+              isDragging ? 'border-[#8ba77f] bg-[#f5f3eb]' : 'border-[#e0e7d4]'
+            } transition-colors`}>
+              <div className="flex flex-col items-center justify-center gap-3 text-center">
+                <Upload className={`w-8 h-8 ${
+                  isDragging ? 'text-[#8ba77f]' : 'text-[#7a938f]'
+                } transition-colors`} />
+                <p className={`font-medium ${
+                  isDragging ? 'text-[#8ba77f]' : 'text-[#3a584e]'
+                } transition-colors`}>
+                  {isLoading ? 'Processing...' : 'Drag & drop or click to upload'}
+                </p>
+                <p className="text-sm text-[#7a938f]">Requires CPS_ZONE and NDVI columns</p>
               </div>
-            </label>
+            </div>
+          </label>
 
+          <div className="mt-4 space-y-2">
             {fileName && (
-              <div className="mt-2 text-green-600 text-sm">{fileName} is ready to upload</div>
+              <div className="flex items-center gap-2 text-sm text-[#8ba77f]">
+                <FileText className="w-4 h-4" />
+                {fileName} ready for upload
+              </div>
             )}
-            {error && <div className="mt-2 text-red-600 text-sm"> {error}</div>}
-            {success && <div className="mt-2 text-green-600 text-sm">{success}</div>}
+            {error && (
+              <div className="flex items-center gap-2 text-sm text-red-600">
+                <AlertCircle className="w-4 h-4" />
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="flex items-center gap-2 text-sm text-[#8ba77f]">
+                <Clock className="w-4 h-4" />
+                {success}
+              </div>
+            )}
           </div>
 
           {data.length > 0 && (
-            <div className="mt-4">
-              <h3 className="text-md font-semibold text-gray-800 mb-2">Data Preview</h3>
-              <div className="overflow-x-auto border rounded-md shadow-sm">
-                <table className="min-w-full divide-y divide-gray-200 text-sm">
-                  <thead className="bg-gray-100">
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold text-[#3a584e] mb-3">Data Preview</h3>
+              <div className="border border-[#e0e7d4] rounded-lg overflow-hidden shadow-sm">
+                <table className="w-full divide-y divide-[#e0e7d4]">
+                  <thead className="bg-[#f9f8f3]">
                     <tr>
                       {data[0].map((header: string, i: number) => (
-                        <th key={i} className="px-4 py-2 text-left text-xs text-gray-600">{header}</th>
+                        <th key={i} className="px-4 py-3 text-left text-sm text-[#7a938f] font-medium">
+                          {header}
+                        </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-[#e0e7d4] bg-white">
                     {data.slice(1, 11).map((row: any[], i) => (
-                      <tr key={i} className="even:bg-gray-50">
+                      <tr key={i} className="hover:bg-[#f9f8f3] transition-colors">
                         {row.map((cell, j) => (
-                          <td key={j} className="px-4 py-2 text-black">{cell}</td>
+                          <td key={j} className="px-4 py-3 text-sm text-[#3a584e]">
+                            {cell}
+                          </td>
                         ))}
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              <div className="mt-4 flex justify-end">
+              <div className="mt-6 flex justify-end">
                 <button
                   onClick={handleSubmit}
                   disabled={isLoading || !!error}
-                  className={`px-4 py-2 rounded text-white ${
-                    isLoading ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'
+                  className={`flex items-center gap-2 px-6 py-2 rounded-lg text-white text-sm font-medium transition-all ${
+                    isLoading ? 'bg-[#c5d3bc]' : 'bg-[#8ba77f] hover:bg-[#7a937f]'
+                  } ${
+                    error ? 'cursor-not-allowed opacity-70' : ''
                   }`}
                 >
-                  {isLoading ? 'Uploading...' : 'Upload & Process'}
+                  {isLoading ? (
+                    <>
+                      <Clock className="w-4 h-4 animate-pulse" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      Upload & Process
+                    </>
+                  )}
                 </button>
               </div>
             </div>
