@@ -4,13 +4,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { getCurrentUser, getToken, clearToken } from '@/utils/api/user';
 import { useRouter } from 'next/navigation';
 import AccountSettingsDialog from '@/components/common/account_setting';
+import { X, AlertTriangle, Settings, LogOut } from 'lucide-react';
 
 export default function AvatarMenu() {
   const [username, setUsername] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
-
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -40,26 +40,26 @@ export default function AvatarMenu() {
   return (
     <div className="relative flex items-center" ref={dropdownRef}>
       <button
-        className="relative flex items-center justify-center h-10 w-10 rounded-full bg-green-600 text-white font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+        className="relative flex items-center justify-center h-10 w-10 rounded-full bg-[#8ba77f] text-white font-medium hover:bg-[#7a937f] focus:outline-none focus:ring-2 focus:ring-[#8ba77f]/50 transition-colors"
         onClick={() => setDropdownOpen(!dropdownOpen)}
         aria-label="User menu"
       >
         {username.charAt(0).toUpperCase() || '?'}
       </button>
 
-      {/* Dropdown menu with transition */}
+      {/* Dropdown menu */}
       <div
-        className={`absolute right-0 top-12 w-56 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 focus:outline-none transition-all duration-200 ease-in-out ${
+        className={`absolute right-0 top-12 w-56 bg-white rounded-xl shadow-lg border border-[#e0e7d4] divide-y divide-[#e0e7d4] transition-all duration-200 ease-out ${
           dropdownOpen
-            ? 'transform opacity-100 scale-100'
-            : 'transform opacity-0 scale-95 pointer-events-none'
+            ? 'opacity-100 scale-100'
+            : 'opacity-0 scale-95 pointer-events-none'
         }`}
       >
         {dropdownOpen && (
           <>
             <div className="px-4 py-3">
-              <p className="text-sm text-gray-500">Signed in as</p>
-              <p className="text-sm font-medium text-gray-900 truncate">{username}</p>
+              <p className="text-sm text-[#7a938f]">Signed in as</p>
+              <p className="text-sm font-medium text-[#3a584e] truncate">{username}</p>
             </div>
             <div className="py-1">
               <button
@@ -67,8 +67,9 @@ export default function AvatarMenu() {
                   setDialogOpen(true);
                   setDropdownOpen(false);
                 }}
-                className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                className="flex items-center w-full px-4 py-2.5 text-sm text-[#3a584e] hover:bg-[#f9f8f3] transition-colors gap-2"
               >
+                <Settings className="w-4 h-4" />
                 Account Settings
               </button>
             </div>
@@ -78,8 +79,9 @@ export default function AvatarMenu() {
                   setLogoutDialogOpen(true);
                   setDropdownOpen(false);
                 }}
-                className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors"
+                className="flex items-center w-full px-4 py-2.5 text-sm text-[#dc2626] hover:bg-[#fee2e2] transition-colors gap-2"
               >
+                <LogOut className="w-4 h-4" />
                 Logout
               </button>
             </div>
@@ -87,55 +89,32 @@ export default function AvatarMenu() {
         )}
       </div>
 
-      {dialogOpen && (
-        <AccountSettingsDialog onClose={() => setDialogOpen(false)} />
-      )}
+      {dialogOpen && <AccountSettingsDialog onClose={() => setDialogOpen(false)} />}
 
-      {/* Logout confirmation modal */}
+      {/* Logout confirmation dialog */}
       {logoutDialogOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
-            <div className="fixed inset-0 bg-gray-500 bg-transparent backdrop-blur-md transition-opacity" />
-            <div className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-sm sm:p-6">
-              <div>
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-                  <svg
-                    className="h-6 w-6 text-red-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                    />
-                  </svg>
-                </div>
-                <div className="mt-3 text-center sm:mt-5">
-                  <h3 className="text-base font-semibold leading-6 text-gray-900">
-                    Confirm Logout
-                  </h3>
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-500">
-                      Are you sure you want to log out of your account?
-                    </p>
-                  </div>
-                </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="bg-white rounded-xl p-6 w-96 border border-[#e0e7d4]">
+            <div className="flex flex-col items-center text-center">
+              <div className="p-3 bg-[#fee2e2] rounded-full mb-4">
+                <AlertTriangle className="w-8 h-8 text-[#dc2626]" />
               </div>
-              <div className="mt-5 sm:mt-6 flex gap-3">
+              <h3 className="text-xl font-semibold text-[#3a584e] mb-2">
+                Confirm Logout
+              </h3>
+              <p className="text-[#7a938f] mb-6">
+                Are you sure you want to log out of your account?
+              </p>
+              <div className="flex gap-3 w-full">
                 <button
-                  type="button"
-                  className="inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
                   onClick={() => setLogoutDialogOpen(false)}
+                  className="flex-1 px-4 py-2.5 rounded-lg bg-[#f9f8f3] text-[#3a584e] hover:bg-[#e0e7d4] transition-colors"
                 >
                   Cancel
                 </button>
                 <button
-                  type="button"
-                  className="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
                   onClick={confirmLogout}
+                  className="flex-1 px-4 py-2.5 rounded-lg bg-[#dc2626] text-white hover:bg-[#b91c1c] transition-colors"
                 >
                   Logout
                 </button>
