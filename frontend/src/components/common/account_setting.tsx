@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { getCurrentUser, getToken, updateUserAccount } from '@/utils/api/user';
+import { X, RefreshCw, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 export default function AccountSettingsDialog({ onClose }: { onClose: () => void }) {
   const [username, setUsername] = useState('');
@@ -60,89 +61,93 @@ export default function AccountSettingsDialog({ onClose }: { onClose: () => void
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30 backdrop-blur-sm">
       {/* Main Dialog */}
       {!showConfirmDialog && (
-        <div className="bg-white p-6 rounded-lg w-96 shadow-xl pointer-events-auto">
+        <div className="bg-white p-6 rounded-xl w-96 shadow-lg border border-[#e0e7d4]">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">Account Settings</h2>
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path
-                  fillRule="evenodd"
-                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
+            <h2 className="text-xl font-semibold text-[#3a584e]">Account Settings</h2>
+            <button 
+              onClick={onClose} 
+              className="text-[#7a938f] hover:text-[#3a584e] transition-colors"
+            >
+              <X className="h-5 w-5" />
             </button>
           </div>
 
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+              <label className="block text-sm font-medium text-[#3a584e] mb-2">Username</label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                className="w-full p-2.5 border border-[#e0e7d4] rounded-lg text-[#3a584e] focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] transition-all"
                 required
               />
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+              <label className="block text-sm font-medium text-[#3a584e] mb-2">New Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                className="w-full p-2.5 border border-[#e0e7d4] rounded-lg text-[#3a584e] focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] transition-all"
                 minLength={6}
               />
               {password && password.length < 6 && (
-                <p className="text-xs text-yellow-600 mt-1">Password should be at least 6 characters</p>
+                <p className="text-xs text-[#d46a1a] mt-2 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  Password should be at least 6 characters
+                </p>
               )}
             </div>
 
             {password && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-[#3a584e] mb-2">Confirm Password</label>
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  className="w-full p-2.5 border border-[#e0e7d4] rounded-lg text-[#3a584e] focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] transition-all"
                 />
               </div>
             )}
 
             {error && (
-              <div className="mb-4 p-2 bg-red-100 text-red-700 rounded text-sm">{error}</div>
+              <div className="mb-4 p-3 bg-[#fee2e2] border-l-4 border-[#dc2626] rounded text-sm text-[#7a938f] flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-[#dc2626]" />
+                {error}
+              </div>
             )}
 
             {success && (
-              <div className="mb-4 p-2 bg-green-100 text-green-700 rounded text-sm">
+              <div className="mb-4 p-3 bg-[#eef4e5] border-l-4 border-[#8ba77f] rounded text-sm text-[#3a584e] flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-[#8ba77f]" />
                 Account updated successfully!
               </div>
             )}
 
-            <div className="flex justify-end space-x-3 mt-6">
+            <div className="flex justify-end gap-3 mt-6">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-md bg-gray-200 text-gray-800 hover:bg-gray-300 transition"
+                className="px-4 py-2.5 rounded-lg bg-[#f9f8f3] text-[#3a584e] hover:bg-[#e0e7d4] transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading || !!(password && password !== confirmPassword)}
-                className={`px-4 py-2 rounded-md text-white transition ${
+                className={`px-4 py-2.5 rounded-lg text-white transition-colors ${
                   loading || (password && password !== confirmPassword)
-                    ? 'bg-green-400 cursor-not-allowed'
-                    : 'bg-green-600 hover:bg-green-700'
+                    ? 'bg-[#8ba77f]/70 cursor-not-allowed'
+                    : 'bg-[#8ba77f] hover:bg-[#7a937f]'
                 }`}
               >
-                {loading ? 'Updating...' : 'Update'}
+                {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Update'}
               </button>
             </div>
           </form>
@@ -151,9 +156,9 @@ export default function AccountSettingsDialog({ onClose }: { onClose: () => void
 
       {/* Confirmation Dialog */}
       {showConfirmDialog && (
-        <div className="bg-white p-6 rounded-lg w-96 shadow-xl pointer-events-auto z-50">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Confirm Changes</h3>
-          <p className="text-gray-600 mb-6">Are you sure you want to update your account information?</p>
+        <div className="bg-white p-6 rounded-xl w-96 shadow-lg border border-[#e0e7d4]">
+          <h3 className="text-lg font-semibold text-[#3a584e] mb-3">Confirm Changes</h3>
+          <p className="text-[#7a938f] mb-6">Are you sure you want to update your account information?</p>
 
           {success ? (
             <div className="flex justify-end">
@@ -162,27 +167,27 @@ export default function AccountSettingsDialog({ onClose }: { onClose: () => void
                   setShowConfirmDialog(false);
                   onClose();
                 }}
-                className="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 transition"
+                className="px-4 py-2.5 rounded-lg bg-[#8ba77f] text-white hover:bg-[#7a937f] transition-colors"
               >
                 Close
               </button>
             </div>
           ) : (
-            <div className="flex justify-end space-x-3">
+            <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowConfirmDialog(false)}
-                className="px-4 py-2 rounded-md bg-gray-200 text-gray-800 hover:bg-gray-300 transition"
+                className="px-4 py-2.5 rounded-lg bg-[#f9f8f3] text-[#3a584e] hover:bg-[#e0e7d4] transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmUpdate}
                 disabled={loading}
-                className={`px-4 py-2 rounded-md text-white transition ${
-                  loading ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
+                className={`px-4 py-2.5 rounded-lg text-white transition-colors ${
+                  loading ? 'bg-[#8ba77f]/70 cursor-not-allowed' : 'bg-[#8ba77f] hover:bg-[#7a937f]'
                 }`}
               >
-                {loading ? 'Updating...' : 'Confirm'}
+                {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Confirm'}
               </button>
             </div>
           )}
