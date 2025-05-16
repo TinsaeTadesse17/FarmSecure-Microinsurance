@@ -7,6 +7,7 @@ import { createEnrollment } from '@/utils/api/enrollment';
 import { getToken } from '@/utils/api/user';
 import { jwtDecode } from 'jwt-decode';
 import EnrollmentList from '@/components/agent/enrollmentList';
+import { UserPlus, AlertTriangle, CheckCircle2, ListChecks, RefreshCw } from 'lucide-react';
 
 interface DecodedToken {
   company_id: number[];
@@ -112,78 +113,73 @@ export default function CustomerEnrollmentPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 text-gray-800">
+    <div className="flex min-h-screen bg-[#f9f8f3] text-[#2c423f]">
       <Sidebar />
-      <main className="flex-1 p-6 max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-green-800">Customer Enrollment</h1>
+      <main className="flex-1 p-8 max-w-4xl mx-auto">
+        <div className="flex justify-between items-start mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-[#3a584e] flex items-center gap-3">
+              <UserPlus className="w-8 h-8 text-[#8ba77f]" />
+              Customer Enrollment
+              <span className="ml-4 text-sm font-normal bg-[#eef4e5] px-3 py-1 rounded-full">
+                New Policy Registration
+              </span>
+            </h1>
+            <p className="mt-2 text-[#7a938f] max-w-2xl">
+              Register new agricultural insurance policies and manage customer coverage
+            </p>
+          </div>
           <AvatarMenu />
         </div>
 
         <div className="space-y-8">
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold text-green-800 mb-6 pb-2 border-b border-gray-200">
-              New Enrollment Form
+          <div className="bg-white p-6 rounded-xl border border-[#e0e7d4] shadow-sm">
+            <h2 className="text-xl font-semibold text-[#3a584e] mb-6 pb-2 border-b border-[#e0e7d4] flex items-center gap-2">
+              <UserPlus className="w-5 h-5" />
+              New Policy Form
             </h2>
             
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-green-700">Personal Information</h3>
+                <h3 className="text-lg font-medium text-[#3a584e]">Personal Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">First Name*</label>
-                    <input
-                      type="text"
-                      name="fName"
-                      value={formData.fName}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Middle Name*</label>
-                    <input
-                      type="text"
-                      name="mName"
-                      value={formData.mName}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Name*</label>
-                    <input
-                      type="text"
-                      name="lName"
-                      value={formData.lName}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
+                  {['fName', 'mName', 'lName'].map((field) => (
+                    <div key={field}>
+                      <label className="block text-sm font-medium text-[#7a938f] mb-2">
+                        {field === 'fName' ? 'First Name*' : 
+                         field === 'mName' ? 'Middle Name*' : 'Last Name*'}
+                      </label>
+                      <input
+                        type="text"
+                        name={field}
+                        value={formData[field as keyof typeof formData]}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
+                        required
+                      />
+                    </div>
+                  ))}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Account Number*</label>
+                    <label className="block text-sm font-medium text-[#7a938f] mb-2">Account Number*</label>
                     <input
                       type="text"
                       name="accountNo"
                       value={formData.accountNo}
                       onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Account Type*</label>
+                    <label className="block text-sm font-medium text-[#7a938f] mb-2">Account Type*</label>
                     <select
                       name="accountType"
                       value={formData.accountType}
                       onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e] bg-white"
                       required
                     >
                       <option value="ID">ID</option>
@@ -195,93 +191,79 @@ export default function CustomerEnrollmentPage() {
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-green-700">Policy Details</h3>
+                <h3 className="text-lg font-medium text-[#3a584e]">Policy Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Premium Amount*</label>
-                    <input
-                      type="number"
-                      name="premium"
-                      value={formData.premium}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Sum Insured*</label>
-                    <input
-                      type="number"
-                      name="sumInsured"
-                      value={formData.sumInsured}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
+                  {['premium', 'sumInsured'].map((field) => (
+                    <div key={field}>
+                      <label className="block text-sm font-medium text-[#7a938f] mb-2">
+                        {field === 'premium' ? 'Premium Amount*' : 'Sum Insured*'}
+                      </label>
+                      <input
+                        type="number"
+                        name={field}
+                        value={formData[field as keyof typeof formData]}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
+                        required
+                      />
+                    </div>
+                  ))}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Coverage Start Date*</label>
-                    <input
-                      type="date"
-                      name="dateFrom"
-                      value={formData.dateFrom}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Coverage End Date*</label>
-                    <input
-                      type="date"
-                      name="dateTo"
-                      value={formData.dateTo}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
+                  {['dateFrom', 'dateTo'].map((field) => (
+                    <div key={field}>
+                      <label className="block text-sm font-medium text-[#7a938f] mb-2">
+                        {field === 'dateFrom' ? 'Coverage Start*' : 'Coverage End*'}
+                      </label>
+                      <input
+                        type="date"
+                        name={field}
+                        value={formData[field as keyof typeof formData]}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
+                        required
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-green-700">Additional Information</h3>
+                <h3 className="text-lg font-medium text-[#3a584e]">Additional Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Receipt Number*</label>
+                    <label className="block text-sm font-medium text-[#7a938f] mb-2">Receipt Number*</label>
                     <input
                       type="text"
                       name="receiptNo"
                       value={formData.receiptNo}
                       onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Product ID*</label>
+                    <label className="block text-sm font-medium text-[#7a938f] mb-2">Product ID*</label>
                     <input
                       type="number"
                       name="productId"
                       value={formData.productId}
                       onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">CPS Zone*</label>
+                  <label className="block text-sm font-medium text-[#7a938f] mb-2">CPS Zone*</label>
                   <input
                     type="text"
                     name="cpsZone"
                     value={formData.cpsZone}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
                     required
                   />
                 </div>
@@ -291,27 +273,39 @@ export default function CustomerEnrollmentPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`px-6 py-2 rounded-md text-white font-medium ${isSubmitting ? 'bg-green-500' : 'bg-green-600 hover:bg-blue-700'} focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors`}
+                  className={`px-6 py-2.5 rounded-lg font-medium transition-colors ${
+                    isSubmitting 
+                      ? 'bg-[#8ba77f]/70 text-white cursor-not-allowed'
+                      : 'bg-[#8ba77f] text-white hover:bg-[#7a937f]'
+                  }`}
                 >
-                  {isSubmitting ? 'Processing...' : 'Submit Enrollment'}
+                  {isSubmitting ? (
+                    <span className="flex items-center gap-2">
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Processing...
+                    </span>
+                  ) : 'Submit Enrollment'}
                 </button>
               </div>
 
               {successMessage && (
-                <div className="mt-4 p-3 bg-green-100 text-green-800 rounded-md border border-green-200">
+                <div className="mt-4 p-3 bg-[#eef4e5] border-l-4 border-[#8ba77f] rounded text-sm text-[#3a584e] flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
                   {successMessage}
                 </div>
               )}
               {errorMessage && (
-                <div className="mt-4 p-3 bg-red-100 text-red-800 rounded-md border border-red-200">
+                <div className="mt-4 p-3 bg-[#fee2e2] border-l-4 border-[#dc2626] rounded text-sm text-[#7a938f] flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-[#dc2626]" />
                   {errorMessage}
                 </div>
               )}
             </form>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold text-green-800 mb-6 pb-2 border-b border-gray-200">
+          <div className="bg-white p-6 rounded-xl border border-[#e0e7d4] shadow-sm">
+            <h2 className="text-xl font-semibold text-[#3a584e] mb-6 pb-2 border-b border-[#e0e7d4] flex items-center gap-2">
+              <ListChecks className="w-5 h-5" />
               Recent Enrollments
             </h2>
             <EnrollmentList />

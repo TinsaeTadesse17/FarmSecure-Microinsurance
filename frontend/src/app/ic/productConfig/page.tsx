@@ -5,7 +5,7 @@ import Sidebar from '@/components/ic/sidebar';
 import AvatarMenu from '@/components/common/avatar';
 import CreateProductDialog from '@/components/ic/productDialog';
 import { getProducts, createProduct, Product, ProductCreate } from '@/utils/api/product';
-import { FiPlus, FiRefreshCw, FiSearch } from 'react-icons/fi';
+import { Plus, RefreshCw, Search, Package } from 'lucide-react';
 
 export default function ProductConfiguration() {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -43,74 +43,66 @@ export default function ProductConfiguration() {
     fetchProducts();
   }, []);
 
-  // filter products by search term
   const filtered = products.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-[#f9f8f3] text-[#2c423f]">
       <Sidebar />
-      <main className="flex-1 p-6">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-800">Product Management</h1>
-          <div className="flex items-center space-x-4">
-            {/* Search bar */}
+      <main className="flex-1 p-8">
+        <div className="flex justify-between items-start mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-[#3a584e] flex items-center gap-3">
+              <Package className="w-8 h-8 text-[#8ba77f]" />
+              Product Management
+              <span className="ml-4 text-sm font-normal bg-[#eef4e5] px-3 py-1 rounded-full">
+                Insurance Configuration
+              </span>
+            </h1>
+            <p className="mt-2 text-[#7a938f] max-w-2xl">
+              Manage agricultural insurance products and commission structures • Updated in real-time
+            </p>
+          </div>
+          <div className="flex gap-4">
             <div className="relative">
-              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7a938f]" />
               <input
                 type="text"
                 placeholder="Search products..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 w-64 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm text-black"
+                className="pl-10 pr-4 py-2 w-64 bg-white border border-[#e0e7d4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8ba77f] text-[#3a584e] placeholder-[#a3b5af]"
               />
             </div>
-
-            {/* Refresh button next to search
-            <button
-              onClick={fetchProducts}
-              disabled={isLoading}
-              className="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-900 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <FiRefreshCw className={`mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-           
-            </button> */}
-
             <AvatarMenu />
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden max-w-4xl mx-auto">
-          <div className="p-6 border-b border-gray-200">
+        <div className="bg-white rounded-xl border border-[#e0e7d4] shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-[#e0e7d4]">
             <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-lg font-semibold text-gray-800">Product Configuration</h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  Manage your product offerings and commission rates
+                <h2 className="text-xl font-semibold text-[#3a584e]">Product Portfolio</h2>
+                <p className="text-sm text-[#7a938f] mt-1">
+                  Configure insurance products and premium rates
                 </p>
               </div>
               <button
                 onClick={() => setDialogOpen(true)}
-                className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+                className="flex items-center px-4 py-2 bg-[#8ba77f] text-white rounded-lg hover:bg-[#7a937f] transition-all shadow-sm"
               >
-                <FiPlus className="mr-2" />
-                Create Product
+                <Plus className="mr-2 h-5 w-5" />
+                New Product
               </button>
             </div>
           </div>
 
           {error && (
-            <div className="bg-red-50 border-l-4 border-red-500 p-4 mx-6 mt-4 rounded">
-              <div className="flex">
-                <svg className="h-5 w-5 text-red-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <p className="ml-3 text-sm text-red-700">{error}</p>
+            <div className="mx-6 mt-4 bg-[#fee2e2] border-l-4 border-[#dc2626] p-4 rounded">
+              <div className="flex items-center">
+                <Package className="h-5 w-5 text-[#dc2626] mr-3" />
+                <p className="text-sm text-[#7a938f]">{error}</p>
               </div>
             </div>
           )}
@@ -118,65 +110,54 @@ export default function ProductConfiguration() {
           <div className="overflow-x-auto">
             {isLoading ? (
               <div className="p-12 flex justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+                <RefreshCw className="h-12 w-12 text-[#8ba77f] animate-spin" />
               </div>
             ) : filtered.length === 0 ? (
               <div className="p-12 text-center">
-                <svg
-                  className="mx-auto h-12 w-12 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    vectorEffect="non-scaling-stroke"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
-                  />
-                </svg>
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No products found</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Try a different search term or create a new product.
+                <Package className="mx-auto h-12 w-12 text-[#7a938f]" />
+                <h3 className="mt-4 text-lg font-medium text-[#3a584e]">No products found</h3>
+                <p className="mt-2 text-sm text-[#7a938f]">
+                  Try adjusting your search or create a new product
                 </p>
                 <div className="mt-6">
                   <button
                     onClick={() => setDialogOpen(true)}
-                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                    className="inline-flex items-center px-4 py-2 bg-[#8ba77f] text-white rounded-lg hover:bg-[#7a937f] transition-all"
                   >
-                    <FiPlus className="-ml-1 mr-2 h-5 w-5" />
-                    New Product
+                    <Plus className="mr-2 h-5 w-5" />
+                    Add Product
                   </button>
                 </div>
               </div>
             ) : (
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-[#e0e7d4]">
+                <thead className="bg-[#f9f8f3]">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-[#3a584e]">
+                      Insurance Product
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-[#3a584e]">
+                      Coverage Type
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-[#3a584e]">
                       Commission Rate
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y divide-[#e0e7d4]">
                   {filtered.map(product => (
-                    <tr key={product.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                    <tr 
+                      key={product.id} 
+                      className="hover:bg-[#f9f8f3] transition-colors cursor-pointer"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#3a584e]">
+                        {product.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-[#7a938f]">
+                        {product.type}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{product.type}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        <span className="px-3 py-1 inline-flex text-sm font-medium bg-[#eef4e5] text-[#3a584e] rounded-full">
                           {product.commission_rate}%
                         </span>
                       </td>
