@@ -14,11 +14,10 @@ class EnrolementService:
         # Check for duplicate customer ID
         # 1. Prevent duplicate enrolment
         if self.db.query(Enrolement).filter(Enrolement.customer_id == customer_id).first():
-            logger.warning("Customer already enrolled: %s", self.db.query(Enrolement).filter(Enrolement.customer_id == customer_id).first())
             raise HTTPException(status_code=400, detail="Customer already enrolled") 
 
         # 2. Validate integer fields
-        for name in ("user_id", "ic_company_id", "branch_id", "product_id", "cps_zone"):
+        for name in ("user_id", "ic_company_id", "branch_id", "product_id"):
             val = getattr(enrolement, name)
             if not isinstance(val, int) or val <= 0:
                 raise HTTPException(
@@ -48,6 +47,9 @@ class EnrolementService:
         db_enrolement = Enrolement(
             customer_id = customer_id,
             cps_zone  = enrolement.cps_zone,
+            grid     = enrolement.grid,
+            lattitude = enrolement.lattitude,
+            longitude = enrolement.longitude,
             user_id      = enrolement.user_id,
             ic_company_id= enrolement.ic_company_id,
             branch_id    = enrolement.branch_id,

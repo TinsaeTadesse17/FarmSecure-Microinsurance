@@ -33,3 +33,6 @@ class Enrolement(Base):
     status = Column(SQLEnum(EnrolementStatus), default=EnrolementStatus.pending, nullable=False)
     cps_zone     = Column(Integer, nullable=False)
     createdAt    = Column(Date, server_default=func.now(), nullable=False)
+    grid = Column(Integer, nullable=True)
+    lattitude = Column(Numeric(12, 8), nullable=False)
+    longitude = Column(Numeric(12, 8), nullable=False)
