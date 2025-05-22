@@ -14,11 +14,9 @@ class GridAndZoneGetter:
         if self.data_df.empty:
             return None, None
         dist, ind = self.tree_model.query([[lon, lat]], k=1)
-        closest_distance = dist[0][0]
-        if closest_distance <= self.distance_threshold:
-            closest_row_index = self.data_df.iloc[ind[0][0]].name
-            closest_row = self.data_df.loc[closest_row_index]
-            return float(closest_row["GRID_CODE"]), float(closest_row["CPS_ZONE"])
-        else:
-            print(f"Closest point is too far (distance: {closest_distance:.4f}), exceeding the threshold of {self.distance_threshold}.")
-            return None, None
+        closest_row_index = self.data_df.iloc[ind[0][0]].name
+        closest_row = self.data_df.loc[closest_row_index]
+        # raise an error if closest_row[CPS_zone] is not between 1 and 200 inclusive
+        if not (1 <= closest_row["CPS_ZONE"] <= 200):
+            raise ValueError(f"CPS_ZONE {closest_row['CPS_ZONE']} is out of range (1-200).")
+        return float(closest_row["GRID_CODE"]), float(closest_row["CPS_ZONE"])

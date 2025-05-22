@@ -67,7 +67,10 @@ def create_enrolement(
         date_to=enrolement.date_to,
         receipt_no=enrolement.receipt_no,
         product_id=enrolement.product_id,
-        cps_zone=enrolement.cps_zone
+        cps_zone=enrolement.cps_zone,
+        grid=enrolement.grid,
+        lattitude=enrolement.lattitude,
+        longitude=enrolement.longitude,
     )
     return enroll
 
@@ -103,6 +106,7 @@ def read_enrolement(
         receipt_no=db_enr.receipt_no,
         product_id=db_enr.product_id,
         cps_zone=db_enr.cps_zone,
+        grid=db_enr.grid,
         lattitude=db_enr.lattitude,
         longitude=db_enr.longitude,
     )
@@ -139,6 +143,7 @@ def list_enrolements(
             receipt_no=db_enr.receipt_no,
             product_id=db_enr.product_id,
             cps_zone=db_enr.cps_zone,
+            grid=db_enr.grid,
             lattitude=db_enr.lattitude,
             longitude=db_enr.longitude,
         )
