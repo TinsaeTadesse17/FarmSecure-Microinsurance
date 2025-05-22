@@ -102,7 +102,9 @@ def read_enrolement(
         date_to=db_enr.date_to,
         receipt_no=db_enr.receipt_no,
         product_id=db_enr.product_id,
-        cps_zone=db_enr.cps_zone
+        cps_zone=db_enr.cps_zone,
+        lattitude=db_enr.lattitude,
+        longitude=db_enr.longitude,
     )
     return result
 
@@ -136,7 +138,9 @@ def list_enrolements(
             date_to=db_enr.date_to,
             receipt_no=db_enr.receipt_no,
             product_id=db_enr.product_id,
-            cps_zone=db_enr.cps_zone
+            cps_zone=db_enr.cps_zone,
+            lattitude=db_enr.lattitude,
+            longitude=db_enr.longitude,
         )
         result.append(enrol)
     return result
