@@ -14,6 +14,8 @@ from src.database.models.customer import Customer
 
 POLICY_SERVICE_URL = settings.POLICY_SERVICE_URL + '/api'
 
+grid_zone_getter = GridAndZoneGetter()
+
 router = APIRouter()
 
 @router.post("/", response_model=EnrolementResponse, status_code=201)
@@ -32,7 +34,6 @@ def create_enrolement(
             account_type=enrolement.account_type,
         )
         customer_id = customer_service.create_customer(customer)
-        grid_zone_getter = GridAndZoneGetter()
 
         grid , cps_zone = grid_zone_getter.get_grid_and_zone_inference_filtered(enrolement.lattitude,  enrolement.longitude)
         enrolement.cps_zone = cps_zone
@@ -67,7 +68,10 @@ def create_enrolement(
         date_to=enrolement.date_to,
         receipt_no=enrolement.receipt_no,
         product_id=enrolement.product_id,
-        cps_zone=enrolement.cps_zone
+        cps_zone=enrolement.cps_zone,
+        grid=enrolement.grid, # Added missing grid field
+        lattitude=enrolement.lattitude,  # Added missing lattitude field
+        longitude=enrolement.longitude  # Added missing longitude field
     )
     return enroll
 
@@ -103,6 +107,7 @@ def read_enrolement(
         receipt_no=db_enr.receipt_no,
         product_id=db_enr.product_id,
         cps_zone=db_enr.cps_zone,
+        grid=db_enr.grid,
         lattitude=db_enr.lattitude,
         longitude=db_enr.longitude,
     )
@@ -139,6 +144,7 @@ def list_enrolements(
             receipt_no=db_enr.receipt_no,
             product_id=db_enr.product_id,
             cps_zone=db_enr.cps_zone,
+            grid=db_enr.grid,
             lattitude=db_enr.lattitude,
             longitude=db_enr.longitude,
         )

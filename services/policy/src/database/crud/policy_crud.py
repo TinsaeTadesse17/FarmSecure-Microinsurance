@@ -108,6 +108,7 @@ def list_policy_details(db: Session):
             'policy_id': p.policy_id,
             'period_sum_insured': float(d.period_sum_insured),
             'cps_zone': str(enrollment.get('cps_zone')),
+            'grid': str(enrollment.get('grid')),
             'product_type': enrollment.get('product_id'),
             "period": d.period,
         })
