@@ -390,6 +390,8 @@ services:
     build:
       context: ./services/gateway
     container_name: gateway
+    env_file:
+      - .env
     ports:
       - "7000:7000"
     networks:
@@ -428,7 +430,7 @@ services:
       - "8004:8000"
     networks:
       - app_network
-      
+
 volumes:
   claim_pgdata:
   pgdata_company:
