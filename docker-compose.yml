@@ -371,6 +371,64 @@ services:
     networks:
       - app_network
 
+  dfs_tests:
+    build:
+      context: ./services/dfs
+    profiles: ["test"]
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: sqlite:///:memory
+      USER_SERVICE_URL: http://user_service:8000
+      POLICY_SERVICE_URL: http://policy_service:8000
+    container_name: enrollment_tests
+    command: ["pytest", "-v", "--tb=short", "-p", "no:cacheprovider"]
+    networks:
+      - app_network
+
+  gateway:
+    build:
+      context: ./services/gateway
+    container_name: gateway
+    ports:
+      - "7000:7000"
+    networks:
+      - app_network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4
+    restart: always
+    env_file:
+      - .env
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    depends_on:
+      product_db:
+        condition: service_healthy
+    ports:
+      - "8006:80"
+    networks:
+      - app_network
+
+  notification_service:
+    build:
+      context: ./services/notification
+    container_name: notification_service
+    env_file:
+      - .env
+    environment:
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM=${SMTP_FROM}
+    ports:
+      - "8004:8000"
+    networks:
+      - app_network
+      
 volumes:
   claim_pgdata:
   pgdata_company:
