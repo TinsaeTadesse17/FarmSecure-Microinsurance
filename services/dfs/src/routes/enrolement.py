@@ -8,6 +8,7 @@ from src.schemas.enrolement_schema import EnrolementRequest, EnrolementResponse,
 from src.database.db import get_db
 from src.schemas.customer_schema import CustomerRequest
 from src.core.config import settings
+from src.utils.grid_and_zone_getter import GridAndZoneGetter
 import httpx
 from src.database.models.customer import Customer
 
@@ -31,6 +32,11 @@ def create_enrolement(
             account_type=enrolement.account_type,
         )
         customer_id = customer_service.create_customer(customer)
+        grid_zone_getter = GridAndZoneGetter()
+
+        grid , cps_zone = grid_zone_getter.get_grid_and_zone_inference_filtered(enrolement.lattitude,  enrolement.longitude)
+        enrolement.cps_zone = cps_zone
+        enrolement.grid = grid
     except HTTPException as e:
         if e.status_code == 400:
             raise HTTPException(status_code=400, detail="Customer already enrolled")
