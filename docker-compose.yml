@@ -299,64 +299,42 @@ services:
       retries: 5
     networks:
       - app_network
-  dfs_tests:
-    build:
-      context: ./services/dfs
-    profiles: ["test"]
+
+  config_db:
+    image: postgres:16
+    container_name: config_db
     env_file:
       - .env
     environment:
-      DATABASE_URL: sqlite:///:memory
-      USER_SERVICE_URL: http://user_service:8000
-      POLICY_SERVICE_URL: http://policy_service:8000
-    container_name: enrollment_tests
-    command: ["pytest", "-v", "--tb=short", "-p", "no:cacheprovider"]
-    networks:
-      - app_network
-
-
-  gateway:
-    build:
-      context: ./services/gateway
-    container_name: gateway
-    env_file:
-      - .env
+      POSTGRES_USER: ${CONFIG_DB_USER}
+      POSTGRES_PASSWORD: ${CONFIG_DB_PASS}
+      POSTGRES_DB: ${CONFIG_DB_NAME}
+    volumes:
+      - pgdata_config:/var/lib/postgresql/data
     ports:
-      - "7000:7000"
+      - "5438:5432" # Host port 5438
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${CONFIG_DB_USER} -d ${CONFIG_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - app_network
 
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: pgadmin4
-    restart: always
+  config_service:
+    build:
+      context: ./services/config
+    container_name: config_service
     env_file:
       - .env
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     depends_on:
-      product_db:
+      config_db:
         condition: service_healthy
     ports:
-      - "8006:80"
-    networks:
-      - app_network
-  
-  notification_service:
-    build:
-      context: ./services/notification
-    container_name: notification_service
-    env_file:
-      - .env
+      - "8008:8000" # Host port 8008
     environment:
-      - SMTP_HOST=${SMTP_HOST}
-      - SMTP_PORT=${SMTP_PORT}
-      - SMTP_USERNAME=${SMTP_USERNAME}
-      - SMTP_PASSWORD=${SMTP_PASSWORD}
-      - SMTP_FROM=${SMTP_FROM}
-    ports:
-      - "8004:8000"
+      DATABASE_URL: postgresql://${CONFIG_DB_USER}:${CONFIG_DB_PASS}@config_db:5432/${CONFIG_DB_NAME}
     networks:
       - app_network
 
@@ -401,6 +379,8 @@ volumes:
   pgdata_policy:
   pgdata_report:
   pgdata_dfs:
+  pgdata_config: # Added volume for config_db
+  pgdata_claim:
 
 networks:
   app_network:
