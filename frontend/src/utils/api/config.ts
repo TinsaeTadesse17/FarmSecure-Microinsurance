@@ -52,7 +52,7 @@ export async function getNdviJobStatus(jobId: string) {
 
 export async function startClaimCalculation() {
   const CLAIM_SERVICE_URL = process.env.NEXT_PUBLIC_CLAIM_SERVICE_URL || "http://localhost:8007";
-  const res = await fetch(`${CLAIM_SERVICE_URL}/api/claim/claims/trigger`, {
+  const res = await fetch(`${CLAIM_SERVICE_URL}/api/v1/claim/claims/trigger`, {
     method: 'POST',
   });
   if (!res.ok) {
