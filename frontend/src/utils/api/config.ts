@@ -49,3 +49,15 @@ export async function getNdviJobStatus(jobId: string) {
   }
   return res.json() as Promise<JobStatus>;
 }
+
+export async function startClaimCalculation() {
+  const CLAIM_SERVICE_URL = process.env.NEXT_PUBLIC_CLAIM_SERVICE_URL || "http://localhost:8007";
+  const res = await fetch(`${CLAIM_SERVICE_URL}/api/claim/claims/trigger`, {
+    method: 'POST',
+  });
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.detail || 'Starting claim calculation failed');
+  }
+  return res.json();
+}

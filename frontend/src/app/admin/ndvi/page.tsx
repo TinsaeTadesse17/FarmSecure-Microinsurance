@@ -5,7 +5,7 @@ import Sidebar from '@/components/admin/sidebar';
 import AvatarMenu from '@/components/common/avatar';
 import { FileText, Upload, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { uploadCpsZoneFiles, uploadNdviFile, getNdviJobStatus } from '@/utils/api/config';
+import { uploadCpsZoneFiles, uploadNdviFile, getNdviJobStatus, startClaimCalculation } from '@/utils/api/config';
 
 const FileUpload = ({ label, file, onChange }: { label: string; file: File | null; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
   <div className="space-y-2">
@@ -51,6 +51,11 @@ const AdminConfigPage: React.FC = () => {
   const [jobId, setJobId] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<string | null>(null);
 
+  const [claimCalculationLoading, setClaimCalculationLoading] = useState(false);
+  const [claimCalculationError, setClaimCalculationError] = useState<string | null>(null);
+  const [claimCalculationSuccess, setClaimCalculationSuccess] = useState<string | null>(null);
+
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (jobId) {
@@ -59,7 +64,7 @@ const AdminConfigPage: React.FC = () => {
           const status = await getNdviJobStatus(jobId!);
           setJobStatus(status.status);
           if (status.status === 'completed') {
-            setNdviSuccess(status.message);
+            setNdviSuccess(status.message || 'NDVI processing completed successfully');
             confetti();
             clearInterval(interval);
           } else if (status.status === 'failed') {
@@ -85,7 +90,7 @@ const AdminConfigPage: React.FC = () => {
       await uploadCpsZoneFiles(triggerFile, exitFile, seasonFile);
       setCpsSuccess('CPS zone configuration uploaded successfully!');
       confetti();
-      setTriggerFile(null); setExitFile(null); setSeasonFile(null);
+      // Do not reset files here, keep them for claim calculation
     } catch (e: any) {
       setCpsError(e.message || 'Upload failed');
     } finally {
@@ -109,6 +114,32 @@ const AdminConfigPage: React.FC = () => {
       setNdviLoading(false);
     }
   };
+
+  const handleStartClaimCalculation = async () => {
+    setClaimCalculationLoading(true);
+    setClaimCalculationError(null);
+    setClaimCalculationSuccess(null);
+    try {
+      const response = await startClaimCalculation();
+      setClaimCalculationSuccess(response.message || 'Claim calculation started successfully!');
+      confetti();
+      // Reset all files and states after successful claim calculation
+      setTriggerFile(null);
+      setExitFile(null);
+      setSeasonFile(null);
+      setNdviFile(null);
+      setCpsSuccess(null); // Clear CPS success message
+      setNdviSuccess(null); // Clear NDVI success message
+      setJobId(null);
+      setJobStatus(null);
+    } catch (e: any) {
+      setClaimCalculationError(e.message || 'Claim calculation failed');
+    } finally {
+      setClaimCalculationLoading(false);
+    }
+  };
+
+  const allFilesUploaded = cpsSuccess && ndviSuccess && jobStatus === 'completed';
 
   return (
     <div className="flex min-h-screen bg-[#f9f8f3] text-[#2c423f]">
@@ -225,6 +256,44 @@ const AdminConfigPage: React.FC = () => {
               </div>
             )}
           </div>
+        </section>
+
+        {/* Claim Calculation Section */}
+        <section className="bg-white p-8 rounded-2xl border border-[#e0e4dd] shadow-sm space-y-6">
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold flex items-center gap-3">
+              <FileText className="text-[#8ba77f]" />
+              Claim Calculation
+            </h2>
+            <p className="text-[#6b7f7c] text-sm">Start the claim calculation process after all files are uploaded successfully.</p>
+          </div>
+
+          {claimCalculationError && (
+            <div className="p-4 bg-red-50 rounded-lg flex items-center gap-3 text-red-600">
+              <XCircle className="h-5 w-5" />
+              <span>{claimCalculationError}</span>
+            </div>
+          )}
+
+          {claimCalculationSuccess && (
+            <div className="p-4 bg-green-50 rounded-lg flex items-center gap-3 text-green-600">
+              <CheckCircle2 className="h-5 w-5" />
+              <span>{claimCalculationSuccess}</span>
+            </div>
+          )}
+
+          <button
+            onClick={handleStartClaimCalculation}
+            disabled={!allFilesUploaded || claimCalculationLoading}
+            className="w-full md:w-auto px-6 py-3 bg-[#8ba77f] text-white rounded-lg hover:bg-[#7a937f] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {claimCalculationLoading ? (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4" /> // Consider a different icon like Play or Calculator
+            )}
+            Start Claim Calculation
+          </button>
         </section>
       </main>
     </div>
