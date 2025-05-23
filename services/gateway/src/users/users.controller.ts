@@ -20,84 +20,71 @@ import { Roles } from '../auth//decorators/roles.decorator';
 import { Role } from '../auth/constants/roles.enum';
 import { JwtAuthGuard } from 'src/auth/guards/auth.guard';
 import { Public } from 'src/auth/decorators/public.decorator';
-const USER_SERVICE_BASE_URL = 'http://user_service:8000/api/user';
+import { UsersService } from './users.service';
 
 @ApiTags('User')
-@ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('api/user')
 export class UsersController {
-  constructor(private readonly http: HttpService) {}
+  constructor(private readonly usersService: UsersService) {}
+
   @Public()
   @Post('login')
   @ApiOperation({ summary: 'Login user and return JWT access token' })
   @ApiResponse({ status: 201, description: 'Login successful, returns token' })
   @ApiResponse({ status: 401, description: 'Invalid username or password' })
-  async login(@Body() body) {
-    try {
-      console.log("Logging in with body:", body);
-      const res = await firstValueFrom(
-        this.http.post(`${USER_SERVICE_BASE_URL}/login`, body),
-      );
-      console.log("Login response:", res.data);
-      return res.data;
-    } catch (err) {
-      console.error("Login error:", err);
-      throw new HttpException(err.response?.data || 'Login failed', err.response?.status || 500);
-    }
+  async login(@Body() loginRequest: any) {
+    return this.usersService.login(loginRequest);
   }
 
-  @Roles(Role.Admin, Role.IC, Role.Agent)
-  @Get('me')
-  @ApiOperation({ summary: 'Gets user data' })
-  @ApiResponse({ status: 201, description: 'successful, returns data' })
-  @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  async getMe(@Headers('authorization') auth: string) {
-    try {
-      const res = await firstValueFrom(
-        this.http.get(`${USER_SERVICE_BASE_URL}/me`, {
-          headers: { Authorization: auth },
-        }),
-      );
-      return res.data;
-    } catch (err) {
-      throw new HttpException(err.response?.data || 'Auth error', err.response?.status || 500);
-    }
-  }
-
-  @Roles(Role.Admin, Role.IC, Role.Agent)
-  @Put('update/:id')
-  @ApiOperation({ summary: 'Updates info' })
-  @ApiResponse({ status: 201, description: 'successful, returns updated data' })
-  @ApiResponse({ status: 401, description: 'Invalid' })
-  async updateUser(@Param('id') id: string, @Body() body, @Headers('authorization') auth: string) {
-    try {
-      const res = await firstValueFrom(
-        this.http.put(`${USER_SERVICE_BASE_URL}/update/${id}`, body, {
-          headers: { Authorization: auth },
-        }),
-      );
-      return res.data;
-    } catch (err) {
-      throw new HttpException(err.response?.data || 'Update failed', err.response?.status || 500);
-    }
-  }
-
-  @Roles(Role.Admin, Role.IC, Role.Agent)
   @Post()
-  @ApiOperation({ summary: 'User creation' })
-  @ApiResponse({ status: 201, description: 'Creation successful, returns user' })
-  @ApiResponse({ status: 401, description: 'creation failed' })
-  async createUser(@Body() body, @Headers('authorization') auth: string) {
-    try {
-      const res = await firstValueFrom(
-        this.http.post(`${USER_SERVICE_BASE_URL}`, body, {
-          headers: { Authorization: auth },
-        }),
-      );
-      return res.data;
-    } catch (err) {
-      throw new HttpException(err.response?.data || 'User creation failed', err.response?.status || 500);
-    }
+  @ApiOperation({ summary: 'Create a new user' })
+  @ApiResponse({ status: 201, description: 'User created successfully' })
+  async createUser(@Body() userCreate: any) {
+    return this.usersService.createUser(userCreate);
+  }
+
+  @Post('agent')
+  @ApiOperation({ summary: 'Create a new agent user' })
+  @ApiResponse({ status: 201, description: 'Agent user created successfully' })
+  async createAgent(@Body() userCreate: any) {
+    return this.usersService.createAgent(userCreate);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get current logged-in user' })
+  @ApiResponse({ status: 200, description: 'Returns current user' })
+  async getMe(@Req() req) {
+    return this.usersService.getMe(req.user);
+  }
+
+  @Get('ics')
+  @Roles(Role.Admin)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get all IC users (admin only)' })
+  @ApiResponse({ status: 200, description: 'Returns a list of IC users' })
+  async getIcUsers() {
+    return this.usersService.getIcUsers();
+  }
+
+  @Put('update/:user_id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Update a user' })
+  @ApiResponse({ status: 200, description: 'User updated successfully' })
+  async updateUser(@Param('user_id') userId: string, @Body() userUpdate: any) {
+    return this.usersService.updateUser(userId, userUpdate);
+  }
+
+  @Get('agents')
+  @Roles(Role.IC)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get all agents for the current IC user' })
+  @ApiResponse({ status: 200, description: 'Returns a list of agents' })
+  async getAgents(@Req() req) {
+    return this.usersService.getAgents(req.user);
   }
 }
