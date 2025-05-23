@@ -5,10 +5,9 @@ import { CreateCompanyDto } from './dto/create-company.dto';
 import { CompanyResponseDto } from './dto/company-response.dto';
 import { CredentialResponseDto } from './dto/credential-response.dto';
 
-const COMPANIES_BASE_URL = 'http://company_service:8000/companies';
 @Injectable()
 export class CompanyManagementService {
-  private readonly baseUrl = `${COMPANIES_BASE_URL}`;
+  private readonly baseUrl = process.env.COMPANY_SERVICE_URL || 'http://company_service:8000/companies';
 
   constructor(private readonly httpService: HttpService) {}
 
