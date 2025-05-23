@@ -4,6 +4,7 @@ import datetime
 
 class NDVIBase(BaseModel):
     grid: int = Field(..., ge=0) # Assuming grid ID is non-negative
+    period: int = Field(..., ge=1, le=36) # Added period, assuming 1-36
     ndvi: float
 
 class NDVICreate(NDVIBase):
@@ -26,6 +27,7 @@ class NDVI(NDVIInDBBase):
 class NDVIResponse(BaseModel):
     id: int # Added id
     grid: int
+    period: int # Added period
     ndvi: float
     created_at: datetime.datetime # Added
     updated_at: datetime.datetime # Added

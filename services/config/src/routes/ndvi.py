@@ -39,20 +39,40 @@ os.makedirs(TEMP_NDVI_FILES_DIR, exist_ok=True) # Create temp directory
 job_statuses: Dict[str, JobStatus] = {}
 
 def validate_ndvi_data(df: pd.DataFrame):
-    if not all(col in df.columns for col in ['grid', 'ndvi']):
-        raise HTTPException(status_code=400, detail="CSV/Excel must contain 'grid' and 'ndvi' columns.")
-    if not pd.api.types.is_numeric_dtype(df['grid']):
-        raise HTTPException(status_code=400, detail="'grid' column must be numeric and integer.")
-    # Ensure grid is integer like, even if read as float by pandas from CSV
+    if df.empty:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+        
+    if len(df.columns) < 37: # 1 grid column + 36 period columns
+        raise HTTPException(status_code=400, detail="File must contain at least 37 columns: one 'grid' column followed by 36 data columns for periods.")
+
+    grid_column_name = df.columns[0]
+
+    # Validate 'grid' column type and content
+    if df[grid_column_name].isnull().any():
+        raise HTTPException(status_code=400, detail=f"'{grid_column_name}' column (grid ID) cannot contain empty values.")
+    
     try:
-        df['grid'] = df['grid'].astype(int)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="'grid' column must contain integer values.")
-    if not (df['grid'] >= 0).all(): # Assuming grid ID is non-negative
-        raise HTTPException(status_code=400, detail="'grid' values must be non-negative.")
-    if not pd.api.types.is_numeric_dtype(df['ndvi']):
-        raise HTTPException(status_code=400, detail="'ndvi' column must be numeric.")
-    # Add more specific NDVI range validation if applicable (e.g., -1 to 1)
+        # Attempt to convert to numeric first, then to int. Handles cases where column might be object type.
+        df[grid_column_name] = pd.to_numeric(df[grid_column_name])
+        # Check if all are whole numbers before converting to int
+        if not (df[grid_column_name] == df[grid_column_name].round()).all():
+            raise ValueError("Grid IDs must be whole numbers.")
+        df[grid_column_name] = df[grid_column_name].astype(int)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"'{grid_column_name}' column (grid ID) must contain integer values. Error: {e}")
+    
+    if not (df[grid_column_name] >= 0).all():
+        raise HTTPException(status_code=400, detail=f"'{grid_column_name}' values (grid ID) must be non-negative.")
+
+    # Validate period data columns (next 36 columns)
+    period_data_columns = df.columns[1:37]
+    for col_name in period_data_columns:
+        try:
+            # This attempts to convert the whole column. If it fails, raises ValueError.
+            # This modifies df, converting columns to numeric if possible.
+            df[col_name] = pd.to_numeric(df[col_name])
+        except ValueError:
+             raise HTTPException(status_code=400, detail=f"Data in period column '{col_name}' must be numeric NDVI values. Found non-numeric entries.")
 
 async def background_process_ndvi_file(
     db_session: Session, 
@@ -74,7 +94,7 @@ async def background_process_ndvi_file(
         else:
             raise ValueError(f"Unsupported file type: {original_filename}")
 
-        validate_ndvi_data(df) # Full validation on complete data
+        validate_ndvi_data(df) # Full validation on complete data (now expects wide format)
 
         # Create timestamped filename for final storage
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
@@ -85,20 +105,41 @@ async def background_process_ndvi_file(
         # Move file from temp to final location after validation
         shutil.move(temp_file_path, final_file_path)
 
-        for _, row in df.iterrows():
-            grid_val = int(row['grid'])
-            ndvi_val = float(row['ndvi'])
+        grid_column_name = df.columns[0]
+        period_data_columns = df.columns[1:37] # Columns for period 1 through 36
 
-            # Use filter_by for the query
-            db_ndvi_instance = db_session.query(models.NDVI).filter_by(grid=grid_val).first()
+        for _, row_data in df.iterrows(): # Iterate over each row in the DataFrame
+            grid_val = int(row_data[grid_column_name]) # Already validated and converted to int
+
+            for i in range(36): # For periods 1 to 36
+                period_val = i + 1 
+                current_period_column = period_data_columns[i]
+                cell_value = row_data[current_period_column]
+
+                if pd.isna(cell_value):
+                    # Decide how to handle missing NDVI values. Raising an error is a safe default.
+                    raise HTTPException(status_code=400, detail=f"Missing NDVI value for grid {grid_val}, period {period_val} (column '{current_period_column}').")
+                
+                try:
+                    ndvi_val = float(cell_value) # Already validated as numeric by validate_ndvi_data
+                except ValueError:
+                    # This should ideally not happen if validate_ndvi_data converted columns to numeric
+                    # But as a safeguard for unexpected non-floatable numerics (e.g. complex numbers if somehow present)
+                    raise HTTPException(status_code=400, detail=f"Invalid NDVI value '{cell_value}' in column '{current_period_column}' for grid {grid_val}, period {period_val}. Must be a convertible number.")
+
+                # Optional: Add specific NDVI range validation here, e.g., -1 to 1
+                # if not (-1 <= ndvi_val <= 1):
+                #     raise HTTPException(status_code=400, detail=f"NDVI value {ndvi_val} for grid {grid_val}, period {period_val} is out of range (-1 to 1).")
+
+                db_ndvi_instance = db_session.query(models.NDVI).filter_by(grid=grid_val, period=period_val).first()
             
-            if db_ndvi_instance:
-                db_ndvi_instance.ndvi = ndvi_val # Attempt direct assignment
-                # 'updated_at' is automatically handled by the model's onupdate
-            else:
-                # Create new NDVI record
-                new_ndvi_instance = models.NDVI(grid=grid_val, ndvi=ndvi_val)
-                db_session.add(new_ndvi_instance)
+                if db_ndvi_instance:
+                    db_ndvi_instance.ndvi = ndvi_val 
+                    # 'updated_at' is automatically handled by the model's onupdate
+                else:
+                    # Create new NDVI record, including period
+                    new_ndvi_instance = models.NDVI(grid=grid_val, period=period_val, ndvi=ndvi_val)
+                    db_session.add(new_ndvi_instance)
         
         db_file_meta = models.UploadedFile(
             filename=original_filename, 
@@ -202,13 +243,20 @@ async def get_ndvi_upload_status(job_id: str):
         raise HTTPException(status_code=404, detail="Job ID not found.")
     return status
 
-@router.get("/{grid_id}", response_model=ndvi_schemas.NDVIResponse)
-def get_ndvi(grid_id: int, db_session: Session = Depends(db.get_db)):
-    # Changed from filter to filter_by
-    db_ndvi = db_session.query(models.NDVI).filter_by(grid=grid_id).first()
+@router.get("/{grid_id}/{period_id}", response_model=ndvi_schemas.NDVIResponse) # Updated endpoint
+def get_ndvi(grid_id: int, period_id: int, db_session: Session = Depends(db.get_db)):
+    # Query includes period_id
+    db_ndvi = db_session.query(models.NDVI).filter_by(grid=grid_id, period=period_id).first()
     if db_ndvi is None:
-        raise HTTPException(status_code=404, detail="NDVI data for the given grid not found")
+        raise HTTPException(status_code=404, detail="NDVI data for the given grid and period not found")
     return db_ndvi
+
+@router.get("/{grid_id}", response_model=List[ndvi_schemas.NDVIResponse]) # Endpoint to get all periods for a grid
+def get_ndvi_for_grid(grid_id: int, db_session: Session = Depends(db.get_db)):
+    db_ndvi_list = db_session.query(models.NDVI).filter_by(grid=grid_id).all()
+    if not db_ndvi_list:
+        raise HTTPException(status_code=404, detail="NDVI data for the given grid not found")
+    return db_ndvi_list
 
 @router.get("/", response_model=List[ndvi_schemas.NDVIResponse])
 def get_all_ndvi_data(skip: int = 0, limit: int = 1000, db_session: Session = Depends(db.get_db)):
