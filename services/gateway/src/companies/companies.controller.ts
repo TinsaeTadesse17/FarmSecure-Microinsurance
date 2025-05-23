@@ -82,6 +82,10 @@ export class CompanyManagementController {
     @Body('role') role: string
   ): Promise<CredentialResponseDto> {
     try {
+      if (role == null) {
+        role = 'ic'
+        this.logger.error("Role was null. Proceeding with the default ic.")
+      }
       return await this.companyManagementService.generateCredentials(id, role);
     } catch (err) {
       throw new HttpException(err.message, err.status || HttpStatus.INTERNAL_SERVER_ERROR);
