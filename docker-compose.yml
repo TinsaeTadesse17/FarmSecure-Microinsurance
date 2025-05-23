@@ -360,12 +360,15 @@ services:
   claim_service:
     build: ./services/claim_management
     container_name: claim_service
+    env_file:
+      - .env
     depends_on:
       claim_db:
         condition: service_healthy  # Add healthcheck dependency
     environment:
       DATABASE_URL: postgresql://claim_user:claim_password@claim_db:5432/claim_db
       POLICY_SERVICE_URL: http://policy_service:8000
+      CONFIG_SERVICE_URL: http://config_service:8008
     ports:
       - "8007:8000" 
     networks:
