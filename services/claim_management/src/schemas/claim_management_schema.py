@@ -37,3 +37,7 @@ class ErrorResponse(BaseModel):
 
 class ClaimAuthorizeSchema(BaseModel):
     status: ClaimStatusEnum = ClaimStatusEnum.AUTHORIZED
+
+class ClaimTriggerSchema(BaseModel):
+    customer_id: int
+    period: int
