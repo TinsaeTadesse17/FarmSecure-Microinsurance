@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from src.routes import cps_zone, ndvi # We will create these route files next
 from src.database.db import Base, engine
 
@@ -11,6 +12,15 @@ app = FastAPI(
     title="Configuration Microservice",
     description="Manages CPS Zone and NDVI configurations.",
     version="0.1.0"
+)
+
+# allow CORS for frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(cps_zone.router, prefix="/api/v1/cps-zone", tags=["CPS Zone"])
