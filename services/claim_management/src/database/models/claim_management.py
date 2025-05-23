@@ -23,6 +23,7 @@ class Claim(Base):
     policy_id = Column(Integer, nullable=False)
     customer_id = Column(Integer, nullable=False)
     grid_id = Column(Integer, nullable=False)
+    period = Column(Integer, nullable=False, index=True) # Added period column
 
     # Store enums as plain strings
     claim_type = Column(String, nullable=False)
@@ -31,4 +32,3 @@ class Claim(Base):
 
     calculated_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    

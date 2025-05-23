@@ -9,7 +9,7 @@ import httpx
 class EnrolementService:
     def __init__(self, db: Session):
         self.db = db
-    def create_enrolement(self, enrolement: EnrolementRequest, customer_id:int):
+    def create_enrolement(self, enrolement, customer_id:int):
         
         # Check for duplicate customer ID
         # 1. Prevent duplicate enrolment

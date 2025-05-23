@@ -20,3 +20,4 @@ class GridAndZoneGetter:
         if not (1 <= closest_row["CPS_ZONE"] <= 200):
             raise ValueError(f"CPS_ZONE {closest_row['CPS_ZONE']} is out of range (1-200).")
         return float(closest_row["GRID_CODE"]), float(closest_row["CPS_ZONE"])
+    

@@ -3,6 +3,7 @@ from src.database.db import engine
 from src.database.models.claim_management import Base
 from src.routes.claim_management import router as claim_router
 from fastapi.middleware.cors import CORSMiddleware  
+from src.core.config import settings  # import API version prefix
 
 
 app = FastAPI(title="Claim Management Service")
@@ -19,7 +20,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(claim_router, prefix="/api/claim")
+app.include_router(
+    claim_router,
+    prefix=f"{settings.API_V1_STR}/claim",  # use /api/v1/claim
+)
 
 if __name__ == "__main__":
     import uvicorn

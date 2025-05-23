@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from pydantic import BaseModel
 
 class CustomerResponse(BaseModel):
@@ -25,8 +26,8 @@ class EnrolementRequest(BaseModel):
     product_id: int
     lattitude: float
     longitude: float
-    grid: int = None
-    cps_zone: int = None
+    grid: int
+    cps_zone: int
 
 
 class EnrolementResponse(BaseModel):
@@ -44,7 +45,7 @@ class EnrolementResponse(BaseModel):
     date_to: datetime
     receipt_no: str
     product_id: int
-    cps_zone: int = None
-    grid: int = None
+    cps_zone: int | float
+    grid: int | float | Decimal | None
     lattitude: float 
     longitude: float

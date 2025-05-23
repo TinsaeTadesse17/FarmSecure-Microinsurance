@@ -31,7 +31,7 @@ export default function Sidebar() {
         </Link>
       </nav>
 
-      <div className="mt-20 pt-6 border-t border-[#e0e7d4]">
+      <div className="mt-90 pt-6 border-t border-[#e0e7d4]">
         <div className="text-sm text-[#7a938f] px-3">
           &copy; 2025 AgriTeck. All rights reserved.
         </div>

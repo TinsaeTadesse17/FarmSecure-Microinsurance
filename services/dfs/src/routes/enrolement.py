@@ -14,6 +14,8 @@ from src.database.models.customer import Customer
 
 POLICY_SERVICE_URL = settings.POLICY_SERVICE_URL + '/api'
 
+grid_zone_getter = GridAndZoneGetter()
+
 router = APIRouter()
 
 @router.post("/", response_model=EnrolementResponse, status_code=201)
@@ -32,7 +34,6 @@ def create_enrolement(
             account_type=enrolement.account_type,
         )
         customer_id = customer_service.create_customer(customer)
-        grid_zone_getter = GridAndZoneGetter()
 
         grid , cps_zone = grid_zone_getter.get_grid_and_zone_inference_filtered(enrolement.lattitude,  enrolement.longitude)
         enrolement.cps_zone = cps_zone
