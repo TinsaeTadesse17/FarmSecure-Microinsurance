@@ -69,9 +69,9 @@ def create_enrolement(
         receipt_no=enrolement.receipt_no,
         product_id=enrolement.product_id,
         cps_zone=enrolement.cps_zone,
-        grid=enrolement.grid, # Added missing grid field
-        lattitude=enrolement.lattitude,  # Added missing lattitude field
-        longitude=enrolement.longitude  # Added missing longitude field
+        grid=enrolement.grid,
+        lattitude=enrolement.lattitude,
+        longitude=enrolement.longitude,
     )
     return enroll
 
