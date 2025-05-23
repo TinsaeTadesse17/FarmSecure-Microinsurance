@@ -9,6 +9,7 @@ export interface Product {
   type: string; // Should match ProductType enum
   commission_rate: number;
   created_at: string;
+  company_id: number;
 }
 
 export interface ProductCreate {
