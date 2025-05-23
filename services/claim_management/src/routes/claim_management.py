@@ -67,17 +67,6 @@ async def fetch_policy_details():
             logger.exception("Error fetching policy details from policy service." + str(e))
             raise HTTPException(status_code=503, detail="Policy service is unavailable.")
 
-def calculate_crop_claim_amount(ndvi_values: list[float], sum_insured: float):
-    avg_ndvi = sum(ndvi_values) / len(ndvi_values)
-    
-    if avg_ndvi >= CROP_TRIGGER:
-        return 0.0
-    elif avg_ndvi <= CROP_EXIT: # Corrected avg_nddi to avg_ndvi
-        return sum_insured
-    else:
-        ratio = (CROP_TRIGGER - avg_ndvi) / (CROP_TRIGGER - CROP_EXIT)
-        return round(ratio * sum_insured, 2)
-
 def calculate_livestock_claim(z_score: float, sum_insured: float):
     if z_score >= LIVESTOCK_TRIGGER:
         return 0.0
@@ -158,7 +147,7 @@ async def process_all_claims_task(db_session_factory, background_tasks_parent: B
                     update_claim_amount(db, created_claim.id, 0.0)
                     update_claim_status(db, created_claim.id, ClaimStatusEnum.SETTLED.value) # Mark as settled with 0 if config fails
                     if cfg_resp.status_code == 404:
-                        logger.warning(f"Config data missing for CPS zone {cps}, period {period}. Claim ID {claim_id_for_logging} marked as SETTLED.")
+                        logger.warning(f"Config data missing for CPS zone {cps}, period {period}. Claim ID {claim_id_for_logging} marked as SETTLED. Link: {cfg_resp.url}")
                     else:
                         logger.warning(f"Config service issue for CPS zone {cps}, period {period}. Claim ID {claim_id_for_logging} marked as SETTLED.")
                     continue 
@@ -224,19 +213,61 @@ class CustomerClaimsSummarySchema(BaseModel):
 async def process_claim(claim_id: int, claim_type: str, policy_data: dict):
     db = SessionLocal()
     try:
-        cps_zone = policy_data['cps_zone']
+        # grid_id for NDVI can be 'grid' or fallback to 'cps_zone' from policy_data
+        grid_id_for_ndvi = policy_data.get('grid') or policy_data['cps_zone']
+        period_for_ndvi = policy_data['period']
         sum_insured = float(policy_data['period_sum_insured'])
-        # fetch NDVI
+
+        # Fetch NDVI using the new specific endpoint: /ndvi/{grid_id}/{period}
+        ndvi_val = 0.0  # Default NDVI value
         async with httpx.AsyncClient(timeout=timeout) as client:
-            ndvi_resp = await client.get(f"{CONFIG_BASE}{settings.API_V1_STR}/ndvi/{cps_zone}")
-            ndvi_resp.raise_for_status()
-            ndvi_val = ndvi_resp.json().get('ndvi', 0.0)
+            ndvi_url = f"{CONFIG_BASE}{settings.API_V1_STR}/ndvi/{int(grid_id_for_ndvi)}/{int(period_for_ndvi)}"
+            logger.info(f"Fetching NDVI for claim_id {claim_id}: URL: {ndvi_url}")
+            try:
+                ndvi_resp = await client.get(ndvi_url)
+                ndvi_resp.raise_for_status()  # Raise an exception for HTTP 4xx or 5xx errors
+                ndvi_json = ndvi_resp.json()
+                
+                # Corrected to use 'ndvi_value'
+                if isinstance(ndvi_json.get('ndvi_value'), (int, float)):
+                    ndvi_val = float(ndvi_json['ndvi_value'])
+                    logger.info(f"Successfully fetched NDVI value {ndvi_val} for claim_id {claim_id}, grid {grid_id_for_ndvi}, period {period_for_ndvi}.")
+                else:
+                    # Corrected log message and key access
+                    logger.error(f"NDVI key 'ndvi_value' missing or not a number in response from {ndvi_url} for claim_id {claim_id}. Response: {ndvi_json}. Defaulting NDVI to 0.0.")
+                    # Consider if claim status should be updated to 'failed' here or if claim should be settled with 0
+                    update_claim_amount(db, claim_id, 0.0)
+                    update_claim_status(db, claim_id, ClaimStatusEnum.SETTLED.value)
+                    logger.warning(f"Claim ID {claim_id} marked as SETTLED due to missing/invalid NDVI value.")
+                    return # Exit processing for this claim if NDVI is critical and missing
+            except httpx.HTTPStatusError as e:
+                logger.error(f"HTTP error fetching NDVI from {ndvi_url} for claim_id {claim_id}: {e}. Defaulting NDVI to 0.0 and marking claim as SETTLED.")
+                update_claim_amount(db, claim_id, 0.0)
+                update_claim_status(db, claim_id, ClaimStatusEnum.SETTLED.value)
+                return # Exit processing for this claim
+            except Exception as e:
+                logger.error(f"Error fetching or parsing NDVI from {ndvi_url} for claim_id {claim_id}: {e}. Defaulting NDVI to 0.0 and marking claim as SETTLED.")
+                update_claim_amount(db, claim_id, 0.0)
+                update_claim_status(db, claim_id, ClaimStatusEnum.SETTLED.value)
+                return # Exit processing for this claim
+        
         # calculate amount based on config thresholds
         if claim_type == ClaimTypeEnum.CROP.value:
-            period = policy_data['period']
+            # cps_zone is used for fetching crop configuration (trigger/exit points)
+            cps_zone_for_config = policy_data['cps_zone'] 
+            period_for_config = policy_data['period'] # period is already available
+
             async with httpx.AsyncClient(timeout=timeout) as client:
-                cfg_resp = await client.get(f"{CONFIG_BASE}{settings.API_V1_STR}/cps_zone/{cps_zone}/{period}")
-                cfg_resp.raise_for_status()
+                cfg_url = f"{CONFIG_BASE}{settings.API_V1_STR}/cps_zone/{int(cps_zone_for_config)}/{int(period_for_config)}"
+                logger.info(f"Fetching CROP config for claim_id {claim_id}: URL: {cfg_url}")
+                cfg_resp = await client.get(cfg_url)
+                # Handle config fetch failure specifically for CROP claims
+                if cfg_resp.status_code != 200:
+                    logger.error(f"Failed to fetch CROP config from {cfg_url} for claim_id {claim_id}. Status: {cfg_resp.status_code}. Marking claim as SETTLED with 0 amount.")
+                    update_claim_amount(db, claim_id, 0.0)
+                    update_claim_status(db, claim_id, ClaimStatusEnum.SETTLED.value)
+                    return # Exit processing for this claim
+                
                 cfg = cfg_resp.json()
             trig, exitp = cfg.get('trigger_point', 0), cfg.get('exit_point', 0)
             # no growing season yields zero claim
@@ -270,22 +301,39 @@ async def create_crop_claim(
     policy_details = await fetch_policy_details()
     crops = [p for p in policy_details if p['product_type'] == 1 and p['period'] == period]
     if not crops:
-        raise HTTPException(400, "No valid crop policies found")
+        raise HTTPException(400, "No valid crop policies found for the specified period")
     for policy in crops:
-        claim = create_claim(db, {
-            "policy_id": policy['policy_id'],
-            "customer_id": policy['customer_id'],
-            "grid_id": policy['cps_zone'],
-            "claim_type": ClaimTypeEnum.CROP.value,
-            "status": ClaimStatusEnum.PROCESSING.value
-        })
-        background_tasks.add_task(
-            process_claim,
-            claim.id,
-            ClaimTypeEnum.CROP.value,
-            policy
-        )
-    return {"message": "Claims are being processed."}
+        # Ensure claim is committed and ID is available before adding to background task
+        db.begin_nested() # Use a nested transaction for individual claim creation
+        try:
+            claim_instance = create_claim(db, {
+                "policy_id": policy['policy_id'],
+                "customer_id": policy['customer_id'],
+                "grid_id": policy.get('grid') or policy['cps_zone'], # Use 'grid' if available, else 'cps_zone'
+                "claim_type": ClaimTypeEnum.CROP.value,
+                "status": ClaimStatusEnum.PROCESSING.value,
+                "period": policy['period'] # Ensure period is included
+            })
+            db.commit() # Commit the nested transaction to get the ID
+            # The claim_instance should now have an integer ID if create_claim refreshes it.
+            # If create_claim doesn't refresh, you might need to query it or ensure it does.
+            # For now, assuming claim_instance.id is an int after commit.
+            if claim_instance and isinstance(claim_instance.id, int):
+                background_tasks.add_task(
+                    process_claim,
+                    claim_instance.id, # Pass the integer ID
+                    ClaimTypeEnum.CROP.value,
+                    policy
+                )
+            else:
+                logger.error(f"Failed to create claim or get valid ID for policy {policy.get('policy_id')}")
+                # Optionally, rollback the main transaction or handle error
+        except Exception as e:
+            db.rollback() # Rollback nested transaction on error
+            logger.error(f"Error creating claim for policy {policy.get('policy_id')}: {e}")
+            # Decide if to continue with other policies or raise an error
+
+    return {"message": "Crop claims processing initiated for the specified period."}
 
 @router.post("/claims/livestock", response_model=dict)
 async def create_livestock_claim(
@@ -297,20 +345,31 @@ async def create_livestock_claim(
     if not livestocks:
         raise HTTPException(400, "No valid livestock policies found")
     for policy in livestocks:
-        claim = create_claim(db, {
-            "policy_id": policy['policy_id'],
-            "customer_id": policy['customer_id'],
-            "grid_id": policy['cps_zone'],
-            "claim_type": ClaimTypeEnum.LIVESTOCK.value,
-            "status": ClaimStatusEnum.PROCESSING.value
-        })
-        background_tasks.add_task(
-            process_claim,
-            claim.id,
-            ClaimTypeEnum.LIVESTOCK.value,
-            policy
-        )
-    return {"message": "Claims are being processed."}
+        db.begin_nested()
+        try:
+            claim_instance = create_claim(db, {
+                "policy_id": policy['policy_id'],
+                "customer_id": policy['customer_id'],
+                "grid_id": policy.get('grid') or policy['cps_zone'], # Use 'grid' if available, else 'cps_zone'
+                "claim_type": ClaimTypeEnum.LIVESTOCK.value,
+                "status": ClaimStatusEnum.PROCESSING.value,
+                "period": policy['period'] # Ensure period is included
+            })
+            db.commit()
+            if claim_instance and isinstance(claim_instance.id, int):
+                background_tasks.add_task(
+                    process_claim,
+                    claim_instance.id, # Pass the integer ID
+                    ClaimTypeEnum.LIVESTOCK.value,
+                    policy
+                )
+            else:
+                logger.error(f"Failed to create claim or get valid ID for policy {policy.get('policy_id')}")
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error creating claim for policy {policy.get('policy_id')}: {e}")
+
+    return {"message": "Livestock claims processing initiated."}
 
 @router.post("/claims/trigger", response_model=dict)
 async def trigger_claims(

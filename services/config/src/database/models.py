@@ -19,11 +19,14 @@ class CPSZonePeriodConfig(Base):
 class NDVI(Base):
     __tablename__ = "ndvi"
 
-    id: int = Column(Integer, primary_key=True, index=True)
-    grid: int = Column(Integer, unique=True, index=True, nullable=False)
-    ndvi: float = Column(Float, nullable=False)  # Added Python type hint
-    created_at: datetime.datetime = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at: datetime.datetime = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    id = Column(Integer, primary_key=True, index=True)
+    grid = Column(Integer, index=True, nullable=False)
+    period = Column(Integer, index=True, nullable=False)
+    ndvi = Column(Float, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    __table_args__ = (UniqueConstraint('grid', 'period', name='_grid_period_uc'),)
 
 
 class UploadedFile(Base):
