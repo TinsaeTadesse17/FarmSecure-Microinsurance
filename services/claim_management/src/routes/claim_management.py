@@ -22,7 +22,7 @@ from src.database.crud.claim_management_crud import (
     get_claim,
     authorize_claim
 )
-from src.database.models.claim_management import ClaimStatusEnum, ClaimTypeEnum  # Import missing enums
+from src.database.models.claim_management import ClaimStatusEnum, ClaimTypeEnum, Claim  # Added Claim model import
 from src.core.config import settings
 import logging
 
@@ -108,19 +108,33 @@ async def process_all_claims_task(db_session_factory, background_tasks_parent: B
             claim_id_for_logging = "N/A"
             try:
                 logger.debug(f"Processing policy {policy_index + 1}/{len(policies)}: {policy.get('policy_id')}")
-                ctype = ClaimTypeEnum.CROP.value if policy.get('product_type') == 1 else ClaimTypeEnum.LIVESTOCK.value
                 
                 required_keys = ['policy_id', 'customer_id', 'cps_zone', 'period', 'product_type', 'period_sum_insured']
                 if not all(policy.get(k) is not None for k in required_keys):
                     logger.error(f"Skipping policy due to missing essential details: Policy Data {policy}")
                     continue
 
+                current_policy_id = policy['policy_id']
+                current_period = policy['period']
+                ctype = ClaimTypeEnum.CROP.value if policy.get('product_type') == 1 else ClaimTypeEnum.LIVESTOCK.value
+
+                # Check if a claim for this policy_id and period already exists
+                existing_claim = db.query(Claim).filter(
+                    Claim.policy_id == current_policy_id,
+                    Claim.period == current_period 
+                ).first()
+
+                if existing_claim:
+                    logger.info(f"Claim already exists for policy_id {current_policy_id} and period {current_period} (Claim ID: {existing_claim.id}). Skipping creation.")
+                    continue
+                
                 claim_data = {
-                    "policy_id": policy['policy_id'],
+                    "policy_id": current_policy_id,
                     "customer_id": policy['customer_id'],
-                    "grid_id": policy.get('grid') or policy['cps_zone'], # Ensure grid_id is populated
+                    "grid_id": policy.get('grid') or policy['cps_zone'], 
                     "claim_type": ctype,
-                    "status": ClaimStatusEnum.PROCESSING.value
+                    "status": ClaimStatusEnum.PROCESSING.value,
+                    "period": current_period  # Added period to claim_data
                 }
                 
                 created_claim = create_claim(db, claim_data)
@@ -137,8 +151,8 @@ async def process_all_claims_task(db_session_factory, background_tasks_parent: B
                 period = policy['period']
 
                 async with httpx.AsyncClient(timeout=timeout) as client:
-                    cfg_resp = await client.get(f"{CONFIG_BASE}{settings.API_V1_STR}/cps_zone/{cps}/{period}")
-
+                    cfg_resp = await client.get(f"{CONFIG_BASE}{settings.API_V1_STR}/cps_zone/{int(cps)}/{int(period)}")
+ 
                 if cfg_resp.status_code != 200:
                     logger.error(f"Error fetching config for Claim ID {claim_id_for_logging}, Policy {policy.get('policy_id')}, CPS zone {cps}, Period {period}. Status: {cfg_resp.status_code}, Response: {cfg_resp.text}")
                     update_claim_amount(db, created_claim.id, 0.0)
