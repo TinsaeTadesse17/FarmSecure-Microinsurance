@@ -51,11 +51,11 @@ export default function Sidebar() {
           Enrollments
         </Link>
         <Link
-          href="/ic/ndvi"
+          href="/ic/claims"
           className="flex items-center gap-3 p-3 rounded-lg text-[#5a736e] hover:bg-[#eef4e5] hover:text-[#3a584e] transition-all"
         >
           <ImageIcon className="w-5 h-5" />
-          NDVI
+          Claims
         </Link>
       </nav>
 
