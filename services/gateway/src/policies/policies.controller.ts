@@ -1,32 +1,61 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { PoliciesService } from './policies.service';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
-@Controller('policies')
+@ApiTags('Policies')
+@Controller('api/v1')
 export class PoliciesController {
   constructor(private readonly policiesService: PoliciesService) {}
 
-  @Post()
-  create( ) {
-    return this.policiesService.create();
+  @Post('policy')
+  @ApiOperation({ summary: 'Create a new policy' })
+  @ApiResponse({ status: 201, description: 'Policy created successfully' })
+  async createPolicy(@Body() policyCreateSchema: any) {
+    return this.policiesService.createPolicy(policyCreateSchema);
   }
 
-  @Get()
-  findAll() {
-    return this.policiesService.findAll();
+  @Post('policy/:policy_id/approve')
+  @ApiOperation({ summary: 'Approve a policy' })
+  @ApiResponse({ status: 200, description: 'Policy approved successfully' })
+  async approvePolicy(@Param('policy_id') policy_id: string) {
+    return this.policiesService.approvePolicy(policy_id);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.policiesService.findOne(+id);
+  @Post('policy/:policy_id/reject')
+  @ApiOperation({ summary: 'Reject a policy' })
+  @ApiResponse({ status: 200, description: 'Policy rejected successfully' })
+  async rejectPolicy(@Param('policy_id') policy_id: string) {
+    return this.policiesService.rejectPolicy(policy_id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string) {
-    return this.policiesService.update(+id );
+  @Get('policy/:policy_id/details')
+  @ApiOperation({ summary: 'Get policy details by policy ID' })
+  @ApiResponse({ status: 200, description: 'Returns policy details' })
+  @ApiResponse({ status: 404, description: 'Policy not found' })
+  async getPolicyDetails(@Param('policy_id') policy_id: string) {
+    return this.policiesService.getPolicyDetails(policy_id);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.policiesService.remove(+id);
+  @Get('/policies') // Adjusted path to avoid conflict with /api/v1/policy/:policy_id
+  @ApiOperation({ summary: 'List all policies' })
+  @ApiResponse({ status: 200, description: 'Returns a list of policies' })
+  async getAllPolicies() {
+    return this.policiesService.getAllPolicies();
   }
+
+  @Get('/policies/details') // Adjusted path
+  @ApiOperation({ summary: 'List all policy details' })
+  @ApiResponse({ status: 200, description: 'Returns a list of all policy details' })
+  async getAllPolicyDetails() {
+    return this.policiesService.getAllPolicyDetails();
+  }
+
+  @Get('policy/:policy_id')
+  @ApiOperation({ summary: 'Get a policy by ID' })
+  @ApiResponse({ status: 200, description: 'Returns a single policy' })
+  @ApiResponse({ status: 404, description: 'Policy not found' })
+  async getPolicy(@Param('policy_id') policy_id: string) {
+    return this.policiesService.getPolicy(policy_id);
+  }
+
 }
