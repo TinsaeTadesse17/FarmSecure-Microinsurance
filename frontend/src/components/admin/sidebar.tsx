@@ -38,12 +38,12 @@ export default function Sidebar() {
           User Management
         </Link>
         <Link
-          href="#"
+          href="/admin/ndvi"
           className="flex items-center gap-3 p-3 rounded-lg text-[#5a736e] hover:bg-[#eef4e5] hover:text-[#3a584e] transition-all cursor-pointer"
           tabIndex={0}
         >
           <Sprout className="w-5 h-5" />
-          NDVI Upload
+          NDVI & CPS Config
         </Link>
       </nav>
 
