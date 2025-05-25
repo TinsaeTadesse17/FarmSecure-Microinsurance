@@ -9,18 +9,18 @@ import { ClaimsModule } from './claims/claims.module';
 import { PaymentsModule } from './payments/payments.module';
 import { CommissionsModule } from './commissions/commissions.module';
 import { RiskModule } from './risk/risk.module';
-import { NdviModule } from './ndvi/ndvi.module';
-import { DashboardModule } from './dashboard/dashboard.module';
 import { ReportsModule } from './reports/reports.module';
 import { UsersModule } from './users/users.module';
 import { UsersController } from './users/users.controller';
 import { HttpModule } from '@nestjs/axios';
 import { ThrottlerModule, ThrottlerGuard, minutes } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { DfsModule } from './dfs/dfs.module';
+import { ConfigModule } from './config/config.module'; 
 
 
 @Module({
-  imports: [AuthModule,HttpModule, ProductsModule, CompanyManagementModule, PoliciesModule, ClaimsModule, PaymentsModule, CommissionsModule, RiskModule, NdviModule, DashboardModule, ReportsModule, UsersModule, 
+  imports: [AuthModule, HttpModule, ProductsModule, CompanyManagementModule, PoliciesModule, ClaimsModule, PaymentsModule, CommissionsModule, RiskModule, ReportsModule, UsersModule, DfsModule, ConfigModule, // Added ConfigModule to imports
     ThrottlerModule.forRoot({
       throttlers: [
         {

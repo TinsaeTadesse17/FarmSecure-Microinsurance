@@ -1,69 +1,110 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { AxiosError } from 'axios';
+
+const USER_SERVICE_BASE_URL = 'http://user_service:8000/api/user';
 
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
-  private readonly baseUrl = process.env.USER_SERVICE_URL || 'http://user_service:8000';
 
   constructor(private readonly httpService: HttpService) {}
 
-  async create(userData: any) {
+  async login(loginRequest: any) {
     try {
-      const { data } = await firstValueFrom(
-        this.httpService.post(`${this.baseUrl}/api/users`, userData)
+      const response = await firstValueFrom(
+        this.httpService.post(`${USER_SERVICE_BASE_URL}/login`, loginRequest),
       );
-      return data;
-    } catch (error) {
-      this.handleAxiosError(error, 'Error creating user');
+      return response.data;
+    } catch (error: any) {
+      this.logger.error('Login failed', error.stack);
+      throw new HttpException(
+        error.response?.data || 'Login failed',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
-  async findOne(id: number) {
+  async createUser(userCreate: any) {
     try {
-      const { data } = await firstValueFrom(
-        this.httpService.get(`${this.baseUrl}/api/users/${id}`)
+      const response = await firstValueFrom(
+        this.httpService.post(`${USER_SERVICE_BASE_URL}/`, userCreate),
       );
-      return data;
-    } catch (error) {
-      this.handleAxiosError(error, `Error fetching user ${id}`);
+      return response.data;
+    } catch (error: any) {
+      this.logger.error('User creation failed', error.stack);
+      throw new HttpException(
+        error.response?.data || 'User creation failed',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
-  async findByEmail(email: string) {
+  async createAgent(userCreate: any) {
     try {
-      const { data } = await firstValueFrom(
-        this.httpService.get(`${this.baseUrl}/api/users/email/${email}`)
+      const response = await firstValueFrom(
+        this.httpService.post(`${USER_SERVICE_BASE_URL}/agent`, userCreate),
       );
-      return data;
-    } catch (error) {
-      if ((error as AxiosError).response?.status === 404) {
-        return null;
-      }
-      this.handleAxiosError(error, `Error finding user by email ${email}`);
+      return response.data;
+    } catch (error: any) {
+      this.logger.error('Agent creation failed', error.stack);
+      throw new HttpException(
+        error.response?.data || 'Agent creation failed',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
-  async updateRoles(id: number, rolesData: any) {
+  async getMe(user: any) {
+    // The user object is already available from the JwtAuthGuard
+    return user;
+  }
+
+  async getIcUsers() {
     try {
-      const { data } = await firstValueFrom(
-        this.httpService.put(`${this.baseUrl}/api/users/${id}/roles`, rolesData)
+      const response = await firstValueFrom(
+        this.httpService.get(`${USER_SERVICE_BASE_URL}/ics`),
       );
-      return data;
-    } catch (error) {
-      this.handleAxiosError(error, `Error updating roles for user ${id}`);
+      return response.data;
+    } catch (error: any) {
+      this.logger.error('Failed to fetch IC users', error.stack);
+      throw new HttpException(
+        error.response?.data || 'Failed to fetch IC users',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
-  private handleAxiosError(error: AxiosError, context: string) {
-    this.logger.error(`${context}: ${error.message}`, error.stack);
-    
-    if (error.response?.status === 404) {
-      throw new NotFoundException(error.response?.data || 'User not found');
+  async updateUser(userId: string, userUpdate: any) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.put(`${USER_SERVICE_BASE_URL}/update/${userId}`, userUpdate),
+      );
+      return response.data;
+    } catch (error: any) {
+      this.logger.error(`Failed to update user ${userId}`, error.stack);
+      throw new HttpException(
+        error.response?.data || 'Failed to update user',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
-    
-    throw error;
+  }
+
+  async getAgents(user: any) {
+    // Assuming the user_service /agents endpoint filters by the authenticated IC user
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(`${USER_SERVICE_BASE_URL}/agents`, {
+          // Pass necessary headers if the downstream service expects authentication
+        }),
+      );
+      return response.data;
+    } catch (error: any) {
+      this.logger.error('Failed to fetch agents', error.stack);
+      throw new HttpException(
+        error.response?.data || 'Failed to fetch agents',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }
