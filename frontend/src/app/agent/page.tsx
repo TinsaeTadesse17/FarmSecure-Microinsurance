@@ -1,276 +1,356 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
-import Sidebar from '@/components/ic/sidebar';
+
+import React, { useState } from 'react';
+import Sidebar from '@/components/agent/sidebar';
 import AvatarMenu from '@/components/common/avatar';
-import { Sprout, ClipboardList } from 'lucide-react';
-import {
-  listEnrollments,
-  approveEnrollment,
-  rejectEnrollment,
-  EnrollmentResponse
-} from '@/utils/api/enrollment';
-import { getToken, getCurrentUser } from '@/utils/api/user';
+import { createEnrollment } from '@/utils/api/enrollment';
+import { getToken } from '@/utils/api/user';
+import { jwtDecode } from 'jwt-decode';
+import EnrollmentList from '@/components/agent/enrollmentList';
+import { UserPlus, AlertTriangle, CheckCircle2, ListChecks, RefreshCw } from 'lucide-react';
+import dynamic from 'next/dynamic';
 
 const MapPicker = dynamic(() => import('@/components/agent/mapPicker'), { ssr: false });
 
-export default function EnrollmentManagementPage() {
-  const [enrollments, setEnrollments] = useState<EnrollmentResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [formVisible, setFormVisible] = useState(false);
+interface DecodedToken {
+  company_id: number[];
+  sub: string;
+  [key: string]: any;
+}
+
+export default function CustomerEnrollmentPage() {
   const [formData, setFormData] = useState({
-    customerId: '',
-    premium: '',
-    sumInsured: '',
+    fName: '',
+    mName: '',
+    lName: '',
+    accountNo: '',
+    accountType: 'ID',
+    premium: 500,
+    sumInsured: 10000,
     dateFrom: '',
-    dateTo: ''
+    dateTo: '',
+    receiptNo: '',
+    productId: 1,
+    cpsZone: '',
+    longitude: '', 
+    lattitude: '',
+    grid: ''
   });
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [companyId, setCompanyId] = useState<number | null>(null);
+  const [userId, setUserId] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    const fetchEnrollments = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const token = await getToken();
-        if (!token) throw new Error('Authentication token not found');
+  React.useEffect(() => {
+    const token = getToken();
+    if (!token) return;
 
-        const user = await getCurrentUser(token);
-        const data = await listEnrollments();
-        const filtered = data.filter(enr => enr.ic_company_id === user.company_id);
-        setEnrollments(filtered);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch enrollments');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchEnrollments();
+    try {
+      const decoded = jwtDecode<DecodedToken>(token);
+      setCompanyId(decoded.company_id?.[0] || null);
+      setUserId(parseInt(decoded.sub));
+    } catch {
+      setErrorMessage('Invalid token or unable to extract user info');
+    }
   }, []);
 
-  const handleApprove = async (id: number) => {
-    try {
-      await approveEnrollment(id);
-      setEnrollments(prev =>
-        prev.map(enr =>
-          enr.enrolement_id === id ? { ...enr, status: 'approved' } : enr
-        )
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to approve enrollment');
-    }
-  };
-
-  const handleReject = async (id: number) => {
-    try {
-      await rejectEnrollment(id);
-      setEnrollments(prev =>
-        prev.map(enr =>
-          enr.enrolement_id === id ? { ...enr, status: 'rejected' } : enr
-        )
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to reject enrollment');
-    }
-  };
-
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === 'premium' || name === 'sumInsured' || name === 'productId' 
+        ? parseFloat(value) || 0 
+        : value
+    }));
   };
+ const handleLocationSelect = (lat: number, lng: number) => {
+  setFormData(prev => ({
+    ...prev,
+    lattitude: lat.toString(),
+    longitude: lng.toString()
+  }));
+};
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // You can submit the formData and location here to the backend
-    alert(`Form submitted with location: ${location?.lat}, ${location?.lng}`);
-  };
+    setSuccessMessage('');
+    setErrorMessage('');
+    setIsSubmitting(true);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
-  };
+    if (!companyId || !userId) {
+      setErrorMessage('Missing user or company info');
+      setIsSubmitting(false);
+      return;
+    }
 
-  const statusStyles = {
-    approved: 'bg-emerald-100/80 text-emerald-800 border-emerald-200',
-    rejected: 'bg-rose-100/80 text-rose-800 border-rose-200',
-    pending: 'bg-amber-100/80 text-amber-800 border-amber-200',
+    try {
+      await createEnrollment({
+        f_name: formData.fName,
+        m_name: formData.mName,
+        l_name: formData.lName,
+        account_no: formData.accountNo,
+        account_type: formData.accountType,
+        user_id: userId,
+        ic_company_id: companyId,
+        branch_id: 1,
+        premium: formData.premium,
+        sum_insured: formData.sumInsured,
+        date_from: formData.dateFrom,
+        date_to: formData.dateTo,
+        receipt_no: formData.receiptNo,
+        product_id: formData.productId,
+        cps_zone: formData.cpsZone,
+        longitude: formData.longitude,
+        lattitude: formData.lattitude,
+        grid: formData.grid
+
+      });
+
+      setSuccessMessage('Customer enrolled successfully!');
+      setFormData({
+        fName: '',
+        mName: '',
+        lName: '',
+        accountNo: '',
+        accountType: 'ID',
+        premium: 500,
+        sumInsured: 10000,
+        dateFrom: '',
+        dateTo: '',
+        receiptNo: '',
+        productId: 1,
+        cpsZone: '',
+        longitude: '',
+        lattitude: '' ,
+        grid: ''  
+      });
+    } catch (error: any) {
+      setErrorMessage(error.message || 'Enrollment failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="flex min-h-screen bg-[#f9f8f3] text-[#2c423f]">
       <Sidebar />
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-8 max-w-4xl mx-auto">
         <div className="flex justify-between items-start mb-8">
           <div>
             <h1 className="text-3xl font-bold text-[#3a584e] flex items-center gap-3">
-              <ClipboardList className="w-8 h-8 text-[#8ba77f]" />
-              Enrollment Management
+              <UserPlus className="w-8 h-8 text-[#8ba77f]" />
+              Customer Enrollment
               <span className="ml-4 text-sm font-normal bg-[#eef4e5] px-3 py-1 rounded-full">
-                Policy Approvals
+                New Policy Registration
               </span>
             </h1>
-            <p className="mt-2 text-[#7a938f]">Review and manage policy enrollments</p>
+            <p className="mt-2 text-[#7a938f] max-w-2xl">
+              Register new agricultural insurance policies and manage customer coverage
+            </p>
           </div>
           <AvatarMenu />
         </div>
 
-        <div className="mb-10">
-          <button
-            className="mb-4 px-4 py-2 bg-[#8ba77f] text-white rounded-lg hover:bg-[#7a937f]"
-            onClick={() => setFormVisible(prev => !prev)}
-          >
-            {formVisible ? 'Hide Form' : 'Add Enrollment'}
-          </button>
+        <div className="space-y-8">
+          <div className="bg-white p-6 rounded-xl border border-[#e0e7d4] shadow-sm">
+            <h2 className="text-xl font-semibold text-[#3a584e] mb-6 pb-2 border-b border-[#e0e7d4] flex items-center gap-2">
+              <UserPlus className="w-5 h-5" />
+              New Policy Form
+            </h2>
+            
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-[#3a584e]">Personal Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {['fName', 'mName', 'lName'].map((field) => (
+                    <div key={field}>
+                      <label className="block text-sm font-medium text-[#7a938f] mb-2">
+                        {field === 'fName' ? 'First Name*' : 
+                         field === 'mName' ? 'Middle Name*' : 'Last Name*'}
+                      </label>
+                      <input
+                        type="text"
+                        name={field}
+                        value={formData[field as keyof typeof formData]}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
+                        required
+                      />
+                    </div>
+                  ))}
+                </div>
 
-          {formVisible && (
-            <form onSubmit={handleFormSubmit} className="bg-white p-6 rounded-lg border mb-6 space-y-4">
-              <input
-                name="customerId"
-                type="text"
-                placeholder="Customer ID"
-                value={formData.customerId}
-                onChange={handleFormChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded"
-                required
-              />
-              <input
-                name="premium"
-                type="number"
-                placeholder="Premium"
-                value={formData.premium}
-                onChange={handleFormChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded"
-                required
-              />
-              <input
-                name="sumInsured"
-                type="number"
-                placeholder="Sum Insured"
-                value={formData.sumInsured}
-                onChange={handleFormChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded"
-                required
-              />
-              <input
-                name="dateFrom"
-                type="date"
-                value={formData.dateFrom}
-                onChange={handleFormChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded"
-                required
-              />
-              <input
-                name="dateTo"
-                type="date"
-                value={formData.dateTo}
-                onChange={handleFormChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded"
-                required
-              />
-              <MapPicker
-                onChange={(lat, lng) => setLocation({ lat, lng })}
-                defaultPosition={[9.03, 38.74]}
-              />
-              {location && (
-                <p className="text-sm text-[#7a938f]">
-                  Selected: Latitude {location.lat}, Longitude {location.lng}
-                </p>
-              )}
-              <button
-                type="submit"
-                className="mt-4 px-6 py-2 bg-[#8ba77f] text-white rounded hover:bg-[#7a937f]"
-              >
-                Submit Enrollment
-              </button>
-            </form>
-          )}
-        </div>
-
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#8ba77f]" />
-          </div>
-        ) : error ? (
-          <div className="bg-rose-50 border-l-4 border-rose-500 p-4 mb-6 rounded-lg">
-            <div className="flex items-center">
-              <svg className="h-5 w-5 text-rose-500 mr-3" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
-              </svg>
-              <p className="text-sm text-rose-700">{error}</p>
-            </div>
-          </div>
-        ) : (
-          <div className="max-w-6xl mx-auto">
-            <div className="bg-white p-6 rounded-xl border border-[#e0e7d4] shadow-sm">
-              <div className="overflow-hidden border border-[#e0e7d4] rounded-xl">
-                <table className="min-w-full divide-y divide-[#e0e7d4]">
-                  <thead className="bg-[#f9f8f3]">
-                    <tr>
-                      <th className="px-6 py-4 text-sm font-semibold text-[#3a584e] text-left">Customer</th>
-                      <th className="px-6 py-4 text-sm font-semibold text-[#3a584e] text-left">Premium</th>
-                      <th className="px-6 py-4 text-sm font-semibold text-[#3a584e] text-left">Coverage</th>
-                      <th className="px-6 py-4 text-sm font-semibold text-[#3a584e] text-left">Period</th>
-                      <th className="px-6 py-4 text-sm font-semibold text-[#3a584e] text-left">Status</th>
-                      <th className="px-6 py-4 text-sm font-semibold text-[#3a584e] text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-[#e0e7d4]">
-                    {enrollments.map(enrollment => (
-                      <tr key={enrollment.enrolement_id} className="hover:bg-[#f9f8f3] transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="text-sm font-medium text-[#3a584e]">
-                            {enrollment.customer?.f_name} {enrollment.customer?.m_name ?? ''} {enrollment.customer?.l_name}
-                          </div>
-                          <div className="text-xs text-[#7a938f]">ID: {enrollment.customer_id}</div>
-                        </td>
-                        <td className="px-6 py-4 text-[#3a584e]">
-                          ${enrollment.premium.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                        </td>
-                        <td className="px-6 py-4 text-[#3a584e]">
-                          ${enrollment.sum_insured.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                        </td>
-                        <td className="px-6 py-4 text-[#3a584e]">
-                          {formatDate(enrollment.date_from)} – {formatDate(enrollment.date_to)}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 text-sm rounded-full border ${statusStyles[enrollment.status.toLowerCase() as keyof typeof statusStyles]}`}>
-                            {enrollment.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right space-x-2">
-                          {enrollment.status.toLowerCase() === 'pending' && (
-                            <>
-                              <button
-                                onClick={() => handleApprove(enrollment.enrolement_id)}
-                                className="px-3 py-1.5 bg-[#8ba77f] text-white rounded-lg hover:bg-[#7a937f] text-sm font-medium transition-colors"
-                              >
-                                Approve
-                              </button>
-                              <button
-                                onClick={() => handleReject(enrollment.enrolement_id)}
-                                className="px-3 py-1.5 bg-white text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-50 text-sm font-medium transition-colors"
-                              >
-                                Reject
-                              </button>
-                            </>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[#7a938f] mb-2">Account Number*</label>
+                    <input
+                      type="text"
+                      name="accountNo"
+                      value={formData.accountNo}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#7a938f] mb-2">Account Type*</label>
+                    <select
+                      name="accountType"
+                      value={formData.accountType}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e] bg-white"
+                      required
+                    >
+                      <option value="ID">ID</option>
+                      <option value="Passport">Passport</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
               </div>
-              {enrollments.length === 0 && (
-                <div className="text-center py-12 bg-[#f9f8f3] rounded-lg border-2 border-dashed border-[#e0e7d4]">
-                  <Sprout className="mx-auto h-12 w-12 text-[#7a938f]" />
-                  <h3 className="mt-4 text-lg font-medium text-[#3a584e]">No pending enrollments</h3>
-                  <p className="mt-2 text-sm text-[#7a938f]">All enrollment requests are processed</p>
+
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-[#3a584e]">Policy Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {['premium', 'sumInsured'].map((field) => (
+                    <div key={field}>
+                      <label className="block text-sm font-medium text-[#7a938f] mb-2">
+                        {field === 'premium' ? 'Premium Amount*' : 'Sum Insured*'}
+                      </label>
+                      <input
+                        type="number"
+                        name={field}
+                        value={formData[field as keyof typeof formData]}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
+                        required
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {['dateFrom', 'dateTo'].map((field) => (
+                    <div key={field}>
+                      <label className="block text-sm font-medium text-[#7a938f] mb-2">
+                        {field === 'dateFrom' ? 'Coverage Start*' : 'Coverage End*'}
+                      </label>
+                      <input
+                        type="date"
+                        name={field}
+                        value={formData[field as keyof typeof formData]}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
+                        required
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-[#3a584e]">Additional Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[#7a938f] mb-2">Receipt Number*</label>
+                    <input
+                      type="text"
+                      name="receiptNo"
+                      value={formData.receiptNo}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#7a938f] mb-2">Product ID*</label>
+                    <input
+                      type="number"
+                      name="productId"
+                      value={formData.productId}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#7a938f] mb-2">CPS Zone*</label>
+                  <input
+                    type="text"
+                    name="cpsZone"
+                    value={formData.cpsZone}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#7a938f] mb-2">Grid*</label>
+                  <input
+                    type="text"
+                    name="grid"
+                    value={formData.grid}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
+                    required
+                  />
+                </div>
+              </div>
+               <div className="space-y-4">
+  <h3 className="text-lg font-medium text-[#3a584e]">Location (Click map to set)</h3>
+  <MapPicker onLocationSelect={handleLocationSelect} />
+  {formData.lattitude && formData.longitude && (
+    <p className="text-sm text-[#7a938f]">
+      Selected Coordinates: <strong>{formData.lattitude}, {formData.longitude}</strong>
+    </p>
+  )}
+</div>
+
+              <div className="pt-4 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`px-6 py-2.5 rounded-lg font-medium transition-colors ${
+                    isSubmitting 
+                      ? 'bg-[#8ba77f]/70 text-white cursor-not-allowed'
+                      : 'bg-[#8ba77f] text-white hover:bg-[#7a937f]'
+                  }`}
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center gap-2">
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Processing...
+                    </span>
+                  ) : 'Submit Enrollment'}
+                </button>
+              </div>
+
+              {successMessage && (
+                <div className="mt-4 p-3 bg-[#eef4e5] border-l-4 border-[#8ba77f] rounded text-sm text-[#3a584e] flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  {successMessage}
                 </div>
               )}
-            </div>
+              {errorMessage && (
+                <div className="mt-4 p-3 bg-[#fee2e2] border-l-4 border-[#dc2626] rounded text-sm text-[#7a938f] flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-[#dc2626]" />
+                  {errorMessage}
+                </div>
+              )}
+            </form>
           </div>
-        )}
+
+          <div className="bg-white p-6 rounded-xl border border-[#e0e7d4] shadow-sm">
+            <h2 className="text-xl font-semibold text-[#3a584e] mb-6 pb-2 border-b border-[#e0e7d4] flex items-center gap-2">
+              <ListChecks className="w-5 h-5" />
+              Recent Enrollments
+            </h2>
+            <EnrollmentList />
+          </div>
+        </div>
       </main>
     </div>
   );

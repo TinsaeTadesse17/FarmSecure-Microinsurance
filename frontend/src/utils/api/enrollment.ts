@@ -19,8 +19,9 @@ export interface EnrollmentPayload extends CustomerInfo {
   receipt_no: string;
   product_id: number;
   cps_zone: string;
-  longtiude: string;
-  latitude: string;
+  longitude: string;
+  grid: string;
+  lattitude: string;
 }
 
 export interface EnrollmentResponse {

@@ -1,45 +1,59 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 
-const markerIcon = new L.Icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41]
-});
-
 interface MapPickerProps {
-  onChange: (lat: number, lng: number) => void;
-  defaultPosition?: [number, number];
+  onLocationSelect: (lat: number, lng: number) => void;
 }
 
-function LocationMarker({ onChange }: { onChange: (lat: number, lng: number) => void }) {
+
+const customIcon = new L.Icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+
+function LocationMarker({ onLocationSelect }: MapPickerProps) {
   const [position, setPosition] = useState<L.LatLng | null>(null);
 
   useMapEvents({
     click(e) {
       setPosition(e.latlng);
-      onChange(e.latlng.lat, e.latlng.lng);
-    }
+      onLocationSelect(e.latlng.lat, e.latlng.lng);
+    },
   });
 
-  return position ? <Marker position={position} icon={markerIcon} /> : null;
+  return position === null ? null : (
+    <Marker position={position} icon={customIcon} />
+  );
 }
 
-export default function MapPicker({ onChange, defaultPosition }: MapPickerProps) {
-  const [center, setCenter] = useState<[number, number]>(defaultPosition || [9.03, 38.74]); // Addis Ababa
+export default function MapPicker({ onLocationSelect }: MapPickerProps) {
+  const [center, setCenter] = useState<[number, number]>([9.03, 38.74]); // Default to Addis Ababa
+
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCenter([pos.coords.latitude, pos.coords.longitude]);
+        onLocationSelect(pos.coords.latitude, pos.coords.longitude);
+      },
+      () => {}
+    );
+  }, []);
 
   return (
-    <div className="h-[400px] w-full rounded-lg overflow-hidden border border-gray-300">
-      <MapContainer center={center} zoom={13} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }}>
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <LocationMarker onChange={onChange} />
-      </MapContainer>
-    </div>
+    <MapContainer
+      center={center}
+      zoom={13}
+      scrollWheelZoom={true}
+      style={{ height: '300px', width: '100%', borderRadius: '12px' }}
+    >
+      <TileLayer
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      <LocationMarker onLocationSelect={onLocationSelect} />
+    </MapContainer>
   );
 }

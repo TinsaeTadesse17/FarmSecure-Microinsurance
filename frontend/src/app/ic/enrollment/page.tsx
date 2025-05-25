@@ -1,6 +1,5 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
 import Sidebar from '@/components/ic/sidebar';
 import AvatarMenu from '@/components/common/avatar';
 import { Sprout, ClipboardList } from 'lucide-react';
@@ -10,38 +9,17 @@ import {
   rejectEnrollment,
   EnrollmentResponse
 } from '@/utils/api/enrollment';
-import { getToken, getCurrentUser } from '@/utils/api/user';
-
-const MapPicker = dynamic(() => import('@/components/agent/mapPicker'), { ssr: false });
 
 export default function EnrollmentManagementPage() {
   const [enrollments, setEnrollments] = useState<EnrollmentResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [formVisible, setFormVisible] = useState(false);
-  const [formData, setFormData] = useState({
-    customerId: '',
-    premium: '',
-    sumInsured: '',
-    dateFrom: '',
-    dateTo: '', 
-    lat: '',
-    lng: '',
-  });
 
   useEffect(() => {
     const fetchEnrollments = async () => {
-      setLoading(true);
-      setError(null);
       try {
-        const token = await getToken();
-        if (!token) throw new Error('Authentication token not found');
-
-        const user = await getCurrentUser(token);
         const data = await listEnrollments();
-        const filtered = data.filter(enr => enr.ic_company_id === user.company_id);
-        setEnrollments(filtered);
+        setEnrollments(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch enrollments');
       } finally {
@@ -55,8 +33,10 @@ export default function EnrollmentManagementPage() {
     try {
       await approveEnrollment(id);
       setEnrollments(prev =>
-        prev.map(enr =>
-          enr.enrolement_id === id ? { ...enr, status: 'approved' } : enr
+        prev.map(enrollment =>
+          enrollment.enrolement_id === id
+            ? { ...enrollment, status: 'approved' }
+            : enrollment
         )
       );
     } catch (err) {
@@ -68,25 +48,15 @@ export default function EnrollmentManagementPage() {
     try {
       await rejectEnrollment(id);
       setEnrollments(prev =>
-        prev.map(enr =>
-          enr.enrolement_id === id ? { ...enr, status: 'rejected' } : enr
+        prev.map(enrollment =>
+          enrollment.enrolement_id === id
+            ? { ...enrollment, status: 'rejected' }
+            : enrollment
         )
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reject enrollment');
     }
-  };
-
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-      console.log('Form Submitted:', formData);
-    // You can submit the formData and location here to the backend
-    alert(`Form submitted with location: ${location?.lat}, ${location?.lng}`);
   };
 
   const formatDate = (dateString: string) => {
@@ -118,104 +88,6 @@ export default function EnrollmentManagementPage() {
           <AvatarMenu />
         </div>
 
-        <div className="mb-10">
-          <button
-            className="mb-4 px-4 py-2 bg-[#8ba77f] text-white rounded-lg hover:bg-[#7a937f]"
-            onClick={() => setFormVisible(prev => !prev)}
-          >
-            {formVisible ? 'Hide Form' : 'Add Enrollment'}
-          </button>
-
-          {formVisible && (
-            <form onSubmit={handleFormSubmit} className="bg-white p-6 rounded-lg border mb-6 space-y-4">
-              <input
-                name="customerId"
-                type="text"
-                placeholder="Customer ID"
-                value={formData.customerId}
-                onChange={handleFormChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded"
-                required
-              />
-              <input
-                name="premium"
-                type="number"
-                placeholder="Premium"
-                value={formData.premium}
-                onChange={handleFormChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded"
-                required
-              />
-              <input
-                name="sumInsured"
-                type="number"
-                placeholder="Sum Insured"
-                value={formData.sumInsured}
-                onChange={handleFormChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded"
-                required
-              />
-              <input
-                name="dateFrom"
-                type="date"
-                value={formData.dateFrom}
-                onChange={handleFormChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded"
-                required
-              />
-              <input
-                name="dateTo"
-                type="date"
-                value={formData.dateTo}
-                onChange={handleFormChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded"
-                required
-              />
-              <input
-  name="lat"
-  type="text"
-  placeholder="Latitude"
-  value={formData.lat}
-  readOnly
-  className="w-full px-4 py-2 border border-gray-300 rounded bg-gray-50"
-/>
-
-<input
-  name="lng"
-  type="text"
-  placeholder="Longitude"
-  value={formData.lng}
-  readOnly
-  className="w-full px-4 py-2 border border-gray-300 rounded bg-gray-50"
-/>
-
-              <MapPicker
-  onChange={(lat, lng) => {
-    setLocation({ lat, lng });
-    setFormData(prev => ({
-      ...prev,
-      lat: lat.toString(),
-      lng: lng.toString(),
-    }));
-  }}
-  defaultPosition={[9.03, 38.74]}
-/>
-
-              {location && (
-                <p className="text-sm text-[#7a938f]">
-                  Selected: Latitude {location.lat}, Longitude {location.lng}
-                </p>
-              )}
-              <button
-                type="submit"
-                className="mt-4 px-6 py-2 bg-[#8ba77f] text-white rounded hover:bg-[#7a937f]"
-              >
-                Submit Enrollment
-              </button>
-            </form>
-          )}
-        </div>
-
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#8ba77f]" />
@@ -245,11 +117,11 @@ export default function EnrollmentManagementPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-[#e0e7d4]">
-                    {enrollments.map(enrollment => (
+                    {enrollments.map((enrollment) => (
                       <tr key={enrollment.enrolement_id} className="hover:bg-[#f9f8f3] transition-colors">
                         <td className="px-6 py-4">
                           <div className="text-sm font-medium text-[#3a584e]">
-                            {enrollment.customer?.f_name} {enrollment.customer?.m_name ?? ''} {enrollment.customer?.l_name}
+                            {enrollment.customer?.f_name} {enrollment.customer?.m_name && `${enrollment.customer.m_name} `}{enrollment.customer?.l_name}
                           </div>
                           <div className="text-xs text-[#7a938f]">ID: {enrollment.customer_id}</div>
                         </td>
@@ -290,6 +162,7 @@ export default function EnrollmentManagementPage() {
                   </tbody>
                 </table>
               </div>
+
               {enrollments.length === 0 && (
                 <div className="text-center py-12 bg-[#f9f8f3] rounded-lg border-2 border-dashed border-[#e0e7d4]">
                   <Sprout className="mx-auto h-12 w-12 text-[#7a938f]" />
