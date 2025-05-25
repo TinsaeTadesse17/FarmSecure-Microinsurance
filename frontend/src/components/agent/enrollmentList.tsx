@@ -1,19 +1,34 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { listEnrollments, EnrollmentResponse } from '@/utils/api/enrollment';
+import { getToken, getCurrentUser } from '@/utils/api/user';
 import { RefreshCw, FileText, CheckCircle2, XCircle, Clock } from 'lucide-react';
 
 export default function EnrollmentList() {
   const [enrollments, setEnrollments] = useState<EnrollmentResponse[]>([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [agentId, setAgentId] = useState<number | null>(null);
 
   useEffect(() => {
     async function fetchData() {
+      setIsLoading(true);
       try {
-        setIsLoading(true);
+        const token = getToken();
+        if (!token) {
+          setError('No token found. Please log in.');
+          setIsLoading(false);
+          return;
+        }
+
+        // 1. Get current user info
+        const user = await getCurrentUser(token);
+        setAgentId(user.user_id);
+
+        // 2. Fetch enrollments and filter by agentId
         const data = await listEnrollments();
-        setEnrollments(data);
+        const filtered = data.filter((e) => e.user_id === user.user_id);
+        setEnrollments(filtered);
       } catch (err: any) {
         setError(err.message || 'Failed to load enrollments');
       } finally {
@@ -82,7 +97,7 @@ export default function EnrollmentList() {
           <div className="text-center py-8 text-[#7a938f]">
             <FileText className="mx-auto h-12 w-12 text-current mb-4" />
             <h3 className="text-lg font-medium">No active enrollments</h3>
-            <p className="mt-2">No policy enrollments found in the system</p>
+            <p className="mt-2">No policy enrollments found for your account</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
