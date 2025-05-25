@@ -20,7 +20,7 @@ import {
 import { Express } from 'express';
 import { ConfigService } from './config.service';
 
-@Controller('api/v1')
+@Controller('api/v1/config/')
 export class ConfigController {
   constructor(private readonly configService: ConfigService) {}
 
