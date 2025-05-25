@@ -17,6 +17,7 @@ import { ThrottlerModule, ThrottlerGuard, minutes } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { DfsModule } from './dfs/dfs.module';
 import { ConfigModule } from './config/config.module'; 
+import { ConfigModule } from './config/config.module';
 
 
 @Module({
