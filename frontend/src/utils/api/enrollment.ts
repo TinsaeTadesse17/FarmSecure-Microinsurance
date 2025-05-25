@@ -39,12 +39,18 @@ export interface EnrollmentResponse {
   cps_zone: string;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_ENROLLMENT_API || 'http://localhost:8022/api/enrollments';
+// const API_BASE = process.env.NEXT_PUBLIC_ENROLLMENT_API || 'http://localhost:8022/api/enrollments';
+const API_BASE = `http://${process.env.NEXT_PUBLIC_HOST}:${process.env.NEXT_PUBLIC_GATEWAY_PORT}/api/v1/enrollments`;
+
+const getAuthHeaders = (): Record<string, string> => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+  return token ? { "Authorization": `Bearer ${token}` } : {};
+};
 
 export async function createEnrollment(data: EnrollmentPayload): Promise<EnrollmentResponse> {
   const res = await fetch(`${API_BASE}/`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
@@ -52,20 +58,21 @@ export async function createEnrollment(data: EnrollmentPayload): Promise<Enrollm
 }
 
 export async function getEnrollment(id: number): Promise<EnrollmentResponse> {
-  const res = await fetch(`${API_BASE}/${id}`);
+  const res = await fetch(`${API_BASE}/${id}`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
   return res.json();
 }
 
 export async function listEnrollments(): Promise<EnrollmentResponse[]> {
-  const res = await fetch(`${API_BASE}/`);
+  const res = await fetch(`${API_BASE}/`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
   return res.json();
 }
 
 export async function approveEnrollment(id: number): Promise<{ success: boolean; message: string }> {
   const res = await fetch(`${API_BASE}/${id}/approve`, {
-    method: 'PUT'
+    method: 'PUT',
+    headers: getAuthHeaders()
   });
   if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
   return res.json();
@@ -73,7 +80,8 @@ export async function approveEnrollment(id: number): Promise<{ success: boolean;
 
 export async function rejectEnrollment(id: number): Promise<{ status: string }> {
   const res = await fetch(`${API_BASE}/${id}/reject`, {
-    method: 'PUT'
+    method: 'PUT',
+    headers: getAuthHeaders()
   });
   if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
   return res.json();

@@ -396,7 +396,17 @@ services:
     env_file:
       - .env
     ports:
-      - "7000:7000"
+      - "${GATEWAY_PORT}:${GATEWAY_PORT}"
+    environment:
+      - GATEWAY_PORT=${GATEWAY_PORT}
+      - COMPANY_SERVICE_URL=http://company_service:8000
+      - PRODUCT_SERVICE_URL=http://product_service:8000
+      - USER_SERVICE_URL=http://user_service:8000
+      - POLICY_SERVICE_URL=http://policy_service:8000
+      - REPORT_SERVICE_URL=http://report_service:8000
+      - DFS_SERVICE_URL=http://dfs_service:8000
+      - CLAIM_SERVICE_URL=http://claim_service:8000
+      - NOTIFICATION_SERVICE_URL=http://notification_service:8000
     networks:
       - app_network
 
@@ -431,6 +441,29 @@ services:
       - SMTP_FROM=${SMTP_FROM}
     ports:
       - "8004:8000"
+    networks:
+      - app_network
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        HOST: ${HOST}
+        GATEWAY_PORT: ${GATEWAY_PORT}
+        FRONTEND_PORT: ${FRONTEND_PORT}
+    container_name: frontend
+    env_file:
+      - .env
+    ports:
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}" # Expose the port defined in the Dockerfile
+    depends_on:
+      - gateway # Assuming your frontend needs the gateway to be up
+    environment:
+      # These are runtime environment variables, if your app needs them
+      # If your Next.js app uses NEXT_PUBLIC_ for these, they are already baked in at build time
+      # HOST: ${HOST} # Not typically needed at runtime if baked in
+      # GATEWAY_PORT: ${GATEWAY_PORT} # Not typically needed at runtime if baked in
+      PORT: ${FRONTEND_PORT} # The port the Next.js server will listen on inside the container
     networks:
       - app_network
 

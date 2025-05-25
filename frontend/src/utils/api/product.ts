@@ -1,6 +1,11 @@
 // src/lib/product.ts
 
-const API_BASE = 'http://localhost:8001/api/products';
+const API_BASE = `http://${process.env.NEXT_PUBLIC_HOST}:${process.env.NEXT_PUBLIC_GATEWAY_PORT}/api/products`;
+
+const getAuthHeaders = (): Record<string, string> => {
+  const token = localStorage.getItem("accessToken");
+  return token ? { "Authorization": `Bearer ${token}` } : {};
+};
 
 export interface Product {
   id: number;
@@ -31,14 +36,18 @@ export interface PremiumCalculation {
 
 // Get all products
 export async function getProducts(skip = 0, limit = 100): Promise<Product[]> {
-  const res = await fetch(`${API_BASE}?skip=${skip}&limit=${limit}`);
+  const res = await fetch(`${API_BASE}?skip=${skip}&limit=${limit}`, {
+    headers: { ...getAuthHeaders() },
+  });
   if (!res.ok) throw new Error('Failed to fetch products');
   return await res.json();
 }
 
 // Get a single product
 export async function getProduct(productId: number): Promise<Product> {
-  const res = await fetch(`${API_BASE}/${productId}`);
+  const res = await fetch(`${API_BASE}/${productId}`, {
+    headers: { ...getAuthHeaders() },
+  });
   if (!res.ok) throw new Error('Product not found');
   return await res.json();
 }
@@ -47,7 +56,7 @@ export async function getProduct(productId: number): Promise<Product> {
 export async function createProduct(data: ProductCreate): Promise<Product> {
   const res = await fetch(API_BASE, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error('Failed to create product');
@@ -58,7 +67,7 @@ export async function createProduct(data: ProductCreate): Promise<Product> {
 export async function updateProduct(productId: number, data: ProductUpdate): Promise<Product> {
   const res = await fetch(`${API_BASE}/${productId}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error('Failed to update product');
@@ -74,7 +83,10 @@ export async function calculatePremium(
   growing_season_id: number
 ): Promise<PremiumCalculation> {
   const url = `${API_BASE}/${productId}/calculate-premium?zone_id=${zone_id}&fiscal_year=${fiscal_year}&period_id=${period_id}&growing_season_id=${growing_season_id}`;
-  const res = await fetch(url, { method: 'POST' });
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { ...getAuthHeaders() },
+  });
   if (!res.ok) throw new Error('Failed to calculate premium');
   return await res.json();
 }
