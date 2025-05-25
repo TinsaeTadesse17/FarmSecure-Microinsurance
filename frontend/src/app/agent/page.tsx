@@ -8,6 +8,9 @@ import { getToken } from '@/utils/api/user';
 import { jwtDecode } from 'jwt-decode';
 import EnrollmentList from '@/components/agent/enrollmentList';
 import { UserPlus, AlertTriangle, CheckCircle2, ListChecks, RefreshCw } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const MapPicker = dynamic(() => import('@/components/agent/mapPicker'), { ssr: false });
 
 interface DecodedToken {
   company_id: number[];
@@ -28,7 +31,10 @@ export default function CustomerEnrollmentPage() {
     dateTo: '',
     receiptNo: '',
     productId: 1,
-    cpsZone: ''
+    cpsZone: '',
+    longitude: '', 
+    lattitude: '',
+    grid: ''
   });
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -58,6 +64,13 @@ export default function CustomerEnrollmentPage() {
         : value
     }));
   };
+ const handleLocationSelect = (lat: number, lng: number) => {
+  setFormData(prev => ({
+    ...prev,
+    lattitude: lat.toString(),
+    longitude: lng.toString()
+  }));
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,6 +101,10 @@ export default function CustomerEnrollmentPage() {
         receipt_no: formData.receiptNo,
         product_id: formData.productId,
         cps_zone: formData.cpsZone,
+        longitude: formData.longitude,
+        lattitude: formData.lattitude,
+        grid: formData.grid
+
       });
 
       setSuccessMessage('Customer enrolled successfully!');
@@ -103,7 +120,10 @@ export default function CustomerEnrollmentPage() {
         dateTo: '',
         receiptNo: '',
         productId: 1,
-        cpsZone: ''
+        cpsZone: '',
+        longitude: '',
+        lattitude: '' ,
+        grid: ''  
       });
     } catch (error: any) {
       setErrorMessage(error.message || 'Enrollment failed. Please try again.');
@@ -267,7 +287,27 @@ export default function CustomerEnrollmentPage() {
                     required
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#7a938f] mb-2">Grid*</label>
+                  <input
+                    type="text"
+                    name="grid"
+                    value={formData.grid}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
+                    required
+                  />
+                </div>
               </div>
+               <div className="space-y-4">
+  <h3 className="text-lg font-medium text-[#3a584e]">Location (Click map to set)</h3>
+  <MapPicker onLocationSelect={handleLocationSelect} />
+  {formData.lattitude && formData.longitude && (
+    <p className="text-sm text-[#7a938f]">
+      Selected Coordinates: <strong>{formData.lattitude}, {formData.longitude}</strong>
+    </p>
+  )}
+</div>
 
               <div className="pt-4 flex justify-end">
                 <button

@@ -6,6 +6,7 @@ import AvatarMenu from '@/components/common/avatar';
 import CreateProductDialog from '@/components/ic/productDialog';
 import { getProducts, createProduct, Product, ProductCreate } from '@/utils/api/product';
 import { Plus, RefreshCw, Search, Package } from 'lucide-react';
+import {  getCurrentUser, getToken } from '@/utils/api/user';  
 
 export default function ProductConfiguration() {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -14,19 +15,30 @@ export default function ProductConfiguration() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const fetchProducts = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await getProducts();
-      setProducts(res);
-    } catch (err) {
-      console.error('Error fetching products:', err);
-      setError('Failed to load products. Please try again.');
-    } finally {
+const fetchProducts = async () => {
+  setIsLoading(true);
+  setError(null);
+  try {
+    const token = await getToken(); 
+    if (!token) {
+      setError('No authentication token found. Please log in.');
       setIsLoading(false);
+      return;
     }
-  };
+    
+    const user = await getCurrentUser(token); 
+    const allProducts = await getProducts(); 
+    const filteredProducts = allProducts.filter(
+      product => product.company_id === user.company_id
+    );
+    setProducts(filteredProducts);
+  } catch (err) {
+    console.error('Error fetching products:', err);
+    setError('Failed to load products. Please try again.');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleCreate = async (newProduct: ProductCreate) => {
     try {

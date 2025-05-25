@@ -19,6 +19,9 @@ export interface EnrollmentPayload extends CustomerInfo {
   receipt_no: string;
   product_id: number;
   cps_zone: string;
+  longitude: string;
+  grid: string;
+  lattitude: string;
 }
 
 export interface EnrollmentResponse {
@@ -37,6 +40,8 @@ export interface EnrollmentResponse {
   receipt_no: string;
   product_id: number;
   cps_zone: string;
+  longtiude: string;
+  latitude: string;
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_ENROLLMENT_API || 'http://localhost:8022/api/enrollments';
