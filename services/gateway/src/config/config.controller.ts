@@ -1,3 +1,4 @@
+// src/config/config.controller.ts
 import {
   Controller,
   Post,
@@ -23,7 +24,7 @@ import { ConfigService } from './config.service';
 export class ConfigController {
   constructor(private readonly configService: ConfigService) {}
 
-  // — CPS Zone Upload (three files) —
+  // — CPS Zone Upload (three files) — all properties now required
   @Post('cps-zone/upload-set')
   @UseInterceptors(
     FileFieldsInterceptor([
@@ -36,14 +37,14 @@ export class ConfigController {
   uploadCpsZone(
     @UploadedFiles()
     files: {
-      trigger_points_file?: Express.Multer.File[];
-      exit_points_file?:      Express.Multer.File[];
-      growing_seasons_file?:  Express.Multer.File[];
+      trigger_points_file: Express.Multer.File[];
+      exit_points_file:      Express.Multer.File[];
+      growing_seasons_file:  Express.Multer.File[];
     },
   ) {
-    const trigger = files.trigger_points_file?.[0];
-    const exit    = files.exit_points_file?.[0];
-    const growing = files.growing_seasons_file?.[0];
+    const trigger = files.trigger_points_file[0];
+    const exit    = files.exit_points_file[0];
+    const growing = files.growing_seasons_file[0];
 
     if (!trigger || !exit || !growing) {
       throw new BadRequestException(
@@ -51,7 +52,6 @@ export class ConfigController {
       );
     }
 
-    // Now guaranteed non-null
     return this.configService.uploadCpsZone(trigger, exit, growing);
   }
 
