@@ -1,7 +1,11 @@
 import axios from 'axios';
 
+const getAuthHeaders = (): Record<string, string> => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+  return token ? { "Authorization": `Bearer ${token}` } : {};
+};
 
-const CLAIM_SERVICE_BASE_URL = 'http://localhost:8001/api'
+const CLAIM_SERVICE_BASE_URL = `http://${process.env.NEXT_PUBLIC_HOST}:${process.env.NEXT_PUBLIC_GATEWAY_PORT}/api`;
 
 interface UploadNDVIParams {
   file: File;
@@ -26,6 +30,7 @@ export const uploadNDVIData = async ({ file, period, ndviType }: UploadNDVIParam
       {
         headers: {
           'Content-Type': 'multipart/form-data',
+          ...getAuthHeaders(),
         },
       }
     );

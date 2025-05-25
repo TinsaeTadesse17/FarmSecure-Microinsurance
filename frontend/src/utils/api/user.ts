@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:8003';
+const API_BASE = `http://${process.env.NEXT_PUBLIC_HOST}:${process.env.NEXT_PUBLIC_GATEWAY_PORT}`;
 
 export interface LoginRequest {
   username: string;
@@ -39,6 +39,11 @@ export interface UserUpdate {
   status?: string;
 }
 
+const getAuthHeaders = (): Record<string, string> => {
+  const token = getToken(); // getToken() uses localStorage.getItem('token')
+  return token ? { "Authorization": `Bearer ${token}` } : {};
+};
+
 /**
  * 1. Login
  */
@@ -64,10 +69,10 @@ export async function loginUser(data: LoginRequest): Promise<TokenResponse> {
 /**
  * 2. Create a new user
  */
-export async function createUser(data: UserCreate, token?: string): Promise<CreateUserResponse> {
-  const res = await fetch(`${API_BASE}/api/user/`, {
+export async function createUser(data: UserCreate): Promise<CreateUserResponse> { // Removed token parameter
+  const res = await fetch(`${API_BASE}/api/user`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }, // Added auth headers
     body: JSON.stringify(data),
   });
   if (!res.ok) {
@@ -81,12 +86,12 @@ export async function createUser(data: UserCreate, token?: string): Promise<Crea
  * 2. Create a new user(agent)
  */
 
-export async function createAgentUser(data: UserCreate, token?: string): Promise<CreateUserResponse> {
+export async function createAgentUser(data: UserCreate): Promise<CreateUserResponse> { // Removed token parameter
   const res = await fetch(`${API_BASE}/api/user/agent`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getAuthHeaders(), // Used getAuthHeaders
     },
     body: JSON.stringify(data),
   });
@@ -103,9 +108,9 @@ export async function createAgentUser(data: UserCreate, token?: string): Promise
 /**
  * 3. Get current logged-in user
  */
-export async function getCurrentUser(token: string): Promise<UserOut> {
+export async function getCurrentUser(): Promise<UserOut> { // Removed token parameter
   const res = await fetch(`${API_BASE}/api/user/me`, {
-    headers: { 'Authorization': `Bearer ${token}` },
+    headers: { ...getAuthHeaders() }, // Used getAuthHeaders
   });
   if (!res.ok) {
     const err = await res.json();
@@ -119,14 +124,13 @@ export async function getCurrentUser(token: string): Promise<UserOut> {
  */
 export async function updateUserAccount(
   userId: number,
-  data: UserUpdate,
-  token: string
-): Promise<UserOut> {
+  data: UserUpdate
+): Promise<UserOut> { // Removed token parameter
   const res = await fetch(`${API_BASE}/api/user/update/${userId}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
+      ...getAuthHeaders(), // Used getAuthHeaders
     },
     body: JSON.stringify(data),
   });
@@ -168,9 +172,9 @@ export function clearToken() {
 /**
  * 8. Get users with IC role
  */
-export async function getIcUsers(token: string): Promise<UserOut[]> {
+export async function getIcUsers(): Promise<UserOut[]> { // Removed token parameter
   const res = await fetch(`${API_BASE}/api/user/ics`, {
-    headers: { 'Authorization': `Bearer ${token}` },
+    headers: { ...getAuthHeaders() }, // Used getAuthHeaders
   });
   if (!res.ok) {
     const err = await res.json();
@@ -182,9 +186,9 @@ export async function getIcUsers(token: string): Promise<UserOut[]> {
 /**
  * 9. Get agents for the current user's company
  */
-export async function getAgentUsers(token: string): Promise<UserOut[]> {
+export async function getAgentUsers(): Promise<UserOut[]> { // Removed token parameter
   const res = await fetch(`${API_BASE}/api/user/agents`, {
-    headers: { 'Authorization': `Bearer ${token}` },
+    headers: { ...getAuthHeaders() }, // Used getAuthHeaders
   });
   if (!res.ok) {
     const err = await res.json();
