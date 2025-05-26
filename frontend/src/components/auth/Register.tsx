@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate hook from react-router-dom
+import { Sprout } from 'lucide-react';
 import {
   InsuranceCompanyCreate,
   InsuranceCompanyResponse,
   registerCompany,
 } from '@/utils/api/company';
-import { Sprout } from 'lucide-react';
 
 interface RegisterFormProps {
   onSwitch: () => void;
@@ -28,10 +29,12 @@ export default function RegisterForm({ onSwitch }: RegisterFormProps) {
   const [company, setCompany] = useState<InsuranceCompanyResponse | null>(null);
   const [successOpen, setSuccessOpen] = useState(false);
 
+ 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
+    // Check if all fields are filled
     if (
       !name ||
       !licenseNo ||
@@ -48,6 +51,7 @@ export default function RegisterForm({ onSwitch }: RegisterFormProps) {
       return;
     }
 
+    // Prepare the data to be sent
     const payload: InsuranceCompanyCreate = {
       name,
       licenseNo,
@@ -63,14 +67,20 @@ export default function RegisterForm({ onSwitch }: RegisterFormProps) {
 
     setLoading(true);
     try {
-      const created = await registerCompany(payload);
+      const created = await registerCompany(payload); // Register the company
       setCompany(created);
-      setSuccessOpen(true);
+      setSuccessOpen(true); // Open the success modal
     } catch (err: any) {
       setError(err.message || 'Registration failed');
     } finally {
-      setLoading(false);
+      setLoading(false); // Stop loading
     }
+  };
+
+  // Handle the "Continue" button click
+  const handleContinue = () => {
+    setSuccessOpen(false); // Close the success modal
+    onSwitch(); // Switch to the login form
   };
 
   return (
@@ -304,7 +314,7 @@ export default function RegisterForm({ onSwitch }: RegisterFormProps) {
             </div>
             <div className="mt-6">
               <button
-                onClick={() => setSuccessOpen(false)}
+                onClick={handleContinue} // Continue to the next page on button click
                 className="w-full py-2.5 bg-[#8ba77f] hover:bg-[#7a937f] text-white rounded-lg transition-colors"
               >
                 Continue
