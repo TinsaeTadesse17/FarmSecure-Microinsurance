@@ -51,9 +51,8 @@ export class UsersController {
   @Roles(Role.IC)
   @UseGuards(JwtAuthGuard, RolesGuard)
   async createAgent(
-    @Body() agentDto: any, @Req() req,
+    @Body() agentDto: any,
     @Headers('authorization') authHeader?: string, // Made optional) {
-    const authHeader = req.headers['authorization'];
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException('Missing or invalid Authorization header');
@@ -103,11 +102,8 @@ export class UsersController {
 @ApiOperation({ summary: 'Get all agents for the current IC user' })
 @ApiResponse({ status: 200, description: 'Returns a list of agents' })
 async getAgents(
-  @Req() req,
   @Headers('authorization') authHeader?: string, // Made optional
   ) {
-  const authHeader = req.headers['authorization'];
-
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     throw new UnauthorizedException('Missing or invalid Authorization header');
   }
