@@ -43,7 +43,8 @@ export class UsersController {
   @ApiResponse({ status: 201, description: 'User created successfully' })
   async createUser(
     @Body() userCreate: any,
-    @Headers('authorization') authHeader?: string, // Made optional) {
+    @Headers('authorization') authHeader?: string,
+    ){
     return this.usersService.createUser(userCreate,authHeader);
   }
 
@@ -52,7 +53,8 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   async createAgent(
     @Body() agentDto: any,
-    @Headers('authorization') authHeader?: string, // Made optional) {
+    @Headers('authorization') authHeader?: string,  
+    ){
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException('Missing or invalid Authorization header');
@@ -91,7 +93,7 @@ export class UsersController {
     @Param('user_id') userId: string,
     @Body() userUpdate: any,
     @Headers('authorization') authHeader?: string, // Made optional
-  ) {
+  ){
     return this.usersService.updateUser(userId, userUpdate, authHeader);
   }
 
