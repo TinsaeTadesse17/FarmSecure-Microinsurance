@@ -47,10 +47,17 @@ export class UsersController {
 
   @Post('agent')
   @Roles(Role.IC)
-  @ApiOperation({ summary: 'Create a new agent user' })
-  @ApiResponse({ status: 201, description: 'Agent user created successfully' })
-  async createAgent(@Body() userCreate: any) {
-    return this.usersService.createAgent(userCreate);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  async createAgent(@Body() agentDto: any, @Req() req) {
+    const authHeader = req.headers['authorization'];
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Missing or invalid Authorization header');
+    }
+
+    const token = authHeader.replace('Bearer ', '').trim();
+
+    return this.usersService.createAgent(token, agentDto);
   }
 
   @Get('me')

@@ -10,8 +10,8 @@ services:
       POSTGRES_DB: ${COMPANY_DB_NAME}
     # volumes:
       # - pgdata_company:/var/lib/postgresql/data
-    # ports:
-    #   - "5444:5432"
+    ports:
+      - "5444:5432"
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${COMPANY_DB_USER} -d ${COMPANY_DB_NAME}"]
@@ -32,8 +32,8 @@ services:
     depends_on:
       company_db:
         condition: service_started
-    # ports:
-    #   - "8000:8000"
+    ports:
+      - "8002:8000"
     environment:
       COMPANY_DB_HOST: company_db
       COMPANY_DB_PORT: 5432
@@ -422,8 +422,8 @@ services:
     depends_on:
       product_db:
         condition: service_healthy
-    # ports:
-    #   - "8006:80"
+    ports:
+      - "8006:80"
     networks:
       - app_network
 

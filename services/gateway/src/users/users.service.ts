@@ -40,16 +40,20 @@ export class UsersService {
     }
   }
 
-  async createAgent(userCreate: any) {
+async createAgent(token: string, agentData: any) {
     try {
       const response = await firstValueFrom(
-        this.httpService.post(`${USER_SERVICE_BASE_URL}/agent`, userCreate),
+        this.httpService.post(`${USER_SERVICE_BASE_URL}/agent`, agentData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }),
       );
       return response.data;
     } catch (error: any) {
-      this.logger.error('Agent creation failed', error.stack);
+      this.logger.error('Failed to create agent', error.stack);
       throw new HttpException(
-        error.response?.data || 'Agent creation failed',
+        error.response?.data || 'Failed to create agent',
         error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
