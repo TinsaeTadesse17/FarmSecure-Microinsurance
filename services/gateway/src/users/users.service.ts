@@ -40,19 +40,21 @@ export class UsersService {
     }
   }
 
-  async createAgent(userCreate: any, authHeader?: string) {
+async createAgent(token: string, agentData: any) {
     try {
       const headers = authHeader ? { Authorization: authHeader } : {};
       const response = await firstValueFrom(
-        this.httpService.post(`${USER_SERVICE_BASE_URL}/agent`, userCreate, {
-          headers,
+        this.httpService.post(`${USER_SERVICE_BASE_URL}/agent`, agentData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }),
       );
       return response.data;
     } catch (error: any) {
-      this.logger.error('Agent creation failed', error.stack);
+      this.logger.error('Failed to create agent', error.stack);
       throw new HttpException(
-        error.response?.data || 'Agent creation failed',
+        error.response?.data || 'Failed to create agent',
         error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -99,21 +101,22 @@ export class UsersService {
     }
   }
 
-  async getAgents(user: any, authHeader?: string) {
+async getAgents(authToken: string) {
     try {
       const headers = authHeader ? { Authorization: authHeader } : {};
       const response = await firstValueFrom(
         this.httpService.get(`${USER_SERVICE_BASE_URL}/agents`, {
-          headers,
-          // Pass necessary headers if the downstream service expects authentication
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
         }),
       );
       return response.data;
     } catch (error: any) {
-      this.logger.error('Failed to fetch agents', error.stack);
+      this.logger.error('Failed to fetch agents', error?.message || error);
       throw new HttpException(
-        error.response?.data || 'Failed to fetch agents',
-        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        error?.response?.data || 'Failed to fetch agents',
+        error?.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

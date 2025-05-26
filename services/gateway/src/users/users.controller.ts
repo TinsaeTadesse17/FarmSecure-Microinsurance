@@ -10,6 +10,7 @@ import {
   HttpException,
   HttpStatus,
   Inject,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
@@ -23,6 +24,7 @@ import { Public } from 'src/auth/decorators/public.decorator';
 import { UsersService } from './users.service';
 
 @ApiTags('User')
+// @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('api/user')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -44,15 +46,18 @@ export class UsersController {
   }
 
   @Post('agent')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Create a new agent user' })
-  @ApiResponse({ status: 201, description: 'Agent user created successfully' })
-  async createAgent(
-    @Body() userCreate: any,
-    @Headers('authorization') authHeader?: string, // Made optional to avoid breaking changes if not provided by client immediately
-  ) {
-    return this.usersService.createAgent(userCreate, authHeader);
+  @Roles(Role.IC)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  async createAgent(@Body() agentDto: any, @Req() req) {
+    const authHeader = req.headers['authorization'];
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Missing or invalid Authorization header');
+    }
+
+    const token = authHeader.replace('Bearer ', '').trim();
+
+    return this.usersService.createAgent(token, agentDto);
   }
 
   @Get('me')
@@ -87,16 +92,23 @@ export class UsersController {
     return this.usersService.updateUser(userId, userUpdate, authHeader);
   }
 
-  @Get('agents')
-  @Roles(Role.IC)
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Get all agents for the current IC user' })
-  @ApiResponse({ status: 200, description: 'Returns a list of agents' })
-  async getAgents(
-    @Req() req,
-    @Headers('authorization') authHeader?: string, // Made optional
-  ) {
-    return this.usersService.getAgents(req.user, authHeader);
+@Get('agents')
+@Roles(Role.IC)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiBearerAuth('access-token')
+@ApiOperation({ summary: 'Get all agents for the current IC user' })
+@ApiResponse({ status: 200, description: 'Returns a list of agents' })
+async getAgents(@Req() req) {
+  const authHeader = req.headers['authorization'];
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    throw new UnauthorizedException('Missing or invalid Authorization header');
   }
+
+  const token = authHeader.replace('Bearer ', '').trim();
+
+  return this.usersService.getAgents(token);
+}
+
+
 }

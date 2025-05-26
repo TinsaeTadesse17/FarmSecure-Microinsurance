@@ -23,8 +23,8 @@ def login_user(db: Session, username: str, password: str):
     token = create_access_token({
         "sub": str(user.user_id),
         "username": user.username,
-        "role": [user.role],
-        "company_id": [user.company_id]
+        "role": user.role,
+        "company_id": user.company_id
     })
     return token
 

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/agent/sidebar';
 import AvatarMenu from '@/components/common/avatar';
