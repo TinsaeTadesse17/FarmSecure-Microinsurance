@@ -26,7 +26,6 @@ jobs:
             --exclude '.git*' \
             --exclude 'node_modules' \
             ./ ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USERNAME }}/agteck-deployment
-
       - name: Create .env file on EC2
         run: |
           ssh -o StrictHostKeyChecking=no \
@@ -38,27 +37,22 @@ jobs:
           DB_PORT="${{ secrets.DB_PORT }}"
           DB_NAME="${{ secrets.DB_NAME }}"
           USER_DB_NAME="${{ secrets.USER_DB_NAME }}"
-
           # PGAdmin Configurations
           PGADMIN_DEFAULT_EMAIL="${{ secrets.PGADMIN_DEFAULT_EMAIL }}"
           PGADMIN_DEFAULT_PASSWORD="${{ secrets.PGADMIN_DEFAULT_PASSWORD }}"
-
           # Admin Credentials
           ADMIN_USERNAME="${{ secrets.ADMIN_USERNAME }}"
           ADMIN_PASSWORD="${{ secrets.ADMIN_PASSWORD }}"
-
           # Company DB
           COMPANY_DB_USER="${{ secrets.COMPANY_DB_USER }}"
           COMPANY_DB_PASS="${{ secrets.COMPANY_DB_PASS }}"
           COMPANY_DB_HOST="${{ secrets.COMPANY_DB_HOST }}"
           COMPANY_DB_PORT="${{ secrets.COMPANY_DB_PORT }}"
           COMPANY_DB_NAME="${{ secrets.COMPANY_DB_NAME }}"
-
           # JWT
           JWT_SECRET_KEY="${{ secrets.JWT_SECRET_KEY }}"
           JWT_ALGORITHM="${{ secrets.JWT_ALGORITHM }}"
           JWT_EXPIRY_MINUTES="${{ secrets.JWT_EXPIRY_MINUTES }}"
-
           # Config Microservice
           CONFIG_DB_USER="${{ secrets.CONFIG_DB_USER }}"
           CONFIG_DB_PASS="${{ secrets.CONFIG_DB_PASS }}"
@@ -66,7 +60,6 @@ jobs:
           CONFIG_DB_PORT="${{ secrets.CONFIG_DB_PORT }}"
           CONFIG_DB_NAME="${{ secrets.CONFIG_DB_NAME }}"
           CONFIG_DB_URL="${{ secrets.CONFIG_DB_URL }}"
-
           # Policy Microservice
           POLICY_DB_USER="${{ secrets.POLICY_DB_USER }}"
           POLICY_DB_PASS="${{ secrets.POLICY_DB_PASS }}"
@@ -74,7 +67,6 @@ jobs:
           POLICY_DB_PORT="${{ secrets.POLICY_DB_PORT }}"
           POLICY_DB_NAME="${{ secrets.POLICY_DB_NAME }}"
           POLICY_DB_URL="${{ secrets.POLICY_DB_URL }}"
-
           # Report Microservice
           REPORT_DB_USER="${{ secrets.REPORT_DB_USER }}"
           REPORT_DB_PASS="${{ secrets.REPORT_DB_PASS }}"
@@ -82,19 +74,16 @@ jobs:
           REPORT_DB_PORT="${{ secrets.REPORT_DB_PORT }}"
           REPORT_DB_NAME="${{ secrets.REPORT_DB_NAME }}"
           REPORT_DB_URL="${{ secrets.REPORT_DB_URL }}"
-
           # DFS Microservice
           DFS_DB_USER="${{ secrets.DFS_DB_USER }}"
           DFS_DB_PASS="${{ secrets.DFS_DB_PASS }}"
           DFS_DB_HOST="${{ secrets.DFS_DB_HOST }}"
           DFS_DB_PORT="${{ secrets.DFS_DB_PORT }}"
           DFS_DB_NAME="${{ secrets.DFS_DB_NAME }}"
-
           # App host & ports
           HOST="${{ secrets.HOST }}"
           GATEWAY_PORT="${{ secrets.GATEWAY_PORT }}"
           FRONTEND_PORT="${{ secrets.FRONTEND_PORT }}"
-
           # Notification / SMTP
           SMTP_HOST="${{ secrets.SMTP_HOST }}"
           SMTP_PORT="${{ secrets.SMTP_PORT }}"
@@ -102,7 +91,6 @@ jobs:
           SMTP_PASSWORD="${{ secrets.SMTP_PASSWORD }}"
           SMTP_FROM="${{ secrets.SMTP_FROM }}"
           EOF
-
       - name: Deploy via SSH
         run: |
           ssh -o StrictHostKeyChecking=no \
