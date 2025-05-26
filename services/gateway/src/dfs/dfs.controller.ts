@@ -7,8 +7,8 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/constants/roles.enum';
 
 @ApiTags('DFS')
-@Controller('api/v1/enrollments')
 @UseGuards(JwtAuthGuard, RolesGuard)
+@Controller('api/v1/enrollments')
 @ApiBearerAuth('access-token')
 export class DfsController {
   constructor(private readonly dfsService: DfsService) {}
