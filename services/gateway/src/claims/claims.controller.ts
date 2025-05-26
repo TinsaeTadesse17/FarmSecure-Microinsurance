@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Param,
-  Query,
-  Put,
-  HttpException,
-  HttpStatus,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Post, Get, Param, Query, Put, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ClaimsService } from './claims.service';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -22,7 +12,7 @@ import { Role } from 'src/auth/constants/roles.enum';
 export class ClaimsController {
   constructor(private readonly claimsService: ClaimsService) {}
 
-  @Roles(Role.IC, Role.Agent, Role.Admin)
+  @Roles(Role.Admin)
   @Post('crop')
   @ApiOperation({ summary: 'Trigger crop claims for a given period' })
   @ApiResponse({ status: 200, description: 'Claims are being processed.' })
@@ -34,7 +24,7 @@ export class ClaimsController {
     return this.claimsService.createCrop(p);
   }
 
-  @Roles(Role.IC, Role.Agent, Role.Admin)
+  @Roles(Role.Admin)
   @Post('livestock')
   @ApiOperation({ summary: 'Trigger livestock claims' })
   @ApiResponse({ status: 200, description: 'Claims are being processed.' })
@@ -42,7 +32,7 @@ export class ClaimsController {
     return this.claimsService.createLivestock();
   }
 
-  @Roles(Role.IC, Role.Agent, Role.Admin)
+  @Roles(Role.Admin)
   @Post('trigger')
   @ApiOperation({ summary: 'Trigger all claims processing' })
   @ApiResponse({ status: 200, description: 'Background processing started.' })
@@ -50,7 +40,7 @@ export class ClaimsController {
     return this.claimsService.triggerAll();
   }
 
-  @Roles(Role.IC, Role.Agent, Role.Admin)
+  @Roles(Role.IC, Role.Admin)
   @Get('by-customer')
   @ApiOperation({ summary: 'Get claims grouped by customer' })
   @ApiResponse({ status: 200, description: 'List of customer claim summaries' })
@@ -58,7 +48,7 @@ export class ClaimsController {
     return this.claimsService.getByCustomer();
   }
 
-  @Roles(Role.IC, Role.Agent, Role.Admin)
+  @Roles(Role.IC, Role.Admin)
   @Get(':id')
   @ApiOperation({ summary: 'Get a single claim by ID' })
   @ApiResponse({ status: 200, description: 'Claim details' })
@@ -71,7 +61,7 @@ export class ClaimsController {
     return this.claimsService.getOne(claimId);
   }
 
-  @Roles(Role.IC, Role.Agent, Role.Admin)
+  @Roles(Role.Admin)
   @Put(':id/authorize')
   @ApiOperation({ summary: 'Authorize a claim' })
   @ApiResponse({ status: 200, description: 'Claim authorized' })
