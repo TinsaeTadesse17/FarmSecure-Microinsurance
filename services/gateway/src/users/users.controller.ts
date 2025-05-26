@@ -24,7 +24,7 @@ import { Public } from 'src/auth/decorators/public.decorator';
 import { UsersService } from './users.service';
 
 @ApiTags('User')
-// @UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('api/user')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -38,6 +38,7 @@ export class UsersController {
     return this.usersService.login(loginRequest);
   }
 
+  @Roles(Role.Admin)
   @Post()
   @ApiOperation({ summary: 'Create a new user' })
   @ApiResponse({ status: 201, description: 'User created successfully' })
@@ -48,25 +49,21 @@ export class UsersController {
     return this.usersService.createUser(userCreate,authHeader);
   }
 
-  @Post('agent')
   @Roles(Role.IC)
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('agent')
   async createAgent(
     @Body() agentDto: any,
     @Headers('authorization') authHeader?: string,  
     ){
-
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException('Missing or invalid Authorization header');
     }
-
     const token = authHeader.replace('Bearer ', '').trim();
-
     return this.usersService.createAgent(token, agentDto,authHeader);
   }
 
+  @Roles(Role.Admin, Role.IC, Role.Agent)
   @Get('me')
-  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get current logged-in user' })
   @ApiResponse({ status: 200, description: 'Returns current user' })
@@ -74,9 +71,8 @@ export class UsersController {
     return this.usersService.getMe(req.user);
   }
 
-  @Get('ics')
   @Roles(Role.Admin)
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('ics')
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get all IC users (admin only)' })
   @ApiResponse({ status: 200, description: 'Returns a list of IC users' })
@@ -84,36 +80,33 @@ export class UsersController {
     return this.usersService.getIcUsers(authHeader);
   }
 
+  @Roles(Role.Admin, Role.IC, Role.Agent)
   @Put('update/:user_id')
-  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Update a user' })
   @ApiResponse({ status: 200, description: 'User updated successfully' })
   async updateUser(
     @Param('user_id') userId: string,
     @Body() userUpdate: any,
-    @Headers('authorization') authHeader?: string, // Made optional
+    @Headers('authorization') authHeader?: string,
   ){
     return this.usersService.updateUser(userId, userUpdate, authHeader);
   }
 
-@Get('agents')
-@Roles(Role.IC)
-@UseGuards(JwtAuthGuard, RolesGuard)
-@ApiBearerAuth('access-token')
-@ApiOperation({ summary: 'Get all agents for the current IC user' })
-@ApiResponse({ status: 200, description: 'Returns a list of agents' })
-async getAgents(
-  @Headers('authorization') authHeader?: string, // Made optional
-  ) {
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw new UnauthorizedException('Missing or invalid Authorization header');
+  @Roles(Role.IC)
+  @Get('agents')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get all agents for the current IC user' })
+  @ApiResponse({ status: 200, description: 'Returns a list of agents' })
+  async getAgents(
+    @Headers('authorization') authHeader?: string, // Made optional
+    ) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Missing or invalid Authorization header');
+    }
+
+    const token = authHeader.replace('Bearer ', '').trim();
+
+    return this.usersService.getAgents(token,authHeader);
   }
-
-  const token = authHeader.replace('Bearer ', '').trim();
-
-  return this.usersService.getAgents(token,authHeader);
-}
-
-
 }
