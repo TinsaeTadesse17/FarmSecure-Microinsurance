@@ -41,14 +41,18 @@ export class UsersController {
   @Post()
   @ApiOperation({ summary: 'Create a new user' })
   @ApiResponse({ status: 201, description: 'User created successfully' })
-  async createUser(@Body() userCreate: any) {
-    return this.usersService.createUser(userCreate);
+  async createUser(
+    @Body() userCreate: any,
+    @Headers('authorization') authHeader?: string, // Made optional) {
+    return this.usersService.createUser(userCreate,authHeader);
   }
 
   @Post('agent')
   @Roles(Role.IC)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  async createAgent(@Body() agentDto: any, @Req() req) {
+  async createAgent(
+    @Body() agentDto: any, @Req() req,
+    @Headers('authorization') authHeader?: string, // Made optional) {
     const authHeader = req.headers['authorization'];
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -57,7 +61,7 @@ export class UsersController {
 
     const token = authHeader.replace('Bearer ', '').trim();
 
-    return this.usersService.createAgent(token, agentDto);
+    return this.usersService.createAgent(token, agentDto,authHeader);
   }
 
   @Get('me')
@@ -98,7 +102,10 @@ export class UsersController {
 @ApiBearerAuth('access-token')
 @ApiOperation({ summary: 'Get all agents for the current IC user' })
 @ApiResponse({ status: 200, description: 'Returns a list of agents' })
-async getAgents(@Req() req) {
+async getAgents(
+  @Req() req,
+  @Headers('authorization') authHeader?: string, // Made optional
+  ) {
   const authHeader = req.headers['authorization'];
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -107,7 +114,7 @@ async getAgents(@Req() req) {
 
   const token = authHeader.replace('Bearer ', '').trim();
 
-  return this.usersService.getAgents(token);
+  return this.usersService.getAgents(token,authHeader);
 }
 
 
