@@ -8,7 +8,7 @@ export default function EnrollmentList() {
   const [enrollments, setEnrollments] = useState<EnrollmentResponse[]>([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [agentId, setAgentId] = useState<number | null>(null);
+  const [agentId, setAgentId] = useState('');
 
   useEffect(() => {
     async function fetchData() {
@@ -23,11 +23,11 @@ export default function EnrollmentList() {
 
         // 1. Get current user info
         const user = await getCurrentUser(token);
-        setAgentId(user.user_id);
+        setAgentId(user.sub);
 
         // 2. Fetch enrollments and filter by agentId
         const data = await listEnrollments();
-        const filtered = data.filter((e) => e.user_id === user.user_id);
+        const filtered = data.filter((e) => e.user_id === Number(user.sub));
         setEnrollments(filtered);
       } catch (err: any) {
         setError(err.message || 'Failed to load enrollments');
