@@ -48,7 +48,7 @@ export default function CustomerEnrollmentPage() {
 
     try {
       const decoded = jwtDecode<DecodedToken>(token);
-      setCompanyId(decoded.company_id?.[0] || null);
+      setCompanyId(decoded.company_id?.[0] || 1); // To do
       setUserId(parseInt(decoded.sub));
     } catch {
       setErrorMessage('Invalid token or unable to extract user info');
