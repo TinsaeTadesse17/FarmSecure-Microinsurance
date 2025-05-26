@@ -10,8 +10,6 @@ services:
       POSTGRES_DB: ${COMPANY_DB_NAME}
     # volumes:
       # - pgdata_company:/var/lib/postgresql/data
-    ports:
-      - "5444:5432"
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${COMPANY_DB_USER} -d ${COMPANY_DB_NAME}"]
@@ -32,8 +30,6 @@ services:
     depends_on:
       company_db:
         condition: service_started
-    ports:
-      - "8000:8000"
     environment:
       COMPANY_DB_HOST: company_db
       COMPANY_DB_PORT: 5432
@@ -85,8 +81,6 @@ services:
     depends_on:
       product_db:
         condition: service_healthy
-    ports:
-      - "8001:8000"
     environment:
       # at runtime, the app can read its DB URL here
       DATABASE_URL: postgresql://postgres:password@product_db:5432/productdb
@@ -117,8 +111,6 @@ services:
       POSTGRES_DB: ${USER_DB_NAME}
     volumes:
       - pgdata_users:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${USER_DB_NAME}"]
@@ -137,8 +129,6 @@ services:
     depends_on:
       user_db:
         condition: service_healthy
-    ports:
-      - "8003:8000"
     environment:
       DB_HOST: user_db
       DB_PORT: 5432
@@ -159,8 +149,6 @@ services:
       POSTGRES_DB: ${POLICY_DB_NAME}
     volumes:
       - pgdata_policy:/var/lib/postgresql/data
-    ports:
-      - "5555:5432"
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POLICY_DB_USER} -d ${POLICY_DB_NAME}"]
@@ -181,8 +169,6 @@ services:
     depends_on:
       policy_db:
         condition: service_started
-    ports:
-      - "8009:8000"
     environment:
       DB_HOST: policy_db
       DB_PORT: 5432
@@ -220,8 +206,6 @@ services:
       POSTGRES_DB: ${REPORT_DB_NAME}
     volumes:
       - pgdata_report:/var/lib/postgresql/data
-    ports:
-      - "6666:5432"
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${REPORT_DB_USER} -d ${REPORT_DB_NAME}"]
@@ -242,8 +226,6 @@ services:
     depends_on:
       report_db:
         condition: service_started
-    ports:
-      - "8010:8000"
     environment:
       REPORT_DB_HOST: report_db
       REPORT_DB_PORT: 5432
@@ -269,9 +251,6 @@ services:
     depends_on:
       dfs_db:
         condition: service_started
-      
-    ports:
-      - "8022:8000"
     environment:
       POLICY_SERVICE_URL: http://policy_service:8000
       DATABASE_URL: postgresql://${DFS_DB_USER}:${DFS_DB_PASS}@dfs_db:5432/${DFS_DB_NAME}
@@ -289,8 +268,6 @@ services:
       POSTGRES_DB: ${DFS_DB_NAME}
     volumes:
       - pgdata_dfs:/var/lib/postgresql/data
-    ports:
-      - "6022:5432"
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DFS_DB_USER} -d ${DFS_DB_NAME}"]
@@ -311,8 +288,6 @@ services:
       POSTGRES_DB: ${CONFIG_DB_NAME}
     volumes:
       - pgdata_config:/var/lib/postgresql/data
-    ports:
-      - "5438:5432" # Host port 5438
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${CONFIG_DB_USER} -d ${CONFIG_DB_NAME}"]
@@ -331,8 +306,6 @@ services:
     depends_on:
       config_db:
         condition: service_healthy
-    ports:
-      - "8008:8000" # Host port 8008
     environment:
       DATABASE_URL: postgresql://${CONFIG_DB_USER}:${CONFIG_DB_PASS}@config_db:5432/${CONFIG_DB_NAME}
     networks:
@@ -346,8 +319,6 @@ services:
       POSTGRES_PASSWORD: claim_password  
       POSTGRES_DB: claim_db  
      
-    ports:
-      - "5434:5432"
     healthcheck:  # Add healthcheck
       test: ["CMD-SHELL", "pg_isready -U claim_user -d claim_db"]
       interval: 5s
@@ -369,8 +340,6 @@ services:
       DATABASE_URL: postgresql://claim_user:claim_password@claim_db:5432/claim_db
       POLICY_SERVICE_URL: http://policy_service:8000
       CONFIG_SERVICE_URL: http://config_service:8000
-    ports:
-      - "8007:8000" 
     networks:
       - app_network
 
@@ -422,8 +391,6 @@ services:
     depends_on:
       product_db:
         condition: service_healthy
-    ports:
-      - "8006:80"
     networks:
       - app_network
 
@@ -439,8 +406,6 @@ services:
       - SMTP_USERNAME=${SMTP_USERNAME}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - SMTP_FROM=${SMTP_FROM}
-    ports:
-      - "8004:8000"
     networks:
       - app_network
 
