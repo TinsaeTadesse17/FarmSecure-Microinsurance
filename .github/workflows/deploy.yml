@@ -8,93 +8,77 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy to EC2
+      # === COPY EVERYTHING TO EC2 ===
+      - name: Copy files to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          # tell the action to scp your entire workspace
+          source: "./"
+          target: "~/agteck"
+
+      # === SSH IN AND DEPLOY ===
+      - name: Deploy on EC2
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
-            # Navigate to the application directory on the EC2 instance
-            # This command creates the directory if it doesn't exist
-            mkdir -p ~/agteck
             cd ~/agteck
 
-            # Copy all files from the GitHub workspace to the current directory
-            # Note: This assumes your docker-compose.yml is in the root of your repo
-            cp -r ${{ github.workspace }}/* .
-
-            # Create the .env file with secrets
             echo "Creating .env file..."
             cat <<EOF > .env
             # Database Configurations
-            DB_USER=user
-            DB_PASS=pass
-            DB_HOST=user_db
-            DB_PORT=5432
-            DB_NAME=user_db
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASS=${{ secrets.DB_PASS }}
+            DB_HOST=${{ secrets.DB_HOST }}
+            DB_PORT=${{ secrets.DB_PORT }}
+            DB_NAME=${{ secrets.DB_NAME }}
 
             # PGAdmin Configurations
-            PGADMIN_DEFAULT_EMAIL=admin@admin.com
-            PGADMIN_DEFAULT_PASSWORD=admin123
+            PGADMIN_DEFAULT_EMAIL=${{ secrets.PGADMIN_EMAIL }}
+            PGADMIN_DEFAULT_PASSWORD=${{ secrets.PGADMIN_PASS }}
 
             # Admin Credentials
-            ADMIN_USERNAME=admin
-            ADMIN_PASSWORD=admin123
+            ADMIN_USERNAME=${{ secrets.ADMIN_USER }}
+            ADMIN_PASSWORD=${{ secrets.ADMIN_PASS }}
 
             # Company Database Configurations
-            COMPANY_DB_USER=user
-            COMPANY_DB_PASS=pass1234
-            COMPANY_DB_HOST=db_company_management
-            COMPANY_DB_PORT=5432
-            COMPANY_DB_NAME=db_company_management
+            COMPANY_DB_USER=${{ secrets.COMPANY_DB_USER }}
+            COMPANY_DB_PASS=${{ secrets.COMPANY_DB_PASS }}
+            COMPANY_DB_HOST=${{ secrets.COMPANY_DB_HOST }}
+            COMPANY_DB_PORT=${{ secrets.COMPANY_DB_PORT }}
+            COMPANY_DB_NAME=${{ secrets.COMPANY_DB_NAME }}
 
             # JWT Configurations
-            JWT_SECRET_KEY=supersecret
-            JWT_ALGORITHM=HS256
-            JWT_EXPIRY_MINUTES=60
-
-            # User Database Name
-            USER_DB_NAME=user_db
+            JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
+            JWT_ALGORITHM=${{ secrets.JWT_ALGORITHM }}
+            JWT_EXPIRY_MINUTES=${{ secrets.JWT_EXPIRY }}
 
             # Config Microservice
-            CONFIG_DB_USER=user
-            CONFIG_DB_PASS=pass1234
-            CONFIG_DB_HOST=config_db
-            CONFIG_DB_PORT=5432
-            CONFIG_DB_NAME=config_db
-            CONFIG_DB_URL=postgresql://user:pass1234@config_db:5432/config_db
+            CONFIG_DB_URL=${{ secrets.CONFIG_DB_URL }}
 
             # Policy Microservice
-            POLICY_DB_USER=user
-            POLICY_DB_PASS=pass1234
-            POLICY_DB_HOST=policy_db
-            POLICY_DB_PORT=5432
-            POLICY_DB_NAME=policy_db
-            POLICY_DB_URL=postgresql://user:pass1234@policy_db:5432/policy_db
+            POLICY_DB_URL=${{ secrets.POLICY_DB_URL }}
 
             # Report Microservice
-            REPORT_DB_USER=user
-            REPORT_DB_PASS=pass1234
-            REPORT_DB_HOST=report_db
-            REPORT_DB_PORT=5432
-            REPORT_DB_NAME=report_db
-            REPORT_DB_URL=postgresql://user:pass1234@report_db:5432/report_db
+            REPORT_DB_URL=${{ secrets.REPORT_DB_URL }}
 
             # DFS Microservice
-            DFS_DB_USER=user
-            DFS_DB_PASS=pass1234
-            DFS_DB_HOST=dfs_db
-            DFS_DB_PORT=5432
-            DFS_DB_NAME=dfs_db
+            DFS_DB_USER=${{ secrets.DFS_DB_USER }}
+            DFS_DB_PASS=${{ secrets.DFS_DB_PASS }}
+            DFS_DB_HOST=${{ secrets.DFS_DB_HOST }}
+            DFS_DB_PORT=${{ secrets.DFS_DB_PORT }}
+            DFS_DB_NAME=${{ secrets.DFS_DB_NAME }}
 
-            # --- DYNAMIC VALUES FROM GITHUB SECRETS ---
-            # Application Host and Ports
+            # Application Host/Ports
             HOST=${{ secrets.HOST }}
             GATEWAY_PORT=${{ secrets.GATEWAY_PORT }}
             FRONTEND_PORT=${{ secrets.FRONTEND_PORT }}
@@ -106,10 +90,9 @@ jobs:
             SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
             SMTP_FROM=${{ secrets.SMTP_FROM }}
             EOF
-            
+
             echo ".env file created successfully"
 
-            # Build and run Docker containers
-            echo "Starting Docker Compose..."
+            echo "Building & starting Docker Compose…"
             docker-compose up --build -d
-            echo "Deployment completed successfully!"
+            echo "✅ Deployment completed!"
