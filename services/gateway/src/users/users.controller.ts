@@ -44,10 +44,15 @@ export class UsersController {
   }
 
   @Post('agent')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Create a new agent user' })
   @ApiResponse({ status: 201, description: 'Agent user created successfully' })
-  async createAgent(@Body() userCreate: any) {
-    return this.usersService.createAgent(userCreate);
+  async createAgent(
+    @Body() userCreate: any,
+    @Headers('authorization') authHeader?: string, // Made optional to avoid breaking changes if not provided by client immediately
+  ) {
+    return this.usersService.createAgent(userCreate, authHeader);
   }
 
   @Get('me')
@@ -65,8 +70,8 @@ export class UsersController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get all IC users (admin only)' })
   @ApiResponse({ status: 200, description: 'Returns a list of IC users' })
-  async getIcUsers() {
-    return this.usersService.getIcUsers();
+  async getIcUsers(@Headers('authorization') authHeader?: string) { // Made optional
+    return this.usersService.getIcUsers(authHeader);
   }
 
   @Put('update/:user_id')
@@ -74,8 +79,12 @@ export class UsersController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Update a user' })
   @ApiResponse({ status: 200, description: 'User updated successfully' })
-  async updateUser(@Param('user_id') userId: string, @Body() userUpdate: any) {
-    return this.usersService.updateUser(userId, userUpdate);
+  async updateUser(
+    @Param('user_id') userId: string,
+    @Body() userUpdate: any,
+    @Headers('authorization') authHeader?: string, // Made optional
+  ) {
+    return this.usersService.updateUser(userId, userUpdate, authHeader);
   }
 
   @Get('agents')
@@ -84,7 +93,10 @@ export class UsersController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get all agents for the current IC user' })
   @ApiResponse({ status: 200, description: 'Returns a list of agents' })
-  async getAgents(@Req() req) {
-    return this.usersService.getAgents(req.user);
+  async getAgents(
+    @Req() req,
+    @Headers('authorization') authHeader?: string, // Made optional
+  ) {
+    return this.usersService.getAgents(req.user, authHeader);
   }
 }
