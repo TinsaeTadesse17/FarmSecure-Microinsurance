@@ -31,7 +31,7 @@ export class UsersService {
       const response = await firstValueFrom(
         this.httpService.post(`${USER_SERVICE_BASE_URL}/`, userCreate, {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: authHeader,
           },
         }),
       );
