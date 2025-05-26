@@ -40,7 +40,7 @@ export class UsersService {
     }
   }
 
-async createAgent(token: string, agentData: any) {
+async createAgent(token: string, agentData: any,authHeader?: string) {
     try {
       const headers = authHeader ? { Authorization: authHeader } : {};
       const response = await firstValueFrom(
@@ -101,7 +101,7 @@ async createAgent(token: string, agentData: any) {
     }
   }
 
-async getAgents(authToken: string) {
+async getAgents(authToken: string,authHeader?: string) {
     try {
       const headers = authHeader ? { Authorization: authHeader } : {};
       const response = await firstValueFrom(
