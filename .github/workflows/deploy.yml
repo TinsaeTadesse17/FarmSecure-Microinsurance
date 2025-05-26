@@ -1,4 +1,4 @@
-name: Deploy to EC2 with Docker Compose
+name: Deploy to EC2
 
 on:
   push:
@@ -8,92 +8,105 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
 
-      # === COPY EVERYTHING TO EC2 ===
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
       - name: Copy files to EC2
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_PRIVATE_KEY }}
-          # tell the action to scp your entire workspace
-          scp: true
-          source: "./"
-          target: "~/agteck"
-        
-      # === SSH IN AND DEPLOY ===
-      - name: Deploy on EC2
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_PRIVATE_KEY }}
-          script: |
-            cd ~/agteck
+        env:
+          RSYNC_RSH: "ssh -o StrictHostKeyChecking=no"
+        run: |
+          rsync -avz \
+            --exclude '.git*' \
+            --exclude 'node_modules' \
+            ./ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/agteck-deployment
 
-            echo "Creating .env file..."
-            cat <<EOF > .env
-            # Database Configurations
-            DB_USER=${{ secrets.DB_USER }}
-            DB_PASS=${{ secrets.DB_PASS }}
-            DB_HOST=${{ secrets.DB_HOST }}
-            DB_PORT=${{ secrets.DB_PORT }}
-            DB_NAME=${{ secrets.DB_NAME }}
+      - name: Create .env file on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "cat > /home/${{ secrets.EC2_USER }}/agteck-deployment/.env" <<'EOF'
+          # Database Configurations
+          DB_USER="${{ secrets.DB_USER }}"
+          DB_PASS="${{ secrets.DB_PASS }}"
+          DB_HOST="${{ secrets.DB_HOST }}"
+          DB_PORT="${{ secrets.DB_PORT }}"
+          DB_NAME="${{ secrets.DB_NAME }}"
 
-            # PGAdmin Configurations
-            PGADMIN_DEFAULT_EMAIL=${{ secrets.PGADMIN_EMAIL }}
-            PGADMIN_DEFAULT_PASSWORD=${{ secrets.PGADMIN_PASS }}
+          # PGAdmin Configurations
+          PGADMIN_DEFAULT_EMAIL="${{ secrets.PGADMIN_DEFAULT_EMAIL }}"
+          PGADMIN_DEFAULT_PASSWORD="${{ secrets.PGADMIN_DEFAULT_PASSWORD }}"
 
-            # Admin Credentials
-            ADMIN_USERNAME=${{ secrets.ADMIN_USER }}
-            ADMIN_PASSWORD=${{ secrets.ADMIN_PASS }}
+          # Admin Credentials
+          ADMIN_USERNAME="${{ secrets.ADMIN_USERNAME }}"
+          ADMIN_PASSWORD="${{ secrets.ADMIN_PASSWORD }}"
 
-            # Company Database Configurations
-            COMPANY_DB_USER=${{ secrets.COMPANY_DB_USER }}
-            COMPANY_DB_PASS=${{ secrets.COMPANY_DB_PASS }}
-            COMPANY_DB_HOST=${{ secrets.COMPANY_DB_HOST }}
-            COMPANY_DB_PORT=${{ secrets.COMPANY_DB_PORT }}
-            COMPANY_DB_NAME=${{ secrets.COMPANY_DB_NAME }}
+          # Company DB
+          COMPANY_DB_USER="${{ secrets.COMPANY_DB_USER }}"
+          COMPANY_DB_PASS="${{ secrets.COMPANY_DB_PASS }}"
+          COMPANY_DB_HOST="${{ secrets.COMPANY_DB_HOST }}"
+          COMPANY_DB_PORT="${{ secrets.COMPANY_DB_PORT }}"
+          COMPANY_DB_NAME="${{ secrets.COMPANY_DB_NAME }}"
 
-            # JWT Configurations
-            JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
-            JWT_ALGORITHM=${{ secrets.JWT_ALGORITHM }}
-            JWT_EXPIRY_MINUTES=${{ secrets.JWT_EXPIRY }}
+          # JWT
+          JWT_SECRET_KEY="${{ secrets.JWT_SECRET_KEY }}"
+          JWT_ALGORITHM="${{ secrets.JWT_ALGORITHM }}"
+          JWT_EXPIRY_MINUTES="${{ secrets.JWT_EXPIRY_MINUTES }}"
 
-            # Config Microservice
-            CONFIG_DB_URL=${{ secrets.CONFIG_DB_URL }}
+          # Config Microservice
+          CONFIG_DB_USER="${{ secrets.CONFIG_DB_USER }}"
+          CONFIG_DB_PASS="${{ secrets.CONFIG_DB_PASS }}"
+          CONFIG_DB_HOST="${{ secrets.CONFIG_DB_HOST }}"
+          CONFIG_DB_PORT="${{ secrets.CONFIG_DB_PORT }}"
+          CONFIG_DB_NAME="${{ secrets.CONFIG_DB_NAME }}"
+          CONFIG_DB_URL="${{ secrets.CONFIG_DB_URL }}"
 
-            # Policy Microservice
-            POLICY_DB_URL=${{ secrets.POLICY_DB_URL }}
+          # Policy Microservice
+          POLICY_DB_USER="${{ secrets.POLICY_DB_USER }}"
+          POLICY_DB_PASS="${{ secrets.POLICY_DB_PASS }}"
+          POLICY_DB_HOST="${{ secrets.POLICY_DB_HOST }}"
+          POLICY_DB_PORT="${{ secrets.POLICY_DB_PORT }}"
+          POLICY_DB_NAME="${{ secrets.POLICY_DB_NAME }}"
+          POLICY_DB_URL="${{ secrets.POLICY_DB_URL }}"
 
-            # Report Microservice
-            REPORT_DB_URL=${{ secrets.REPORT_DB_URL }}
+          # Report Microservice
+          REPORT_DB_USER="${{ secrets.REPORT_DB_USER }}"
+          REPORT_DB_PASS="${{ secrets.REPORT_DB_PASS }}"
+          REPORT_DB_HOST="${{ secrets.REPORT_DB_HOST }}"
+          REPORT_DB_PORT="${{ secrets.REPORT_DB_PORT }}"
+          REPORT_DB_NAME="${{ secrets.REPORT_DB_NAME }}"
+          REPORT_DB_URL="${{ secrets.REPORT_DB_URL }}"
 
-            # DFS Microservice
-            DFS_DB_USER=${{ secrets.DFS_DB_USER }}
-            DFS_DB_PASS=${{ secrets.DFS_DB_PASS }}
-            DFS_DB_HOST=${{ secrets.DFS_DB_HOST }}
-            DFS_DB_PORT=${{ secrets.DFS_DB_PORT }}
-            DFS_DB_NAME=${{ secrets.DFS_DB_NAME }}
+          # DFS Microservice
+          DFS_DB_USER="${{ secrets.DFS_DB_USER }}"
+          DFS_DB_PASS="${{ secrets.DFS_DB_PASS }}"
+          DFS_DB_HOST="${{ secrets.DFS_DB_HOST }}"
+          DFS_DB_PORT="${{ secrets.DFS_DB_PORT }}"
+          DFS_DB_NAME="${{ secrets.DFS_DB_NAME }}"
 
-            # Application Host/Ports
-            HOST=${{ secrets.HOST }}
-            GATEWAY_PORT=${{ secrets.GATEWAY_PORT }}
-            FRONTEND_PORT=${{ secrets.FRONTEND_PORT }}
+          # App host & ports
+          HOST="${{ secrets.HOST }}"
+          GATEWAY_PORT="${{ secrets.GATEWAY_PORT }}"
+          FRONTEND_PORT="${{ secrets.FRONTEND_PORT }}"
 
-            # Notification Microservice
-            SMTP_HOST=${{ secrets.SMTP_HOST }}
-            SMTP_PORT=${{ secrets.SMTP_PORT }}
-            SMTP_USERNAME=${{ secrets.SMTP_USERNAME }}
-            SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
-            SMTP_FROM=${{ secrets.SMTP_FROM }}
-            EOF
+          # Notification / SMTP
+          SMTP_HOST="${{ secrets.SMTP_HOST }}"
+          SMTP_PORT="${{ secrets.SMTP_PORT }}"
+          SMTP_USERNAME="${{ secrets.SMTP_USERNAME }}"
+          SMTP_PASSWORD="${{ secrets.SMTP_PASSWORD }}"
+          SMTP_FROM="${{ secrets.SMTP_FROM }}"
+          EOF
 
-            echo ".env file created successfully"
-
-            echo "Building & starting Docker Compose…"
-            docker-compose up --build -d
-            echo "✅ Deployment completed!"
+      - name: Deploy via SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} <<'EOF'
+            cd /home/${{ secrets.EC2_USER }}/agteck-deployment
+            docker-compose down
+            docker-compose up -d --build
+          EOF
