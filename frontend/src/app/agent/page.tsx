@@ -142,7 +142,7 @@ export default function CustomerEnrollmentPage() {
               <UserPlus className="w-8 h-8 text-[#8ba77f]" />
               Customer Enrollment
               <span className="ml-4 text-sm font-normal bg-[#eef4e5] px-3 py-1 rounded-full">
-                New Policy Registration
+                New Enrollment Registration
               </span>
             </h1>
             <p className="mt-2 text-[#7a938f] max-w-2xl">
