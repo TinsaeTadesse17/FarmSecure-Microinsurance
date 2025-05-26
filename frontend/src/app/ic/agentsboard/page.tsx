@@ -85,7 +85,7 @@ const AgentsPage: React.FC = () => {
       return;
     }
     try {
-      await updateUserAccount(selectedUser.user_id, { status: selectedStatus });
+      await updateUserAccount(selectedUser.user_id, { status: selectedStatus }, token);
       setAgents(prev => ({
         ...prev,
         data: prev.data.map(u => (u.user_id === selectedUser.user_id ? { ...u, status: selectedStatus } : u)),
