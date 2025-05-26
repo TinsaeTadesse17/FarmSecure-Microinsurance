@@ -75,8 +75,8 @@ export class UsersController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get all IC users (admin only)' })
   @ApiResponse({ status: 200, description: 'Returns a list of IC users' })
-  async getIcUsers() {
-    return this.usersService.getIcUsers();
+  async getIcUsers(@Headers('authorization') authHeader?: string) { // Made optional
+    return this.usersService.getIcUsers(authHeader);
   }
 
   @Put('update/:user_id')
@@ -84,8 +84,12 @@ export class UsersController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Update a user' })
   @ApiResponse({ status: 200, description: 'User updated successfully' })
-  async updateUser(@Param('user_id') userId: string, @Body() userUpdate: any) {
-    return this.usersService.updateUser(userId, userUpdate);
+  async updateUser(
+    @Param('user_id') userId: string,
+    @Body() userUpdate: any,
+    @Headers('authorization') authHeader?: string, // Made optional
+  ) {
+    return this.usersService.updateUser(userId, userUpdate, authHeader);
   }
 
 @Get('agents')

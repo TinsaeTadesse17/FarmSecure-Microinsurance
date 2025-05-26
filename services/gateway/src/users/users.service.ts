@@ -42,6 +42,7 @@ export class UsersService {
 
 async createAgent(token: string, agentData: any) {
     try {
+      const headers = authHeader ? { Authorization: authHeader } : {};
       const response = await firstValueFrom(
         this.httpService.post(`${USER_SERVICE_BASE_URL}/agent`, agentData, {
           headers: {
@@ -64,10 +65,11 @@ async createAgent(token: string, agentData: any) {
     return user;
   }
 
-  async getIcUsers() {
+  async getIcUsers(authHeader?: string) {
     try {
+      const headers = authHeader ? { Authorization: authHeader } : {};
       const response = await firstValueFrom(
-        this.httpService.get(`${USER_SERVICE_BASE_URL}/ics`),
+        this.httpService.get(`${USER_SERVICE_BASE_URL}/ics`, { headers }),
       );
       return response.data;
     } catch (error: any) {
@@ -79,10 +81,15 @@ async createAgent(token: string, agentData: any) {
     }
   }
 
-  async updateUser(userId: string, userUpdate: any) {
+  async updateUser(userId: string, userUpdate: any, authHeader?: string) {
     try {
+      const headers = authHeader ? { Authorization: authHeader } : {};
       const response = await firstValueFrom(
-        this.httpService.put(`${USER_SERVICE_BASE_URL}/update/${userId}`, userUpdate),
+        this.httpService.put(
+          `${USER_SERVICE_BASE_URL}/update/${userId}`,
+          userUpdate,
+          { headers },
+        ),
       );
       return response.data;
     } catch (error: any) {
@@ -96,6 +103,7 @@ async createAgent(token: string, agentData: any) {
 
 async getAgents(authToken: string) {
     try {
+      const headers = authHeader ? { Authorization: authHeader } : {};
       const response = await firstValueFrom(
         this.httpService.get(`${USER_SERVICE_BASE_URL}/agents`, {
           headers: {

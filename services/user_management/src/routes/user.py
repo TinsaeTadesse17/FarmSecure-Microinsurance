@@ -129,6 +129,7 @@ def get_user_info(current_user: User = Depends(get_current_active_user)):
 @router.get("/ics", response_model=List[user_schema.UserOut])
 def get_ic_users(
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin"))
 ):
     ic_users = db.query(User).filter(User.role == "ic").all()
     if not ic_users:

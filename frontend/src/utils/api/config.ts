@@ -66,7 +66,7 @@ export async function getNdviJobStatus(jobId: string) {
 }
 
 export async function startClaimCalculation() {
-  const CLAIM_SERVICE_URL = `http://${process.env.NEXT_PUBLIC_HOST}:${process.env.NEXT_PUBLIC_GATEWAY_PORT}/api/v1/claims`;
+  const CLAIM_SERVICE_URL = `http://${process.env.NEXT_PUBLIC_HOST}:${process.env.NEXT_PUBLIC_GATEWAY_PORT}/api/claims`;
   const res = await fetch(`${CLAIM_SERVICE_URL}/trigger`, {
     method: 'POST',
     headers: {
