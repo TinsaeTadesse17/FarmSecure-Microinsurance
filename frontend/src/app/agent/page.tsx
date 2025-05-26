@@ -78,7 +78,7 @@ export default function CustomerEnrollmentPage() {
     setErrorMessage('');
     setIsSubmitting(true);
 
-    if (!companyId || !userId) {
+    if (!userId) {
       setErrorMessage('Missing user or company info');
       setIsSubmitting(false);
       return;
