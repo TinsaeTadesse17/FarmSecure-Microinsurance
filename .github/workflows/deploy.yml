@@ -1,0 +1,115 @@
+name: Deploy to EC2 with Docker Compose
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          script: |
+            # Navigate to the application directory on the EC2 instance
+            # This command creates the directory if it doesn't exist
+            mkdir -p ~/agteck
+            cd ~/agteck
+
+            # Copy all files from the GitHub workspace to the current directory
+            # Note: This assumes your docker-compose.yml is in the root of your repo
+            cp -r ${{ github.workspace }}/* .
+
+            # Create the .env file with secrets
+            echo "Creating .env file..."
+            cat <<EOF > .env
+            # Database Configurations
+            DB_USER=user
+            DB_PASS=pass
+            DB_HOST=user_db
+            DB_PORT=5432
+            DB_NAME=user_db
+
+            # PGAdmin Configurations
+            PGADMIN_DEFAULT_EMAIL=admin@admin.com
+            PGADMIN_DEFAULT_PASSWORD=admin123
+
+            # Admin Credentials
+            ADMIN_USERNAME=admin
+            ADMIN_PASSWORD=admin123
+
+            # Company Database Configurations
+            COMPANY_DB_USER=user
+            COMPANY_DB_PASS=pass1234
+            COMPANY_DB_HOST=db_company_management
+            COMPANY_DB_PORT=5432
+            COMPANY_DB_NAME=db_company_management
+
+            # JWT Configurations
+            JWT_SECRET_KEY=supersecret
+            JWT_ALGORITHM=HS256
+            JWT_EXPIRY_MINUTES=60
+
+            # User Database Name
+            USER_DB_NAME=user_db
+
+            # Config Microservice
+            CONFIG_DB_USER=user
+            CONFIG_DB_PASS=pass1234
+            CONFIG_DB_HOST=config_db
+            CONFIG_DB_PORT=5432
+            CONFIG_DB_NAME=config_db
+            CONFIG_DB_URL=postgresql://user:pass1234@config_db:5432/config_db
+
+            # Policy Microservice
+            POLICY_DB_USER=user
+            POLICY_DB_PASS=pass1234
+            POLICY_DB_HOST=policy_db
+            POLICY_DB_PORT=5432
+            POLICY_DB_NAME=policy_db
+            POLICY_DB_URL=postgresql://user:pass1234@policy_db:5432/policy_db
+
+            # Report Microservice
+            REPORT_DB_USER=user
+            REPORT_DB_PASS=pass1234
+            REPORT_DB_HOST=report_db
+            REPORT_DB_PORT=5432
+            REPORT_DB_NAME=report_db
+            REPORT_DB_URL=postgresql://user:pass1234@report_db:5432/report_db
+
+            # DFS Microservice
+            DFS_DB_USER=user
+            DFS_DB_PASS=pass1234
+            DFS_DB_HOST=dfs_db
+            DFS_DB_PORT=5432
+            DFS_DB_NAME=dfs_db
+
+            # --- DYNAMIC VALUES FROM GITHUB SECRETS ---
+            # Application Host and Ports
+            HOST=${{ secrets.HOST }}
+            GATEWAY_PORT=${{ secrets.GATEWAY_PORT }}
+            FRONTEND_PORT=${{ secrets.FRONTEND_PORT }}
+
+            # Notification Microservice
+            SMTP_HOST=${{ secrets.SMTP_HOST }}
+            SMTP_PORT=${{ secrets.SMTP_PORT }}
+            SMTP_USERNAME=${{ secrets.SMTP_USERNAME }}
+            SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
+            SMTP_FROM=${{ secrets.SMTP_FROM }}
+            EOF
+            
+            echo ".env file created successfully"
+
+            # Build and run Docker containers
+            echo "Starting Docker Compose..."
+            docker-compose up --build -d
+            echo "Deployment completed successfully!"
