@@ -24,7 +24,7 @@ export interface CreateUserResponse {
 export interface UserOut {
   created_at: string | number | Date;
   email: any;
-  user_id: number;
+  sub: string;
   username: string;
   role: string | string[];
   company_id: number;
@@ -108,7 +108,7 @@ export async function createAgentUser(data: UserCreate): Promise<CreateUserRespo
 /**
  * 3. Get current logged-in user
  */
-export async function getCurrentUser(): Promise<UserOut> { // Removed token parameter
+export async function getCurrentUser(token: string): Promise<UserOut> { // Removed token parameter
   const res = await fetch(`${API_BASE}/api/user/me`, {
     headers: { ...getAuthHeaders() }, // Used getAuthHeaders
   });
@@ -123,9 +123,7 @@ export async function getCurrentUser(): Promise<UserOut> { // Removed token para
  * 4. Update a user account
  */
 export async function updateUserAccount(
-  userId: number,
-  data: UserUpdate
-): Promise<UserOut> { // Removed token parameter
+userId: string, data: UserUpdate, token: string): Promise<UserOut> { // Removed token parameter
   const res = await fetch(`${API_BASE}/api/user/update/${userId}`, {
     method: 'PUT',
     headers: {
