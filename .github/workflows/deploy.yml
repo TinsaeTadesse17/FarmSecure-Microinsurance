@@ -37,6 +37,7 @@ jobs:
           DB_HOST="${{ secrets.DB_HOST }}"
           DB_PORT="${{ secrets.DB_PORT }}"
           DB_NAME="${{ secrets.DB_NAME }}"
+          USER_DB_NAME="${{ secrets.USER_DB_NAME }}"
 
           # PGAdmin Configurations
           PGADMIN_DEFAULT_EMAIL="${{ secrets.PGADMIN_DEFAULT_EMAIL }}"
