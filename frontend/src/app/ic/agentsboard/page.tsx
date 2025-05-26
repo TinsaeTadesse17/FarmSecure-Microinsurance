@@ -47,7 +47,7 @@ const AgentsPage: React.FC = () => {
         return;
       }
       try {
-        const agentData = await getAgentUsers(token);
+        const agentData = await getAgentUsers();
         const sortedAgents = [...agentData].sort(
           (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
@@ -64,7 +64,7 @@ const AgentsPage: React.FC = () => {
         setHasFetched(true);
         if (token && companyId === null) {
           try {
-            const current = await getCurrentUser(token);
+            const current = await getCurrentUser();
             setCompanyId(current.company_id);
           } catch {}
         }
@@ -85,7 +85,7 @@ const AgentsPage: React.FC = () => {
       return;
     }
     try {
-      await updateUserAccount(selectedUser.user_id, { status: selectedStatus }, token);
+      await updateUserAccount(selectedUser.user_id, { status: selectedStatus });
       setAgents(prev => ({
         ...prev,
         data: prev.data.map(u => (u.user_id === selectedUser.user_id ? { ...u, status: selectedStatus } : u)),
@@ -105,8 +105,8 @@ const AgentsPage: React.FC = () => {
     }
     try {
       setIsCreating(true);
-      await createAgentUser({ role: 'agent', company_id: companyId, email: newAgentEmail }, token);
-      const updated = await getAgentUsers(token);
+      await createAgentUser({ role: 'agent', company_id: companyId, email: newAgentEmail }, );
+      const updated = await getAgentUsers();
       const sortedAgents = [...updated].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );

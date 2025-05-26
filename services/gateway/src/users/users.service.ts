@@ -90,20 +90,21 @@ export class UsersService {
     }
   }
 
-  async getAgents(user: any) {
-    // Assuming the user_service /agents endpoint filters by the authenticated IC user
+async getAgents(authToken: string) {
     try {
       const response = await firstValueFrom(
         this.httpService.get(`${USER_SERVICE_BASE_URL}/agents`, {
-          // Pass necessary headers if the downstream service expects authentication
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
         }),
       );
       return response.data;
     } catch (error: any) {
-      this.logger.error('Failed to fetch agents', error.stack);
+      this.logger.error('Failed to fetch agents', error?.message || error);
       throw new HttpException(
-        error.response?.data || 'Failed to fetch agents',
-        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+        error?.response?.data || 'Failed to fetch agents',
+        error?.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

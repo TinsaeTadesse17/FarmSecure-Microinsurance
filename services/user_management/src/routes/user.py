@@ -186,7 +186,7 @@ def update_user_account(
 @router.get("/agents", response_model=List[user_schema.UserOut])
 def get_agent_users(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("ic"))
+    current_user: User  = Depends(get_current_user)
 ):
     agent_users = db.query(User).filter(
         User.role == "agent",
