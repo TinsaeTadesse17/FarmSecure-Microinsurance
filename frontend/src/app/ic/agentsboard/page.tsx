@@ -219,7 +219,7 @@ const AgentsPage: React.FC = () => {
             <h1 className="text-3xl font-bold text-[#3a584e] flex items-center gap-3">
               <Sprout className="w-8 h-8 text-[#8ba77f]" />
               Agent Management
-              <span className="ml-4 text-sm font-normal bg-[#eef4e5] px-3 py-1 rounded-full">Admin View</span>
+              <span className="ml-4 text-sm font-normal bg-[#eef4e5] px-3 py-1 rounded-full">IC View</span>
             </h1>
             <p className="mt-2 text-[#7a938f]">Manage agent accounts and permissions</p>
           </div>

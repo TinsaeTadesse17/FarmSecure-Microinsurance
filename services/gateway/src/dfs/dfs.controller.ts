@@ -21,7 +21,7 @@ export class DfsController {
     return this.dfsService.createEnrollment(enrollmentRequest);
   }
 
-  @Roles(Role.Agent)
+  @Roles(Role.Agent, Role.IC)
   @Get('/:enrollment_id')
   @ApiOperation({ summary: 'Get an enrollment by ID' })
   @ApiResponse({ status: 200, description: 'Returns a single enrollment' })
@@ -38,7 +38,7 @@ export class DfsController {
     return this.dfsService.getAllEnrollments();
   }
 
-  @Roles(Role.Agent)
+  @Roles(Role.IC, Role.Agent)
   @Put('/:enrollment_id/approve')
   @ApiOperation({ summary: 'Approve an enrollment' })
   @ApiResponse({ status: 200, description: 'Enrollment approved successfully' })
@@ -47,7 +47,7 @@ export class DfsController {
     return this.dfsService.approveEnrollment(enrollment_id);
   }
 
-  @Roles(Role.Agent)
+  @Roles(Role.Agent,Role.IC)
   @Put('/:enrollment_id/reject')
   @ApiOperation({ summary: 'Reject an enrollment' })
   @ApiResponse({ status: 200, description: 'Enrollment rejected successfully' })
