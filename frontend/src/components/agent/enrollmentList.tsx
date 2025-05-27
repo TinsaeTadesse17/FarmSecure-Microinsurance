@@ -25,9 +25,17 @@ export default function EnrollmentList() {
         const user = await getCurrentUser(token);
         setAgentId(user.sub);
 
-        // 2. Fetch enrollments and filter by agentId
+        // 2. Fetch enrollments
         const data = await listEnrollments();
+        
+        // 3. Filter enrollments by matching user_id with the current user's sub (user.sub)
         const filtered = data.filter((e) => e.user_id === Number(user.sub));
+
+        // 4. Check if enrollments are valid for the current user
+        if (filtered.length === 0) {
+          setError('No enrollments found for this user.');
+        }
+
         setEnrollments(filtered);
       } catch (err: any) {
         setError(err.message || 'Failed to load enrollments');
@@ -35,6 +43,7 @@ export default function EnrollmentList() {
         setIsLoading(false);
       }
     }
+
     fetchData();
   }, []);
 
