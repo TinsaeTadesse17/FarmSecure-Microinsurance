@@ -3,7 +3,7 @@
 const API_BASE = `http://${process.env.NEXT_PUBLIC_HOST}:${process.env.NEXT_PUBLIC_GATEWAY_PORT}/api/products`;
 
 const getAuthHeaders = (): Record<string, string> => {
-  const token = localStorage.getItem("accessToken");
+  const token = localStorage.getItem("token");
   return token ? { "Authorization": `Bearer ${token}` } : {};
 };
 
