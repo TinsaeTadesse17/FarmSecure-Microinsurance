@@ -92,7 +92,7 @@ export default function CustomerEnrollmentPage() {
         account_no: formData.accountNo,
         account_type: formData.accountType,
         user_id: userId,
-        ic_company_id: companyId,
+        ic_company_id: companyId || 0,
         branch_id: 1,
         premium: formData.premium,
         sum_insured: formData.sumInsured,

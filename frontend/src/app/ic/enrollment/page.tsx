@@ -3,31 +3,40 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/ic/sidebar';
 import AvatarMenu from '@/components/common/avatar';
 import { Sprout, ClipboardList } from 'lucide-react';
-import {
-  listEnrollments,
-  approveEnrollment,
-  rejectEnrollment,
-  EnrollmentResponse
-} from '@/utils/api/enrollment';
+import { listEnrollments, approveEnrollment, rejectEnrollment, EnrollmentResponse } from '@/utils/api/enrollment';
+import { getCurrentUser } from '@/utils/api/user'; // Assuming this fetches the current user details
 
 export default function EnrollmentManagementPage() {
   const [enrollments, setEnrollments] = useState<EnrollmentResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userCompanyId, setUserCompanyId] = useState<number | null>(null);
 
   useEffect(() => {
-    const fetchEnrollments = async () => {
-      try {
-        const data = await listEnrollments();
-        setEnrollments(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch enrollments');
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetchCurrentUser();
     fetchEnrollments();
   }, []);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const user = await getCurrentUser();
+      setUserCompanyId(user.company_id); // Store the user's company_id
+    } catch (err) {
+      setError('Failed to fetch user data');
+    }
+  };
+
+  const fetchEnrollments = async () => {
+    try {
+      setLoading(true);
+      const data = await listEnrollments();
+      setEnrollments(data);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load enrollments');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleApprove = async (id: number) => {
     try {
@@ -69,6 +78,11 @@ export default function EnrollmentManagementPage() {
     rejected: 'bg-rose-100/80 text-rose-800 border-rose-200',
     pending: 'bg-amber-100/80 text-amber-800 border-amber-200',
   };
+
+  // Filter enrollments to only show those that belong to the user's company_id
+  const filteredEnrollments = enrollments.filter(enrollment => {
+    return enrollment.ic_company_id === userCompanyId;
+  });
 
   return (
     <div className="flex min-h-screen bg-[#f9f8f3] text-[#2c423f]">
@@ -117,7 +131,7 @@ export default function EnrollmentManagementPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-[#e0e7d4]">
-                    {enrollments.map((enrollment) => (
+                    {filteredEnrollments.map((enrollment) => (
                       <tr key={enrollment.enrolement_id} className="hover:bg-[#f9f8f3] transition-colors">
                         <td className="px-6 py-4">
                           <div className="text-sm font-medium text-[#3a584e]">
@@ -163,7 +177,7 @@ export default function EnrollmentManagementPage() {
                 </table>
               </div>
 
-              {enrollments.length === 0 && (
+              {filteredEnrollments.length === 0 && (
                 <div className="text-center py-12 bg-[#f9f8f3] rounded-lg border-2 border-dashed border-[#e0e7d4]">
                   <Sprout className="mx-auto h-12 w-12 text-[#7a938f]" />
                   <h3 className="mt-4 text-lg font-medium text-[#3a584e]">No pending enrollments</h3>
