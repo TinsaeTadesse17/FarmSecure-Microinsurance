@@ -7,22 +7,22 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/constants/roles.enum';
 
 @ApiTags('DFS')
-@Controller('api/v1/enrollments')
 @UseGuards(JwtAuthGuard, RolesGuard)
+@Controller('api/v1/enrollments')
 @ApiBearerAuth('access-token')
 export class DfsController {
   constructor(private readonly dfsService: DfsService) {}
 
+  @Roles(Role.Agent)
   @Post('/')
-  @Roles(Role.Agent) // Assuming Agents can create enrollments
   @ApiOperation({ summary: 'Create an enrollment' })
   @ApiResponse({ status: 201, description: 'Enrollment created successfully' })
   async createEnrollment(@Body() enrollmentRequest: any) {
     return this.dfsService.createEnrollment(enrollmentRequest);
   }
 
+  @Roles(Role.Agent)
   @Get('/:enrollment_id')
-  @Roles(Role.Agent, Role.IC, Role.Admin) // Assuming multiple roles can view
   @ApiOperation({ summary: 'Get an enrollment by ID' })
   @ApiResponse({ status: 200, description: 'Returns a single enrollment' })
   @ApiResponse({ status: 404, description: 'Enrollment not found' })
@@ -30,16 +30,16 @@ export class DfsController {
     return this.dfsService.getEnrollmentById(enrollment_id);
   }
 
+  @Roles(Role.Agent)
   @Get('/')
-  @Roles(Role.IC, Role.Admin, Role.Agent) // Assuming IC and Admin can list all
   @ApiOperation({ summary: 'List all enrollments' })
   @ApiResponse({ status: 200, description: 'Returns a list of enrollments' })
   async getAllEnrollments() {
     return this.dfsService.getAllEnrollments();
   }
 
+  @Roles(Role.Agent)
   @Put('/:enrollment_id/approve')
-  @Roles(Role.IC) // Assuming ICs approve enrollments
   @ApiOperation({ summary: 'Approve an enrollment' })
   @ApiResponse({ status: 200, description: 'Enrollment approved successfully' })
   @ApiResponse({ status: 404, description: 'Enrollment not found' })
@@ -47,8 +47,8 @@ export class DfsController {
     return this.dfsService.approveEnrollment(enrollment_id);
   }
 
+  @Roles(Role.Agent)
   @Put('/:enrollment_id/reject')
-  @Roles(Role.IC) // Assuming ICs reject enrollments
   @ApiOperation({ summary: 'Reject an enrollment' })
   @ApiResponse({ status: 200, description: 'Enrollment rejected successfully' })
   @ApiResponse({ status: 404, description: 'Enrollment not found' })

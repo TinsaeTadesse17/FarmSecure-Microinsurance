@@ -31,7 +31,7 @@ export class CompanyManagementController {
     }
   }
 
-  @Roles(Role.IC, Role.Agent)
+  @Roles(Role.IC, Role.Agent, Role.Admin)
   @Get(':id')
   @ApiOperation({ summary: 'Endpoint to get a single company by ID' })
   @ApiResponse({ status: 200, description: 'Returns a single company' })
