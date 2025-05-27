@@ -64,7 +64,7 @@ const AgentsPage: React.FC = () => {
         setHasFetched(true);
         if (token && companyId === null) {
           try {
-            const current = await getCurrentUser();
+            const current = await getCurrentUser(token);
             setCompanyId(current.company_id);
           } catch {}
         }
@@ -85,10 +85,10 @@ const AgentsPage: React.FC = () => {
       return;
     }
     try {
-      await updateUserAccount(selectedUser.user_id, { status: selectedStatus }, token);
+      await updateUserAccount(selectedUser.sub, { status: selectedStatus }, token);
       setAgents(prev => ({
         ...prev,
-        data: prev.data.map(u => (u.user_id === selectedUser.user_id ? { ...u, status: selectedStatus } : u)),
+        data: prev.data.map(u => (u.sub === selectedUser.sub ? { ...u, status: selectedStatus } : u)),
       }));
       setShowStatusModal(false);
     } catch (err: any) {
@@ -189,7 +189,7 @@ const AgentsPage: React.FC = () => {
           </thead>
           <tbody className="bg-white divide-y divide-[#e0e7d4]">
             {filteredAgents.map(user => (
-              <tr key={user.user_id} className="hover:bg-[#f9f8f3] transition-colors">
+              <tr key={user.sub} className="hover:bg-[#f9f8f3] transition-colors">
                 <td className="px-6 py-4">
                   <div className="flex items-center">
                     <div className="h-10 w-10 rounded-full bg-[#eef4e5] flex items-center justify-center text-[#3a584e] font-medium">

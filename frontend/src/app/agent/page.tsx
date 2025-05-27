@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/agent/sidebar';
 import AvatarMenu from '@/components/common/avatar';
 import { createEnrollment } from '@/utils/api/enrollment';
@@ -9,6 +9,7 @@ import { jwtDecode } from 'jwt-decode';
 import EnrollmentList from '@/components/agent/enrollmentList';
 import { UserPlus, AlertTriangle, CheckCircle2, ListChecks, RefreshCw } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import { getProducts } from '@/utils/api/product';
 
 const MapPicker = dynamic(() => import('@/components/agent/mapPicker'), { ssr: false });
 
@@ -16,6 +17,12 @@ interface DecodedToken {
   company_id: number[];
   sub: string;
   [key: string]: any;
+}
+
+interface Product {
+  id: number;
+  name: string;
+  company_id: number;
 }
 
 export default function CustomerEnrollmentPage() {
@@ -31,46 +38,65 @@ export default function CustomerEnrollmentPage() {
     dateTo: '',
     receiptNo: '',
     productId: 1,
-    cpsZone: '',
-    longitude: '', 
+    cpsZone: 0,
+    longitude: '',
     lattitude: '',
-    grid: ''
+    grid: 0
   });
+
+  const [products, setProducts] = useState<Product[]>([]);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [companyId, setCompanyId] = useState<number | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const token = getToken();
     if (!token) return;
 
     try {
       const decoded = jwtDecode<DecodedToken>(token);
-      setCompanyId(decoded.company_id?.[0] || 1); // To do
+      setCompanyId(decoded.company_id?.[0] || 1);
       setUserId(parseInt(decoded.sub));
     } catch {
       setErrorMessage('Invalid token or unable to extract user info');
     }
   }, []);
 
+  useEffect(() => {
+    async function fetchProducts() {
+      if (!companyId) return;
+
+      try {
+        const result = await getProducts(0, 100);
+        const filtered = result.filter((product: Product) => product.company_id === companyId);
+        setProducts(filtered);
+      } catch (error) {
+        console.error('Failed to load products', error);
+      }
+    }
+
+    fetchProducts();
+  }, [companyId]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'premium' || name === 'sumInsured' || name === 'productId' 
-        ? parseFloat(value) || 0 
+      [name]: name === 'premium' || name === 'sumInsured' || name === 'productId'
+        ? parseFloat(value) || 0
         : value
     }));
   };
- const handleLocationSelect = (lat: number, lng: number) => {
-  setFormData(prev => ({
-    ...prev,
-    lattitude: lat.toString(),
-    longitude: lng.toString()
-  }));
-};
+
+  const handleLocationSelect = (lat: number, lng: number) => {
+    setFormData(prev => ({
+      ...prev,
+      lattitude: lat.toString(),
+      longitude: lng.toString()
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,11 +126,10 @@ export default function CustomerEnrollmentPage() {
         date_to: formData.dateTo,
         receipt_no: formData.receiptNo,
         product_id: formData.productId,
-        cps_zone: formData.cpsZone,
+        cps_zone: "0",
         longitude: formData.longitude,
         lattitude: formData.lattitude,
-        grid: formData.grid
-
+        grid: "0"
       });
 
       setSuccessMessage('Customer enrolled successfully!');
@@ -120,10 +145,10 @@ export default function CustomerEnrollmentPage() {
         dateTo: '',
         receiptNo: '',
         productId: 1,
-        cpsZone: '',
+        cpsZone: 0,
         longitude: '',
-        lattitude: '' ,
-        grid: ''  
+        lattitude: '',
+        grid: 0
       });
     } catch (error: any) {
       setErrorMessage(error.message || 'Enrollment failed. Please try again.');
@@ -154,167 +179,149 @@ export default function CustomerEnrollmentPage() {
 
         <div className="space-y-8">
           <div className="bg-white p-6 rounded-xl border border-[#e0e7d4] shadow-sm">
-            <h2 className="text-xl font-semibold text-[#3a584e] mb-6 pb-2 border-b border-[#e0e7d4] flex items-center gap-2">
-              <UserPlus className="w-5 h-5" />
-              New Policy Form
-            </h2>
-            
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-[#3a584e]">Personal Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {['fName', 'mName', 'lName'].map((field) => (
-                    <div key={field}>
-                      <label className="block text-sm font-medium text-[#7a938f] mb-2">
-                        {field === 'fName' ? 'First Name*' : 
-                         field === 'mName' ? 'Middle Name*' : 'Last Name*'}
-                      </label>
-                      <input
-                        type="text"
-                        name={field}
-                        value={formData[field as keyof typeof formData]}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
-                        required
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-[#7a938f] mb-2">Account Number*</label>
+              {/* Personal Info */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {['fName', 'mName', 'lName'].map((field) => (
+                  <div key={field}>
+                    <label className="block text-sm font-medium text-[#7a938f] mb-2">
+                      {field === 'fName' ? 'First Name*' : field === 'mName' ? 'Middle Name*' : 'Last Name*'}
+                    </label>
                     <input
                       type="text"
-                      name="accountNo"
-                      value={formData.accountNo}
+                      name={field}
+                      value={formData[field as keyof typeof formData]}
                       onChange={handleChange}
-                      className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
+                      className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg"
                       required
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-[#7a938f] mb-2">Account Type*</label>
-                    <select
-                      name="accountType"
-                      value={formData.accountType}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e] bg-white"
-                      required
-                    >
-                      <option value="ID">ID</option>
-                      <option value="Passport">Passport</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
+                ))}
+              </div>
+
+              {/* Account Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#7a938f] mb-2">Account Number*</label>
+                  <input
+                    type="text"
+                    name="accountNo"
+                    value={formData.accountNo}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#7a938f] mb-2">Account Type*</label>
+                  <select
+                    name="accountType"
+                    value={formData.accountType}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg bg-white"
+                    required
+                  >
+                    <option value="ID">ID</option>
+                    <option value="Passport">Passport</option>
+                    <option value="Other">Other</option>
+                  </select>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-[#3a584e]">Policy Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {['premium', 'sumInsured'].map((field) => (
-                    <div key={field}>
-                      <label className="block text-sm font-medium text-[#7a938f] mb-2">
-                        {field === 'premium' ? 'Premium Amount*' : 'Sum Insured*'}
-                      </label>
-                      <input
-                        type="number"
-                        name={field}
-                        value={formData[field as keyof typeof formData]}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
-                        required
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {['dateFrom', 'dateTo'].map((field) => (
-                    <div key={field}>
-                      <label className="block text-sm font-medium text-[#7a938f] mb-2">
-                        {field === 'dateFrom' ? 'Coverage Start*' : 'Coverage End*'}
-                      </label>
-                      <input
-                        type="date"
-                        name={field}
-                        value={formData[field as keyof typeof formData]}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
-                        required
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-[#3a584e]">Additional Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-[#7a938f] mb-2">Receipt Number*</label>
-                    <input
-                      type="text"
-                      name="receiptNo"
-                      value={formData.receiptNo}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-[#7a938f] mb-2">Product ID*</label>
+              {/* Policy Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {['premium', 'sumInsured'].map((field) => (
+                  <div key={field}>
+                    <label className="block text-sm font-medium text-[#7a938f] mb-2">
+                      {field === 'premium' ? 'Premium Amount*' : 'Sum Insured*'}
+                    </label>
                     <input
                       type="number"
-                      name="productId"
-                      value={formData.productId}
+                      name={field}
+                      value={formData[field as keyof typeof formData]}
                       onChange={handleChange}
-                      className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
+                      className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg"
                       required
                     />
                   </div>
-                </div>
+                ))}
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#7a938f] mb-2">CPS Zone*</label>
+                  <label className="block text-sm font-medium text-[#7a938f] mb-2">Coverage Start*</label>
                   <input
-                    type="text"
-                    name="cpsZone"
-                    value={formData.cpsZone}
+                    type="date"
+                    name="dateFrom"
+                    value={formData.dateFrom}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
+                    className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#7a938f] mb-2">Grid*</label>
+                  <label className="block text-sm font-medium text-[#7a938f] mb-2">Coverage End*</label>
                   <input
-                    type="text"
-                    name="grid"
-                    value={formData.grid}
+                    type="date"
+                    name="dateTo"
+                    value={formData.dateTo}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg focus:ring-2 focus:ring-[#8ba77f] focus:border-[#8ba77f] text-[#3a584e]"
+                    className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg"
                     required
                   />
                 </div>
               </div>
-               <div className="space-y-4">
-  <h3 className="text-lg font-medium text-[#3a584e]">Location (Click map to set)</h3>
-  <MapPicker onLocationSelect={handleLocationSelect} />
-  {formData.lattitude && formData.longitude && (
-    <p className="text-sm text-[#7a938f]">
-      Selected Coordinates: <strong>{formData.lattitude}, {formData.longitude}</strong>
-    </p>
-  )}
-</div>
 
+              {/* Receipt and Product */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#7a938f] mb-2">Receipt Number*</label>
+                  <input
+                    type="text"
+                    name="receiptNo"
+                    value={formData.receiptNo}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#7a938f] mb-2">Product*</label>
+                  <select
+                    name="productId"
+                    value={formData.productId}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 border border-[#e0e7d4] rounded-lg bg-white"
+                    required
+                  >
+                    <option value="">Select a product</option>
+                    {products.map((product) => (
+                      <option key={product.id} value={product.id}>
+                        {product.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Location Picker */}
+              <div>
+                <h3 className="text-lg font-medium text-[#3a584e] mb-2">Location (Click map to set)</h3>
+                <MapPicker onLocationSelect={handleLocationSelect} />
+                {formData.lattitude && formData.longitude && (
+                  <p className="text-sm text-[#7a938f] mt-2">
+                    Selected Coordinates: <strong>{formData.lattitude}, {formData.longitude}</strong>
+                  </p>
+                )}
+              </div>
+
+              {/* Submit */}
               <div className="pt-4 flex justify-end">
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className={`px-6 py-2.5 rounded-lg font-medium transition-colors ${
-                    isSubmitting 
+                    isSubmitting
                       ? 'bg-[#8ba77f]/70 text-white cursor-not-allowed'
                       : 'bg-[#8ba77f] text-white hover:bg-[#7a937f]'
                   }`}
@@ -328,6 +335,7 @@ export default function CustomerEnrollmentPage() {
                 </button>
               </div>
 
+              {/* Feedback Messages */}
               {successMessage && (
                 <div className="mt-4 p-3 bg-[#eef4e5] border-l-4 border-[#8ba77f] rounded text-sm text-[#3a584e] flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4" />
@@ -343,6 +351,7 @@ export default function CustomerEnrollmentPage() {
             </form>
           </div>
 
+          {/* Enrollment List */}
           <div className="bg-white p-6 rounded-xl border border-[#e0e7d4] shadow-sm">
             <h2 className="text-xl font-semibold text-[#3a584e] mb-6 pb-2 border-b border-[#e0e7d4] flex items-center gap-2">
               <ListChecks className="w-5 h-5" />
