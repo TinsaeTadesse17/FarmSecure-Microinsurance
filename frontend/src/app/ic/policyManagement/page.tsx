@@ -7,6 +7,7 @@ import CreatePolicyDialog from '@/components/ic/policyDialog';
 import PolicyDetailModal from '@/components/ic/policyDetail';
 import { listPolicies, approvePolicy, rejectPolicy, Policy } from '@/utils/api/policy';
 import { Plus, RefreshCw, Search, AlertCircle, ClipboardList, Sprout } from 'lucide-react';
+import { getCurrentUser } from '@/utils/api/user'; // Assuming this fetches the current user details
 
 export default function PolicyManagement() {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -14,16 +15,26 @@ export default function PolicyManagement() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  // const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [statusDialog, setStatusDialog] = useState<{ open: boolean; policy: Policy | null }>({
     open: false,
     policy: null,
   });
   const [selectedPolicyId, setSelectedPolicyId] = useState<number | null>(null);
+  const [userCompanyId, setUserCompanyId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchPolicies();
+    fetchCurrentUser(); // Fetch current user to get their company_id
   }, []);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const user = await getCurrentUser();
+      setUserCompanyId(user.company_id); // Store the user's company_id
+    } catch (err) {
+      setError('Failed to fetch user data');
+    }
+  };
 
   const fetchPolicies = async () => {
     try {
@@ -39,7 +50,6 @@ export default function PolicyManagement() {
 
   const handleUpdateStatus = async (policyId: number, newStatus: 'approved' | 'rejected') => {
     try {
-      // setUpdatingId(policyId); // removed unused state
       let updatedPolicy: Policy;
 
       if (newStatus === 'approved') {
@@ -53,19 +63,21 @@ export default function PolicyManagement() {
       ));
     } catch (err: any) {
       setError(err.message || `Failed to ${newStatus} policy`);
-    } finally {
-      // setUpdatingId(null); // removed unused state
     }
   };
 
+  // Filter policies to only show those that belong to the user's company_id
   const filteredPolicies = policies.filter(policy => {
     const searchTermLower = searchTerm.toLowerCase();
-    return (
+    const isPolicyBelongsToUserCompany = policy.ic_company_id === userCompanyId;
+    const isSearchMatch =
       policy.policy_id.toString().toLowerCase().includes(searchTermLower) ||
       (policy.policy_no && policy.policy_no.toLowerCase().includes(searchTermLower)) ||
-      policy.enrollment_id.toString().toLowerCase().includes(searchTermLower)
-    );
+      policy.enrollment_id.toString().toLowerCase().includes(searchTermLower);
+    
+    return isPolicyBelongsToUserCompany && isSearchMatch;
   });
+
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'approved': return 'bg-[#e8f5e9] text-[#2e7d32]';
@@ -212,7 +224,6 @@ export default function PolicyManagement() {
           )}
         </div>
 
-        {/* Modals remain similar with updated styling */}
         {statusDialog.open && statusDialog.policy && (
           <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center">
             <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm border">
