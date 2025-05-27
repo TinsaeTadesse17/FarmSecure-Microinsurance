@@ -142,37 +142,30 @@ def update_user_account(
     user_id: int,
     updates: user_schema.UserUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    # current_user: User = Depends(get_current_user)
 ):
     user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    current_user_role = current_user.role[0] if isinstance(current_user.role, list) else current_user.role
-    target_user_role = user.role[0] if isinstance(user.role, list) else user.role
+    # print(f"Editing user: {user_id} | Current User: {current_user.user_id}")
 
-    print(f"Editing user: {user_id} | Current User: {current_user.user_id} ({current_user_role}) → {target_user_role}")
+    # Only allow self-edit
+    # if current_user.user_id != user.user_id:
+    #     raise HTTPException(status_code=403, detail="You are only allowed to update your own account.")
 
-    if current_user.user_id == user.user_id:
-        if updates.username:
-            user.username = updates.username
-        if updates.password:
-            user.password = hash_password(updates.password)
-            user.must_change_password = False
-        if updates.status:
-            raise HTTPException(status_code=403, detail="You can't change your own status.")
-    elif current_user_role == "admin" and target_user_role == "ic":
-        if updates.status:
-            user.status = updates.status
-        else:
-            raise HTTPException(status_code=403, detail="Only status can be updated by admin on ICs.")
-    elif current_user_role == "ic" and target_user_role == "agent":
-        if updates.status:
-            user.status = updates.status
-        else:
-            raise HTTPException(status_code=403, detail="Only status can be updated by IC on Agents.")
-    else:
-        raise HTTPException(status_code=403, detail="You are not allowed to update this account.")
+    # Allow username update
+    if updates.username:
+        user.username = updates.username
+
+    # Allow password update
+    if updates.password:
+        user.password = hash_password(updates.password)
+        user.must_change_password = False
+
+    # Prevent self-status editing
+    if updates.status:
+        raise HTTPException(status_code=403, detail="You can't change your own status.")
 
     try:
         db.commit()

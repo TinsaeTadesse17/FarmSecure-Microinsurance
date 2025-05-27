@@ -30,8 +30,8 @@ export class DfsController {
     return this.dfsService.getEnrollmentById(enrollment_id);
   }
 
-  @Roles(Role.Agent)
   @Get('/')
+  @Roles(Role.IC, Role.Agent) // Assuming IC and Admin can list all
   @ApiOperation({ summary: 'List all enrollments' })
   @ApiResponse({ status: 200, description: 'Returns a list of enrollments' })
   async getAllEnrollments() {

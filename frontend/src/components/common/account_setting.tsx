@@ -8,7 +8,7 @@ export default function AccountSettingsDialog({ onClose }: { onClose: () => void
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [userId, setUserId] = useState<number | null>(null);
+  const [userId, setUserId] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
@@ -17,12 +17,17 @@ export default function AccountSettingsDialog({ onClose }: { onClose: () => void
   useEffect(() => {
     const token = getToken();
     if (!token) return;
+
     getCurrentUser(token)
       .then((user) => {
         setUsername(user.username);
-        setUserId(user.user_id);
+        setUserId(user.sub);
+        console.log("✅ Loaded user:", user);
       })
-      .catch(() => setError('Failed to fetch current user'));
+      .catch(() => {
+        setError('Failed to fetch current user');
+        console.warn("❌ Failed to fetch current user");
+      });
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -35,42 +40,57 @@ export default function AccountSettingsDialog({ onClose }: { onClose: () => void
   };
 
   const confirmUpdate = async () => {
-    if (!userId) return;
+    console.log("🟢 Confirm button clicked");
+
+    if (!userId) {
+      console.warn("⚠️ userId is null. Cannot send update.");
+      return;
+    }
 
     const token = getToken();
-    if (!token) return;
+    if (!token) {
+      console.warn("⚠️ Token not found. User may not be authenticated.");
+      return;
+    }
+
+    console.log("🔧 Preparing to update account with:");
+    console.log("➡️ userId:", userId);
+    console.log("➡️ username:", username);
+    console.log("➡️ password:", password ? '[HIDDEN]' : '(no password)');
+    console.log("➡️ token:", token.slice(0, 10) + '...');
 
     setLoading(true);
     setError('');
     setSuccess(false);
 
     try {
-      await updateUserAccount(userId, { username, password }, token);
+      const response = await updateUserAccount(userId, { username, password }, token);
+      console.log("✅ Update successful:", response);
+
       setSuccess(true);
       setPassword('');
       setConfirmPassword('');
+
       setTimeout(() => {
         setShowConfirmDialog(false);
         onClose();
       }, 1500);
     } catch (err) {
+      console.error("❌ Error updating account:", err);
       setError((err as Error).message);
     } finally {
       setLoading(false);
+      console.log("⏹️ Finished update request");
     }
   };
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30 backdrop-blur-sm">
-      {/* Main Dialog */}
       {!showConfirmDialog && (
         <div className="bg-white p-6 rounded-xl w-96 shadow-lg border border-[#e0e7d4]">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-[#3a584e]">Account Settings</h2>
-            <button 
-              onClick={onClose} 
-              className="text-[#7a938f] hover:text-[#3a584e] transition-colors"
-            >
+            <button onClick={onClose} className="text-[#7a938f] hover:text-[#3a584e] transition-colors">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -154,7 +174,6 @@ export default function AccountSettingsDialog({ onClose }: { onClose: () => void
         </div>
       )}
 
-      {/* Confirmation Dialog */}
       {showConfirmDialog && (
         <div className="bg-white p-6 rounded-xl w-96 shadow-lg border border-[#e0e7d4]">
           <h3 className="text-lg font-semibold text-[#3a584e] mb-3">Confirm Changes</h3>

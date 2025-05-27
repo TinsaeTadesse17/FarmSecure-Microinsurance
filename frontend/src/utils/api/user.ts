@@ -1,4 +1,7 @@
+import { useNavigate } from 'react-router-dom';
+
 const API_BASE = `http://${process.env.NEXT_PUBLIC_HOST}:${process.env.NEXT_PUBLIC_GATEWAY_PORT}`;
+
 
 export interface LoginRequest {
   username: string;
@@ -24,7 +27,7 @@ export interface CreateUserResponse {
 export interface UserOut {
   created_at: string | number | Date;
   email: any;
-  user_id: number;
+  sub: string;
   username: string;
   role: string | string[];
   company_id: number;
@@ -108,24 +111,32 @@ export async function createAgentUser(data: UserCreate): Promise<CreateUserRespo
 /**
  * 3. Get current logged-in user
  */
-export async function getCurrentUser(): Promise<UserOut> { // Removed token parameter
-  const res = await fetch(`${API_BASE}/api/user/me`, {
-    headers: { ...getAuthHeaders() }, // Used getAuthHeaders
-  });
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.detail || res.statusText);
+export async function getCurrentUser(token: string): Promise<UserOut> {
+  try {
+    const res = await fetch(`${API_BASE}/api/user/me`, {
+      headers: { ...getAuthHeaders() },
+    });
+    
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || res.statusText);
+    }
+    
+    return (await res.json()) as UserOut;
+  } catch (error) {
+   const navigate = useNavigate(); // Moving useNavigate inside the function
+    navigate('/');
+    localStorage.removeItem('authToken');
+    throw error;
   }
-  return (await res.json()) as UserOut;
 }
+
 
 /**
  * 4. Update a user account
  */
 export async function updateUserAccount(
-  userId: number,
-  data: UserUpdate
-): Promise<UserOut> { // Removed token parameter
+userId: string, data: UserUpdate, token: string): Promise<UserOut> { // Removed token parameter
   const res = await fetch(`${API_BASE}/api/user/update/${userId}`, {
     method: 'PUT',
     headers: {
