@@ -16,11 +16,18 @@ export default function AvatarMenu() {
 
   useEffect(() => {
     const token = getToken();
-    if (!token) return;
+    if (!token) {
+      router.replace('/');
+      return;
+    }
 
     getCurrentUser()
       .then((user) => setUsername(user.username))
-      .catch((err) => console.error('Failed to fetch user:', err));
+      .catch((err) => {
+        console.error('Failed to fetch user:', err);
+        clearToken();
+        router.replace('/');
+      });
 
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -30,7 +37,7 @@ export default function AvatarMenu() {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [router]);
 
   const confirmLogout = () => {
     clearToken();
