@@ -81,6 +81,12 @@ class EnrolementService:
     def get_enrolement(self, enrolement_id: int):
         return self.db.query(Enrolement).filter(Enrolement.enrolment_id == enrolement_id).first()
 
+    def get_enrolements_by_company_id(self, company_id: int):
+        return self.db.query(Enrolement).filter(Enrolement.ic_company_id == company_id).all()
+
+    def get_enrolements_by_user_id(self, user_id: int):
+        return self.db.query(Enrolement).filter(Enrolement.user_id == user_id).all()
+
     def get_enrolements(self):
         return self.db.query(Enrolement).all()
 

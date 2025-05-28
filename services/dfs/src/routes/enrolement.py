@@ -113,6 +113,85 @@ def read_enrolement(
     )
     return result
 
+
+@router.get("/by-company/{company_id}", response_model=list[EnrolementResponse])
+def get_enrollments_by_company_id(
+    company_id: int,
+    db: Session = Depends(get_db),
+):
+    service = EnrolementService(db)
+    enrollments = service.get_enrolements_by_company_id(company_id)
+    result = []
+    for db_enr in enrollments:
+        db_customer = db.query(Customer).filter(Customer.customer_id == db_enr.customer_id).first()
+        enrol = EnrolementResponse(
+            enrolement_id=db_enr.enrolment_id,
+            customer_id=db_enr.customer_id,
+            customer=CustomerResponse(
+                f_name=db_customer.f_name,
+                m_name=db_customer.m_name,
+                l_name=db_customer.l_name,
+                account_no=db_customer.account_no,
+                account_type=db_customer.account_type,
+            ),
+            createdAt=db_enr.createdAt,
+            user_id=db_enr.user_id,
+            status=db_enr.status,
+            ic_company_id=db_enr.ic_company_id,
+            branch_id=db_enr.branch_id,
+            premium=db_enr.premium,
+            sum_insured=db_enr.sum_insured,
+            date_from=db_enr.date_from,
+            date_to=db_enr.date_to,
+            receipt_no=db_enr.receipt_no,
+            product_id=db_enr.product_id,
+            cps_zone=db_enr.cps_zone,
+            grid=db_enr.grid,
+            lattitude=db_enr.lattitude,
+            longitude=db_enr.longitude,
+        )
+        result.append(enrol)
+    return result
+
+@router.get("/by-user/{user_id}", response_model=list[EnrolementResponse])
+def get_enrollments_by_user_id(
+    user_id: int,
+    db: Session = Depends(get_db),
+):
+    service = EnrolementService(db)
+    enrollments = service.get_enrolements_by_user_id(user_id)
+    result = []
+    for db_enr in enrollments:
+        db_customer = db.query(Customer).filter(Customer.customer_id == db_enr.customer_id).first()
+        enrol = EnrolementResponse(
+            enrolement_id=db_enr.enrolment_id,
+            customer_id=db_enr.customer_id,
+            customer=CustomerResponse(
+                f_name=db_customer.f_name,
+                m_name=db_customer.m_name,
+                l_name=db_customer.l_name,
+                account_no=db_customer.account_no,
+                account_type=db_customer.account_type,
+            ),
+            createdAt=db_enr.createdAt,
+            user_id=db_enr.user_id,
+            status=db_enr.status,
+            ic_company_id=db_enr.ic_company_id,
+            branch_id=db_enr.branch_id,
+            premium=db_enr.premium,
+            sum_insured=db_enr.sum_insured,
+            date_from=db_enr.date_from,
+            date_to=db_enr.date_to,
+            receipt_no=db_enr.receipt_no,
+            product_id=db_enr.product_id,
+            cps_zone=db_enr.cps_zone,
+            grid=db_enr.grid,
+            lattitude=db_enr.lattitude,
+            longitude=db_enr.longitude,
+        )
+        result.append(enrol)
+    return result
+
 @router.get("/", response_model=list[EnrolementResponse])
 def list_enrolements(
     db: Session = Depends(get_db)

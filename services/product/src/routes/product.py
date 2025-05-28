@@ -10,6 +10,7 @@ from src.database.crud.product_crud import (
     get_products,
     create_product,
     update_product,
+    get_products_by_company
 )
 from src.database.models.excel_ingest import TriggerExitPoint
 from src.schemas.product_schema import (
@@ -40,6 +41,16 @@ def read_product(
     if not prod:
         raise HTTPException(404, "Product not found")
     return prod
+
+@router.get("/by-company/{company_id}", response_model=list[ProductResponse])
+def get_products_by_company_route(
+    company_id: int,
+    db: Session = Depends(db.get_db),
+):
+    products = get_products_by_company(db, company_id)
+    if not products:
+        raise HTTPException(404, "No products found for the specified company")
+    return products
 
 @router.post("", response_model=ProductResponse)
 def create_product_route(

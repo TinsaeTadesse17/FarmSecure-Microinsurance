@@ -13,6 +13,9 @@ DEFAULT_ELC = 10.0
 def get_product(db: Session, product_id: int) -> Product | None:
     return db.query(Product).first() # filter(Product.product_id == product_id).
 
+def get_products_by_company(db: Session, company_id: int):
+    return db.query(Product).filter(Product.company_id == company_id).all()
+
 def get_products(db: Session, skip: int = 0, limit: int = 100) -> list[Product]:
     return db.query(Product).offset(skip).limit(limit).all()
 
