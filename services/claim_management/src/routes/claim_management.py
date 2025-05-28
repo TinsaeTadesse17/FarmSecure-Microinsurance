@@ -253,6 +253,23 @@ async def process_claim(claim_id: int, claim_type: str, policy_data: dict):
         
         # calculate amount based on config thresholds
         if claim_type == ClaimTypeEnum.CROP.value:
+            # New: Check if period is within growing season
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                season_url = f"{CONFIG_BASE}{settings.API_V1_STR}/growing_season/{int(grid_id_for_ndvi)}"
+                logger.info(f"Checking growing season for claim_id {claim_id}: URL: {season_url}")
+                season_resp = await client.get(season_url)
+            if season_resp.status_code != 200:
+                logger.error(f"Failed to fetch growing season from {season_url} for claim_id {claim_id}. Marking as SETTLED.")
+                update_claim_amount(db, claim_id, 0.0)
+                update_claim_status(db, claim_id, ClaimStatusEnum.SETTLED.value)
+                return
+            season_periods = season_resp.json()
+            if period_for_ndvi not in season_periods:
+                logger.info(f"Period {period_for_ndvi} not in growing season {season_periods} for claim_id {claim_id}. Skipping calculation and settling claim.")
+                update_claim_amount(db, claim_id, 0.0)
+                update_claim_status(db, claim_id, ClaimStatusEnum.SETTLED.value)
+                return
+            # existing CROP calculation continues...
             # cps_zone is used for fetching crop configuration (trigger/exit points)
             cps_zone_for_config = policy_data['cps_zone'] 
             period_for_config = policy_data['period'] # period is already available
