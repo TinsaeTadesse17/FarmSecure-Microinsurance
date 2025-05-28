@@ -4,9 +4,9 @@ import React, { useEffect, useState } from 'react';
 import Sidebar from '@/components/ic/sidebar';
 import AvatarMenu from '@/components/common/avatar';
 import CreateProductDialog from '@/components/ic/productDialog';
-import { getProducts, createProduct, Product, ProductCreate } from '@/utils/api/product';
+import { getProductsbyCompany, createProduct, Product, ProductCreate } from '@/utils/api/product';
 import { Plus, RefreshCw, Search, Package } from 'lucide-react';
-import {  getCurrentUser, getToken } from '@/utils/api/user';  
+import { getCurrentUser, getToken } from '@/utils/api/user';
 
 export default function ProductConfiguration() {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -15,30 +15,27 @@ export default function ProductConfiguration() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-const fetchProducts = async () => {
-  setIsLoading(true);
-  setError(null);
-  try {
-    const token = await getToken(); 
-    if (!token) {
-      setError('No authentication token found. Please log in.');
+  const fetchProducts = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const token = await getToken();
+      if (!token) {
+        setError('No authentication token found. Please log in.');
+        setIsLoading(false);
+        return;
+      }
+
+      const user = await getCurrentUser();
+      const productsResult = await getProductsbyCompany(Number(user.company_id)); // Backend handles company filtering
+      setProducts(Array.isArray(productsResult) ? productsResult : [productsResult]);
+    } catch (err) {
+      console.error('Error fetching products:', err);
+      setError('Failed to load products. Please try again.');
+    } finally {
       setIsLoading(false);
-      return;
     }
-    
-    const user = await getCurrentUser(); 
-    const allProducts = await getProducts(); 
-    const filteredProducts = allProducts.filter(
-      product => product.company_id === user.company_id
-    );
-    setProducts(filteredProducts);
-  } catch (err) {
-    console.error('Error fetching products:', err);
-    setError('Failed to load products. Please try again.');
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   const handleCreate = async (newProduct: ProductCreate) => {
     try {
@@ -55,6 +52,7 @@ const fetchProducts = async () => {
     fetchProducts();
   }, []);
 
+  // Only search filtering (not company_id)
   const filtered = products.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -158,10 +156,7 @@ const fetchProducts = async () => {
                 </thead>
                 <tbody className="divide-y divide-[#e0e7d4]">
                   {filtered.map(product => (
-                    <tr 
-                      key={product.id} 
-                      className="hover:bg-[#f9f8f3] transition-colors cursor-pointer"
-                    >
+                    <tr key={product.id} className="hover:bg-[#f9f8f3] transition-colors cursor-pointer">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#3a584e]">
                         {product.name}
                       </td>

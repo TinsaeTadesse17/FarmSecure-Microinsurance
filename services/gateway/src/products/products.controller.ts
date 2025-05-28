@@ -33,11 +33,11 @@ export class ProductsController {
 
   @Roles(Role.IC, Role.Agent)
   @Get(':company_id')
-  @ApiOperation({ summary: 'Get a product by company ID' })
+  @ApiOperation({ summary: 'Get products by company ID' })
   @ApiResponse({ status: 200, description: 'Returns a single product' })
   @ApiResponse({ status: 404, description: 'Product not found' })
-  async findOneByCompanyId(@Param('company_id') company_id: string) {
-    return this.productsService.findOneByCompanyId(company_id);
+  async finAllByCompanyId(@Param('company_id') company_id: number) {
+    return this.productsService.findAllByCompanyId(company_id);
   }
 
   @Roles(Role.IC, Role.Agent)

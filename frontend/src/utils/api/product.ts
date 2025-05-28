@@ -53,6 +53,7 @@ export async function getProduct(productId: number): Promise<Product> {
   return await res.json();
 }
 
+// get products by company id
 export async function getProductsbyCompany(company_id: number): Promise<Product> {
   const res = await fetch(`${API_BASE}/by-company/${company_id}`, {
     headers: { ...getAuthHeaders() },

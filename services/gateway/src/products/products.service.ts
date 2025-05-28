@@ -38,7 +38,7 @@ export class ProductsService {
     }
   }
 
-  async findOneByCompanyId(company_id: string) {
+  async findAllByCompanyId(company_id: number) {
     try {
       const response = await firstValueFrom(
         this.httpService.get(`${PRODUCT_SERVICE_BASE_URL}/products/${company_id}`),
