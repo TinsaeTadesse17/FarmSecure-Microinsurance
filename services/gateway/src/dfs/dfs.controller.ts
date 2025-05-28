@@ -26,8 +26,26 @@ export class DfsController {
   @ApiOperation({ summary: 'Get an enrollment by ID' })
   @ApiResponse({ status: 200, description: 'Returns a single enrollment' })
   @ApiResponse({ status: 404, description: 'Enrollment not found' })
-  async getEnrollmentById(@Param('enrollment_id') enrollment_id: string) {
+  async getEnrollmentById(@Param('enrollment_id') enrollment_id: number) {
     return this.dfsService.getEnrollmentById(enrollment_id);
+  }
+
+  @Roles(Role.Agent, Role.IC)
+  @Get('/by-company/:company_id')
+  @ApiOperation({ summary: 'Get an enrollment by ID' })
+  @ApiResponse({ status: 200, description: 'Returns a single enrollment' })
+  @ApiResponse({ status: 404, description: 'Enrollment not found' })
+  async getEnrollmentByCompanyId(@Param('company_id') company_id: number) {
+    return this.dfsService.getEnrollmentByCompanyId(company_id);
+  }
+
+  @Roles(Role.Agent, Role.IC)
+  @Get('/by-user/:user_id')
+  @ApiOperation({ summary: 'Get an enrollment by ID' })
+  @ApiResponse({ status: 200, description: 'Returns a single enrollment' })
+  @ApiResponse({ status: 404, description: 'Enrollment not found' })
+  async getEnrollmentByUserId(@Param('user_id') user_id: number) {
+    return this.dfsService.getEnrollmentByUserId(user_id);
   }
 
   @Get('/')
