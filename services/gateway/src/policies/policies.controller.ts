@@ -54,6 +54,30 @@ export class PoliciesController {
   }
 
   @Roles(Role.Agent, Role.IC)
+  @Get('/policies/by-company/:company_id') // Adjusted path to avoid conflict with /api/v1/policy/:policy_id
+  @ApiOperation({ summary: 'List all policies' })
+  @ApiResponse({ status: 200, description: 'Returns a list of policies' })
+  async getAllPoliciesByCompany(@Param('company_id') company_id: number) {
+    return this.policiesService.getAllPoliciesByCompany(company_id);
+  }
+
+  @Roles(Role.Agent, Role.IC)
+  @Get('/policies/by-user/:user_id') // Adjusted path to avoid conflict with /api/v1/policy/:policy_id
+  @ApiOperation({ summary: 'List all policies' })
+  @ApiResponse({ status: 200, description: 'Returns a list of policies' })
+  async getAllPoliciesByUser(@Param('user_id') user_id: number) {
+    return this.policiesService.getAllPoliciesByUser(user_id);
+  }
+
+  @Roles(Role.Agent, Role.IC)
+  @Get('/policies/by-enrollment/:enrollment_id') // Adjusted path to avoid conflict with /api/v1/policy/:policy_id
+  @ApiOperation({ summary: 'List all policies' })
+  @ApiResponse({ status: 200, description: 'Returns a list of policies' })
+  async getAllPoliciesByEnrollment(@Param('enrollment_id') enrollment_id: number) {
+    return this.policiesService.getAllPoliciesByEnrollment(enrollment_id);
+  }
+
+  @Roles(Role.Agent, Role.IC)
   @Get('/policies/details') // Adjusted path
   @ApiOperation({ summary: 'List all policy details' })
   @ApiResponse({ status: 200, description: 'Returns a list of all policy details' })
