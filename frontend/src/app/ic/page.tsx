@@ -45,7 +45,7 @@ export default function DashboardPage() {
       setLoading(false);
     } catch (err) {
       console.error('Authentication error:', err);
-      router.replace('/login');
+      router.replace('/');
     }
   }, [router]);
 

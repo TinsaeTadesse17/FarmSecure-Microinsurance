@@ -18,8 +18,8 @@ export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
+  useEffect(() => 
+    {const token = localStorage.getItem('token');
     if (!token) {
       router.replace('/');
       return;
@@ -40,7 +40,7 @@ export default function DashboardPage() {
       setLoading(false);
     } catch (err) {
       console.error('Invalid token:', err);
-      router.replace('/login');
+      router.replace('/');
     }
   }, [router]);
 
