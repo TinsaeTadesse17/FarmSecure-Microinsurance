@@ -1,35 +1,20 @@
-from typing import Union, List
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi import HTTPException, APIRouter, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
-import httpx
 import time
-from datetime import datetime # Ensure datetime is imported
-from src.database.db import SessionLocal
-from src.schemas.claim_management_schema import (
-    ClaimReadSchema,
-    ErrorResponse,
-    ClaimTriggerSchema
-)
-from typing import List
-import httpx
-from pydantic import BaseModel, ConfigDict # Added for new schemas
-
-from src.database.crud.claim_management_crud import (
-    create_claim,
-    get_all_claims,
-    update_claim_status,
-    update_claim_amount,
-    get_claim,
-    authorize_claim
-)
-from src.database.models.claim_management import ClaimStatusEnum, ClaimTypeEnum, Claim  # Added Claim model import
-from src.core.config import settings
+from datetime import datetime
 import logging
 
-logger = logging.getLogger(__name__)
+from pydantic import BaseModel, ConfigDict
+from typing import List
 
-POLICY_SERVICE_BASE_URL = settings.POLICY_SERVICE_URL
-CONFIG_BASE = settings.CONFIG_SERVICE_URL  # base URL for config service
+from src.database.db import SessionLocal
+from src.schemas.claim_management_schema import ClaimReadSchema, ErrorResponse
+from src.services.policy_service import fetch_policy_details
+from src.services.config_service import fetch_cps_config, fetch_ndvi, fetch_growing_season
+from src.services.claim_calculator import calculate_crop_claim, calculate_livestock_claim
+from src.database.crud.claim_management_crud import create_claim, get_all_claims, update_claim_status, update_claim_amount, get_claim, authorize_claim
+from src.database.models.claim_management import ClaimStatusEnum, ClaimTypeEnum, Claim
+logger = logging.getLogger(__name__)
 
 def get_db():
     db = SessionLocal()
@@ -40,44 +25,6 @@ def get_db():
         
 router = APIRouter()
 
-# Static thresholds
-CROP_TRIGGER = 15
-CROP_EXIT = 5
-LIVESTOCK_TRIGGER = 1.5
-LIVESTOCK_EXIT = 0.5
-LIVESTOCK_MP_PERCENT = 0.1  # Define minimum payment percentage
-
-
-timeout = httpx.Timeout(
-    connect=5.0,   # max time to connect
-    read=30.0,     # max time to read a response
-    write=5.0,     # max time to write the request
-    pool=None      # use default pool timeout
-)
-
-async def fetch_policy_details():
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        try:
-            response = await client.get(
-                f"{POLICY_SERVICE_BASE_URL}/api/policies/details",
-            )
-            response.raise_for_status() 
-            return response.json()
-        except httpx.HTTPError as e:
-            logger.exception("Error fetching policy details from policy service." + str(e))
-            raise HTTPException(status_code=503, detail="Policy service is unavailable.")
-
-def calculate_livestock_claim(z_score: float, sum_insured: float):
-    if z_score >= LIVESTOCK_TRIGGER:
-        return 0.0
-    if z_score <= LIVESTOCK_EXIT:
-        return sum_insured
-    
-    ratio = (LIVESTOCK_TRIGGER - z_score) / (LIVESTOCK_TRIGGER - LIVESTOCK_EXIT)
-    claim_amount = ratio * sum_insured
-    min_payment = LIVESTOCK_MP_PERCENT * sum_insured
-    return max(claim_amount, min_payment)
-
 async def process_all_claims_task(db_session_factory, background_tasks_parent: BackgroundTasks):
     """
     Processes claims for all policies and customers in the background.
@@ -86,7 +33,11 @@ async def process_all_claims_task(db_session_factory, background_tasks_parent: B
     db: Session = db_session_factory()
     try:
         logger.info("Starting background task: process_all_claims_task")
-        policies = await fetch_policy_details()
+        try:
+            policies = await fetch_policy_details()
+        except HTTPException as e:
+            logger.error(f"Could not fetch policy details: {e.detail}")
+            return
         if not policies:
             logger.info("No policies found to process in background task.")
             return
@@ -136,51 +87,37 @@ async def process_all_claims_task(db_session_factory, background_tasks_parent: B
                 
                 claim_id_for_logging = created_claim.id # For logging in subsequent error blocks
 
-                cps = policy['cps_zone']
-                period = policy['period']
-
-                async with httpx.AsyncClient(timeout=timeout) as client:
-                    cfg_resp = await client.get(f"{CONFIG_BASE}{settings.API_V1_STR}/cps_zone/{int(cps)}/{int(period)}")
- 
-                if cfg_resp.status_code != 200:
-                    logger.error(f"Error fetching config for Claim ID {claim_id_for_logging}, Policy {policy.get('policy_id')}, CPS zone {cps}, Period {period}. Status: {cfg_resp.status_code}, Response: {cfg_resp.text}")
+                cps = policy['cps_zone']; period = policy['period']
+                try:
+                    cfgj = await fetch_cps_config(int(cps), int(period))
+                except HTTPException as e:
                     update_claim_amount(db, created_claim.id, 0.0)
-                    update_claim_status(db, created_claim.id, ClaimStatusEnum.SETTLED.value) # Mark as settled with 0 if config fails
-                    if cfg_resp.status_code == 404:
-                        logger.warning(f"Config data missing for CPS zone {cps}, period {period}. Claim ID {claim_id_for_logging} marked as SETTLED. Link: {cfg_resp.url}")
-                    else:
-                        logger.warning(f"Config service issue for CPS zone {cps}, period {period}. Claim ID {claim_id_for_logging} marked as SETTLED.")
-                    continue 
-
-                cfgj = cfg_resp.json()
+                    update_claim_status(db, created_claim.id, ClaimStatusEnum.SETTLED.value)
+                    logger.warning(f"Config service error for CPS {cps}, period {period}: {e.detail}. Claim {claim_id_for_logging} settled.")
+                    continue
                 trig, exitp = cfgj.get('trigger_point', 0), cfgj.get('exit_point', 0)
 
                 if trig == 0 or exitp == 0:
-                    logger.info(f"No growing season (trigger/exit is 0) for Claim ID {claim_id_for_logging}, Policy {policy.get('policy_id')}. Marking as SETTLED with 0 amount.")
                     update_claim_amount(db, created_claim.id, 0.0)
                     update_claim_status(db, created_claim.id, ClaimStatusEnum.SETTLED.value)
                 else:
-                    logger.debug(f"Adding process_claim task for Claim ID {claim_id_for_logging}, Type {ctype}")
-                    # process_claim will create its own DB session
                     background_tasks_parent.add_task(process_claim, created_claim.id, ctype, policy)
             
-            except httpx.HTTPError as http_err:
-                logger.error(f"HTTP error processing policy {policy.get('policy_id', 'N/A')} (Claim ID if created: {claim_id_for_logging}): {http_err}")
-                if claim_id_for_logging != "N/A" and isinstance(claim_id_for_logging, int): # Check if claim was created
+            except HTTPException as e:
+                logger.error(f"Service error for policy {policy.get('policy_id', 'N/A')} (Claim ID: {claim_id_for_logging}): {e.detail}")
+                if isinstance(claim_id_for_logging, int):
                     update_claim_amount(db, claim_id_for_logging, 0.0)
                     update_claim_status(db, claim_id_for_logging, ClaimStatusEnum.SETTLED.value)
             except Exception as e:
-                logger.error(f"Unexpected error processing policy {policy.get('policy_id', 'N/A')} (Claim ID if created: {claim_id_for_logging}): {str(e)}", exc_info=True)
-                if claim_id_for_logging != "N/A" and isinstance(claim_id_for_logging, int): # Check if claim was created
+                logger.error(f"Unexpected error processing policy {policy.get('policy_id', 'N/A')} (Claim ID: {claim_id_for_logging}): {e}", exc_info=True)
+                if isinstance(claim_id_for_logging, int):
                     update_claim_amount(db, claim_id_for_logging, 0.0)
                     update_claim_status(db, claim_id_for_logging, ClaimStatusEnum.SETTLED.value)
         
         logger.info("Finished background task: process_all_claims_task")
     
-    except httpx.HTTPError as http_err:
-        logger.error(f"Failed to fetch policy details at the start of process_all_claims_task: {http_err}")
     except Exception as e:
-        logger.error(f"General error in process_all_claims_task: {str(e)}", exc_info=True)
+        logger.error(f"General error in process_all_claims_task: {e}", exc_info=True)
     finally:
         if db:
             db.close()
@@ -219,93 +156,44 @@ async def process_claim(claim_id: int, claim_type: str, policy_data: dict):
         sum_insured = float(policy_data['period_sum_insured'])
 
         # Fetch NDVI using the new specific endpoint: /ndvi/{grid_id}/{period}
-        ndvi_val = 0.0  # Default NDVI value
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            ndvi_url = f"{CONFIG_BASE}{settings.API_V1_STR}/ndvi/{int(grid_id_for_ndvi)}/{int(period_for_ndvi)}"
-            logger.info(f"Fetching NDVI for claim_id {claim_id}: URL: {ndvi_url}")
-            try:
-                ndvi_resp = await client.get(ndvi_url)
-                ndvi_resp.raise_for_status()  # Raise an exception for HTTP 4xx or 5xx errors
-                ndvi_json = ndvi_resp.json()
-                
-                # Corrected to use 'ndvi_value'
-                if isinstance(ndvi_json.get('ndvi_value'), (int, float)):
-                    ndvi_val = float(ndvi_json['ndvi_value'])
-                    logger.info(f"Successfully fetched NDVI value {ndvi_val} for claim_id {claim_id}, grid {grid_id_for_ndvi}, period {period_for_ndvi}.")
-                else:
-                    # Corrected log message and key access
-                    logger.error(f"NDVI key 'ndvi_value' missing or not a number in response from {ndvi_url} for claim_id {claim_id}. Response: {ndvi_json}. Defaulting NDVI to 0.0.")
-                    # Consider if claim status should be updated to 'failed' here or if claim should be settled with 0
-                    update_claim_amount(db, claim_id, 0.0)
-                    update_claim_status(db, claim_id, ClaimStatusEnum.SETTLED.value)
-                    logger.warning(f"Claim ID {claim_id} marked as SETTLED due to missing/invalid NDVI value.")
-                    return # Exit processing for this claim if NDVI is critical and missing
-            except httpx.HTTPStatusError as e:
-                logger.error(f"HTTP error fetching NDVI from {ndvi_url} for claim_id {claim_id}: {e}. Defaulting NDVI to 0.0 and marking claim as SETTLED.")
-                update_claim_amount(db, claim_id, 0.0)
-                update_claim_status(db, claim_id, ClaimStatusEnum.SETTLED.value)
-                return # Exit processing for this claim
-            except Exception as e:
-                logger.error(f"Error fetching or parsing NDVI from {ndvi_url} for claim_id {claim_id}: {e}. Defaulting NDVI to 0.0 and marking claim as SETTLED.")
-                update_claim_amount(db, claim_id, 0.0)
-                update_claim_status(db, claim_id, ClaimStatusEnum.SETTLED.value)
-                return # Exit processing for this claim
+        try:
+            ndvi_val = await fetch_ndvi(int(grid_id_for_ndvi), int(period_for_ndvi))
+        except HTTPException as e:
+            update_claim_amount(db, claim_id, 0.0)
+            update_claim_status(db, claim_id, ClaimStatusEnum.SETTLED.value)
+            return
         
-        # calculate amount based on config thresholds
+        # Determine and calculate claim amount
         if claim_type == ClaimTypeEnum.CROP.value:
-            # New: Check if period is within growing season
-            async with httpx.AsyncClient(timeout=timeout) as client:
-                season_url = f"{CONFIG_BASE}{settings.API_V1_STR}/growing_season/{int(grid_id_for_ndvi)}"
-                logger.info(f"Checking growing season for claim_id {claim_id}: URL: {season_url}")
-                season_resp = await client.get(season_url)
-            if season_resp.status_code != 200:
-                logger.error(f"Failed to fetch growing season from {season_url} for claim_id {claim_id}. Marking as SETTLED.")
+            # Check growing season before calculation
+            try:
+                seasons = await fetch_growing_season(int(grid_id_for_ndvi))
+            except HTTPException as e:
+                update_claim_amount(db, claim_id, 0.0)
+                update_claim_status(db, claim_id, ClaimStatusEnum.SETTLED.value)
+                logger.warning(f"Growing season service error for grid {grid_id_for_ndvi}: {e.detail}. Claim {claim_id} settled.")
+                return
+            if period_for_ndvi not in seasons:
+                update_claim_amount(db, claim_id, 0.0)
+                update_claim_status(db, claim_id, ClaimStatusEnum.SETTLED.value)
+                logger.info(f"Period {period_for_ndvi} not in growing season {seasons} for claim {claim_id}. Claim settled.")
+                return
+            try:
+                cfg = await fetch_cps_config(int(grid_id_for_ndvi), int(period_for_ndvi))
+            except HTTPException:
                 update_claim_amount(db, claim_id, 0.0)
                 update_claim_status(db, claim_id, ClaimStatusEnum.SETTLED.value)
                 return
-            season_periods = season_resp.json()
-            if period_for_ndvi not in season_periods:
-                logger.info(f"Period {period_for_ndvi} not in growing season {season_periods} for claim_id {claim_id}. Skipping calculation and settling claim.")
-                update_claim_amount(db, claim_id, 0.0)
-                update_claim_status(db, claim_id, ClaimStatusEnum.SETTLED.value)
-                return
-            # existing CROP calculation continues...
-            # cps_zone is used for fetching crop configuration (trigger/exit points)
-            cps_zone_for_config = policy_data['cps_zone'] 
-            period_for_config = policy_data['period'] # period is already available
-
-            async with httpx.AsyncClient(timeout=timeout) as client:
-                cfg_url = f"{CONFIG_BASE}{settings.API_V1_STR}/cps_zone/{int(cps_zone_for_config)}/{int(period_for_config)}"
-                logger.info(f"Fetching CROP config for claim_id {claim_id}: URL: {cfg_url}")
-                cfg_resp = await client.get(cfg_url)
-                # Handle config fetch failure specifically for CROP claims
-                if cfg_resp.status_code != 200:
-                    logger.error(f"Failed to fetch CROP config from {cfg_url} for claim_id {claim_id}. Status: {cfg_resp.status_code}. Marking claim as SETTLED with 0 amount.")
-                    update_claim_amount(db, claim_id, 0.0)
-                    update_claim_status(db, claim_id, ClaimStatusEnum.SETTLED.value)
-                    return # Exit processing for this claim
-                
-                cfg = cfg_resp.json()
             trig, exitp = cfg.get('trigger_point', 0), cfg.get('exit_point', 0)
-            # no growing season yields zero claim
-            if trig == 0 and exitp == 0:
-                amount = 0.0
-            elif ndvi_val >= trig:
-                amount = 0.0
-            elif ndvi_val <= exitp:
-                amount = sum_insured
-            else:
-                ratio = (trig - ndvi_val) / (trig - exitp)
-                amount = round(ratio * sum_insured, 2)
+            amount = calculate_crop_claim(ndvi_val, trig, exitp, sum_insured)
         else:
-            # livestock claim calculation
             z_score = (ndvi_val - 0.5) * 2
             amount = calculate_livestock_claim(z_score, sum_insured)
         update_claim_amount(db, claim_id, amount)
         time.sleep(0.2)
         update_claim_status(db, claim_id, ClaimStatusEnum.PENDING.value)
     except Exception as e:
-        logger.error(f"Unexpected error occurred: {str(e)}")
+        logger.error(f"Unexpected error in process_claim {claim_id}: {e}")
     finally:
         db.close()
 
@@ -390,8 +278,7 @@ async def create_livestock_claim(
 
 @router.post("/claims/trigger", response_model=dict)
 async def trigger_claims(
-    background_tasks: BackgroundTasks,
-    # Removed db: Session = Depends(get_db) as the background task manages its own session
+    background_tasks: BackgroundTasks
 ):
     """
     Triggers claim processing for all policies.
@@ -402,7 +289,7 @@ async def trigger_claims(
     background_tasks.add_task(process_all_claims_task, SessionLocal, background_tasks)
     return {"message": "Claim processing for all policies has been initiated in the background."}
 
-@router.get("/claims/by-customer", response_model=List[CustomerClaimsSummarySchema], tags=["claims"]) # Corrected tags syntax
+@router.get("/claims/by-customer", response_model=List[CustomerClaimsSummarySchema], tags=["claims"] )
 async def get_claims_grouped_by_customer(db: Session = Depends(get_db)):
     all_claims_db = get_all_claims(db)
     if not all_claims_db:
@@ -414,7 +301,7 @@ async def get_claims_grouped_by_customer(db: Session = Depends(get_db)):
         # Re-raise if fetch_policy_details already prepared an HTTPException (e.g., service unavailable)
         raise e
     except Exception as e:
-        logger.error(f"Failed to fetch policy details for claims aggregation: {str(e)}")
+        logger.error(f"Failed to fetch policy details for claims aggregation: {e}")
         # Return a 503 if policy service is down or another error occurred
         raise HTTPException(status_code=503, detail="Could not retrieve policy details necessary for claim aggregation.")
 
