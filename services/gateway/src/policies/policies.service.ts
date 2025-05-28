@@ -139,7 +139,7 @@ export class PoliciesService {
   async getAllPoliciesByEnrollment(enrollment_id: number) {
     try {
       const response = await firstValueFrom(
-        this.httpService.get(`${POLICY_SERVICE_BASE_URL}/policies/by-enrollment/${enrollment_id}`),
+        this.httpService.get(`${POLICY_SERVICE_BASE_URL}/policy/by-enrollment/${enrollment_id}`),
       );
       return response.data;
     } catch (error: any) {

@@ -168,6 +168,8 @@ services:
     container_name: policy_service
     env_file:
       - .env
+    ports:
+      - "8006:8000" # Expose the port defined in the Dockerfile
     depends_on:
       policy_db:
         condition: service_started

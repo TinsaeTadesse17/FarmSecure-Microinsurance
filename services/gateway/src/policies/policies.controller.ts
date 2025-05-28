@@ -70,7 +70,7 @@ export class PoliciesController {
   }
 
   @Roles(Role.Agent, Role.IC)
-  @Get('/policies/by-enrollment/:enrollment_id') // Adjusted path to avoid conflict with /api/v1/policy/:policy_id
+  @Get('/policy/by-enrollment/:enrollment_id') // Adjusted path to avoid conflict with /api/v1/policy/:policy_id
   @ApiOperation({ summary: 'List all policies' })
   @ApiResponse({ status: 200, description: 'Returns a list of policies' })
   async getAllPoliciesByEnrollment(@Param('enrollment_id') enrollment_id: number) {
