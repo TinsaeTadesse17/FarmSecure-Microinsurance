@@ -19,6 +19,8 @@ class UserOut(BaseModel):
 class UserUpdate(BaseModel):
     username: Optional[str] = None
     password: Optional[str] = None
-    status: Optional[str] = None
     # role: Optional[str] = None
     # company_id: Optional[int] = None
+
+class StatusUpdate(BaseModel):
+    status: str
