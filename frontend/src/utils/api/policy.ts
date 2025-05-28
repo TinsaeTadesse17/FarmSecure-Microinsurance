@@ -73,7 +73,7 @@ export async function getPolicy(policyId: number): Promise<Policy> {
 
 //  Get a single policy by enrollment ID
 export async function getPolicyByEnrollment(enrollment_id: number): Promise<Policy> {
-  const res = await fetch(`${API_BASE}/policy/by_enrollment/${enrollment_id}`, {
+  const res = await fetch(`${API_BASE}/policy/by-enrollment/${enrollment_id}`, {
     headers: { ...getAuthHeaders() },
   });
   if (!res.ok) throw new Error('Failed to fetch policy');
@@ -100,7 +100,7 @@ export async function listPolicies(): Promise<Policy[]> {
 
 // 6. List all policies by comapnyid
 export async function listPoliciesbyCompany(company_id: number): Promise<Policy[]> {
-  const res = await fetch(`${API_BASE}/policies/${company_id}`, {
+  const res = await fetch(`${API_BASE}/policies/by-company/${company_id}`, {
     headers: { ...getAuthHeaders() },
   });
   if (!res.ok) throw new Error('Failed to fetch policies');
@@ -109,7 +109,7 @@ export async function listPoliciesbyCompany(company_id: number): Promise<Policy[
 
 // 6. List all policiesby userid
 export async function listPoliciesbyUser(user_id: number): Promise<Policy[]> {
-  const res = await fetch(`${API_BASE}/policies/${user_id}`, {
+  const res = await fetch(`${API_BASE}/policies/by-user/${user_id}`, {
     headers: { ...getAuthHeaders() },
   });
   if (!res.ok) throw new Error('Failed to fetch policies');

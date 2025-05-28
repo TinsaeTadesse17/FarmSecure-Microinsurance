@@ -69,14 +69,14 @@ export async function getEnrollment(id: number): Promise<EnrollmentResponse> {
 }
 
 
-export async function getEnrollmentByCompany(ic_company_id: number): Promise<EnrollmentResponse> {
-  const res = await fetch(`${API_BASE}/${ic_company_id}`, { headers: getAuthHeaders() });
+export async function getEnrollmentsByCompany(ic_company_id: number): Promise<EnrollmentResponse> {
+  const res = await fetch(`${API_BASE}/by-company/${ic_company_id}`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
   return res.json();
 }
 
-export async function getEnrollmentByUser(user_id: number): Promise<EnrollmentResponse> {
-  const res = await fetch(`${API_BASE}/${user_id}`, { headers: getAuthHeaders() });
+export async function getEnrollmentsByUser(user_id: number): Promise<EnrollmentResponse> {
+  const res = await fetch(`${API_BASE}/by-user/${user_id}`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
   return res.json();
 }
