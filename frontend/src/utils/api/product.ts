@@ -53,6 +53,15 @@ export async function getProduct(productId: number): Promise<Product> {
   return await res.json();
 }
 
+export async function getProductbyCompany(company_id: number): Promise<Product> {
+  const res = await fetch(`${API_BASE}/${company_id}`, {
+    headers: { ...getAuthHeaders() },
+  });
+  if (!res.ok) throw new Error('Product not found');
+  return await res.json();
+}
+
+
 // Create a new product
 export async function createProduct(data: ProductCreate): Promise<Product> {
   const res = await fetch(API_BASE, {

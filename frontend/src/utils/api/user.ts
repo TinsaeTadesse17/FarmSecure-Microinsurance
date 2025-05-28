@@ -38,6 +38,9 @@ export interface UserOut {
 export interface UserUpdate {
   username?: string;
   password?: string;
+}
+
+export interface UserStatus{
   status?: string;
 }
 
@@ -209,4 +212,25 @@ export async function getAgentUsers(): Promise<UserOut[]> { // Removed token par
     throw new Error(err.detail || res.statusText);
   }
   return (await res.json()) as UserOut[];
+}
+
+/**
+ * 10. Update a user account
+ */
+export async function updateUserStatus(
+  userId: string, data: UserStatus
+): Promise<UserOut> {
+  const res = await fetch(`${API_BASE}/api/user/update-status/${userId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || res.statusText);
+  }
+  return (await res.json()) as UserOut;
 }
