@@ -41,7 +41,7 @@ export class ProductsService {
   async findAllByCompanyId(company_id: number) {
     try {
       const response = await firstValueFrom(
-        this.httpService.get(`${PRODUCT_SERVICE_BASE_URL}/products/${company_id}`),
+        this.httpService.get(`${PRODUCT_SERVICE_BASE_URL}/products/by-company/${company_id}`),
       );
       return response.data;
     } catch (error: any) {

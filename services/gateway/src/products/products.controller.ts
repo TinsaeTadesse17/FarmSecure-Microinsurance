@@ -32,7 +32,7 @@ export class ProductsController {
   }
 
   @Roles(Role.IC, Role.Agent)
-  @Get(':company_id')
+  @Get('by-company/:company_id')
   @ApiOperation({ summary: 'Get products by company ID' })
   @ApiResponse({ status: 200, description: 'Returns a single product' })
   @ApiResponse({ status: 404, description: 'Product not found' })
