@@ -26,7 +26,7 @@ const fetchProducts = async () => {
       return;
     }
     
-    const user = await getCurrentUser(token); 
+    const user = await getCurrentUser(); 
     const allProducts = await getProducts(); 
     const filteredProducts = allProducts.filter(
       product => product.company_id === user.company_id

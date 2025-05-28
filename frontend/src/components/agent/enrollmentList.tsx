@@ -22,7 +22,7 @@ export default function EnrollmentList() {
         }
 
         // 1. Get current user info
-        const user = await getCurrentUser(token);
+        const user = await getCurrentUser();
         setAgentId(user.sub);
 
         // 2. Fetch enrollments

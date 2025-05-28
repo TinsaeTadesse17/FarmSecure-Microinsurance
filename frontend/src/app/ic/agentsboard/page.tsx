@@ -64,7 +64,7 @@ const AgentsPage: React.FC = () => {
         setHasFetched(true);
         if (token && companyId === null) {
           try {
-            const current = await getCurrentUser(token);
+            const current = await getCurrentUser();
             setCompanyId(current.company_id);
           } catch {}
         }
@@ -85,7 +85,7 @@ const AgentsPage: React.FC = () => {
       return;
     }
     try {
-      await updateUserAccount(selectedUser.sub, { status: selectedStatus }, token);
+      await updateUserAccount(selectedUser.sub, { status: selectedStatus });
       setAgents(prev => ({
         ...prev,
         data: prev.data.map(u => (u.sub === selectedUser.sub ? { ...u, status: selectedStatus } : u)),

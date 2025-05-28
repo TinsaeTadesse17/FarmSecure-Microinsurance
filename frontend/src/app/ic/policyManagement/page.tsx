@@ -72,7 +72,7 @@ export default function PolicyManagement() {
     const isPolicyBelongsToUserCompany = policy.ic_company_id === userCompanyId;
     const isSearchMatch =
       policy.policy_id.toString().toLowerCase().includes(searchTermLower) ||
-      (policy.policy_no && policy.policy_no.toLowerCase().includes(searchTermLower)) ||
+      (policy.policy_no && policy.policy_no.toString().toLowerCase().includes(searchTermLower)) ||
       policy.enrollment_id.toString().toLowerCase().includes(searchTermLower);
     
     return isPolicyBelongsToUserCompany && isSearchMatch;

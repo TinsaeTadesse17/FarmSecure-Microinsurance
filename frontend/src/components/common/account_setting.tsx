@@ -18,7 +18,7 @@ export default function AccountSettingsDialog({ onClose }: { onClose: () => void
     const token = getToken();
     if (!token) return;
 
-    getCurrentUser(token)
+    getCurrentUser()
       .then((user) => {
         setUsername(user.username);
         setUserId(user.sub);
@@ -64,7 +64,7 @@ export default function AccountSettingsDialog({ onClose }: { onClose: () => void
     setSuccess(false);
 
     try {
-      const response = await updateUserAccount(userId, { username, password }, token);
+      const response = await updateUserAccount(userId, { username, password });
       console.log("✅ Update successful:", response);
 
       setSuccess(true);

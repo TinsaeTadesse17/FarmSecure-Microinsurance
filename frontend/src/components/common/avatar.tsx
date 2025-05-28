@@ -18,7 +18,7 @@ export default function AvatarMenu() {
     const token = getToken();
     if (!token) return;
 
-    getCurrentUser(token)
+    getCurrentUser()
       .then((user) => setUsername(user.username))
       .catch((err) => console.error('Failed to fetch user:', err));
 

@@ -39,7 +39,7 @@ const IcUsersPage: React.FC = () => {
         return;
       }
       try {
-        const data = await getIcUsers(token);
+        const data = await getIcUsers();
         setIcUsers({ data, loading: false, error: null });
       } catch (error) {
         setIcUsers({
@@ -72,7 +72,7 @@ const IcUsersPage: React.FC = () => {
     }));
 
     try {
-      await updateUserAccount(userId, { status: newStatus }, token);
+      await updateUserAccount(String(userId), { status: newStatus });
     } catch (error) {
       setIcUsers(prev => ({
         ...prev,

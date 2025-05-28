@@ -139,7 +139,7 @@ const AdminConfigPage: React.FC = () => {
     }
   };
 
-  const allFilesUploaded = cpsSuccess && ndviSuccess && jobStatus === 'completed';
+  const allFilesUploaded = ndviSuccess && jobStatus === 'completed';
 
   return (
     <div className="flex min-h-screen bg-[#f9f8f3] text-[#2c423f]">
