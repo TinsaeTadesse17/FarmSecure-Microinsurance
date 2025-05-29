@@ -43,7 +43,7 @@ export default function PolicyDetailView({ params }: PolicyDetailViewProps) {
       try {
         const user = await getCurrentUser();
         const data = await listPoliciesbyUser(Number(user.sub));
-        
+
         const enhancedPolicies = await Promise.all(
           data.map(async (policy) => {
             if (policy.enrollment_id) {
@@ -79,12 +79,9 @@ export default function PolicyDetailView({ params }: PolicyDetailViewProps) {
 
   const handleExportPDF = async (policyId: number) => {
     setCurrentlyExporting(policyId);
-    
-    // First expand the policy if it's not already expanded
+
     if (!expandedPolicies[policyId]) {
       setExpandedPolicies(prev => ({ ...prev, [policyId]: true }));
-      
-      // Wait for the expansion to complete
       await new Promise(resolve => setTimeout(resolve, 300));
     }
 
@@ -92,14 +89,12 @@ export default function PolicyDetailView({ params }: PolicyDetailViewProps) {
       const policyElement = policyRefs.current[policyId];
       if (!policyElement) return;
 
-      // Create a clone of the element to avoid affecting the UI
       const clone = policyElement.cloneNode(true) as HTMLDivElement;
       clone.style.position = 'absolute';
       clone.style.left = '-9999px';
       clone.style.width = '800px';
       document.body.appendChild(clone);
 
-      // Ensure all content is visible in the clone
       const detailsSection = clone.querySelector('[data-policy-details]');
       if (detailsSection) {
         detailsSection.classList.remove('hidden');
@@ -109,17 +104,32 @@ export default function PolicyDetailView({ params }: PolicyDetailViewProps) {
         scale: 2,
         useCORS: true,
         allowTaint: true,
-        logging: true,
       });
 
       document.body.removeChild(clone);
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210; // A4 width in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = 210;
+      const pdfHeight = 297;
+      const imgWidth = pdfWidth;
+      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+
       pdf.save(`policy-${policyId}-details.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -193,13 +203,12 @@ export default function PolicyDetailView({ params }: PolicyDetailViewProps) {
               const isExporting = currentlyExporting === policy.policy_id;
 
               return (
-                <div 
-                  key={policy.policy_id} 
+                <div
+                  key={policy.policy_id}
                   className="bg-white rounded-xl border border-[#e0e7d4] shadow-sm overflow-hidden"
                   ref={(el) => { policyRefs.current[policy.policy_id] = el; }}
                 >
                   <div className="p-6">
-                    {/* Customer Info Section */}
                     {policy.enrollment?.customer && (
                       <div className="mb-6 bg-[#f5f9f8] p-4 rounded-lg border border-[#e0e7d4]">
                         <div className="flex justify-between items-center mb-3">
@@ -257,7 +266,6 @@ export default function PolicyDetailView({ params }: PolicyDetailViewProps) {
                       </div>
                     )}
 
-                    {/* Policy Info Section */}
                     <h3 className="text-lg font-semibold text-[#3a584e] mb-4 flex items-center gap-2">
                       <FileText className="w-5 h-5 text-[#8ba77f]" />
                       Policy Information
@@ -322,7 +330,7 @@ export default function PolicyDetailView({ params }: PolicyDetailViewProps) {
                     </div>
                   </div>
 
-                  <div 
+                  <div
                     className={`bg-[#f5f9f8] border-t border-[#e0e7d4] ${isExpanded ? 'block' : 'hidden'}`}
                     data-policy-details
                   >
