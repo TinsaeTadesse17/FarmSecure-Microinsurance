@@ -391,6 +391,8 @@ services:
     restart: always
     env_file:
       - .env
+    ports:
+      - "8010:80" # Expose the port defined in the Dockerfile
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
