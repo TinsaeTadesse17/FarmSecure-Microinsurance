@@ -66,6 +66,11 @@ export default function CustomerEnrollmentPage() {
       }
 
       const user = await getCurrentUser();
+      const userId = Number(user.sub);
+      const companyId = user.company_id ? Number(user.company_id) : null;
+      setCompanyId(companyId);
+      setUserId(userId);
+    
       const productsResult = await getProductsbyCompany(Number(user.company_id));
       setProducts(Array.isArray(productsResult) ? productsResult : [productsResult]);
       
