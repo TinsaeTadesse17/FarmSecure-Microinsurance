@@ -33,32 +33,32 @@ export class ConfigController {
   ) {
     const trigger = files.trigger_points_file[0];
     const exit    = files.exit_points_file[0];
-    const growing = files.growing_seasons_file[0];
+    const season = files.growing_seasons_file[0];
 
-    if (!trigger || !exit || !growing) {
+    if (!trigger || !exit || !season) {
       throw new BadRequestException(
         'Missing files: trigger_points_file, exit_points_file, and growing_seasons_file are all required'
       );
     }
 
-    return this.configService.uploadCpsZone(trigger, exit, growing);
+    return this.configService.uploadCpsZone(trigger, exit, season);
   }
 
   @Roles(Role.Admin)
   @Get('cps-zone/:cps_zone_value/:period_value')
   getCpsZonePeriodConfig(
-    @Param('cps_zone_value', ParseIntPipe) cpsZone: number,
-    @Param('period_value',   ParseIntPipe) period:  number,
+    @Param('cps_zone_value', ParseIntPipe) cps_zone_value: number,
+    @Param('period_value',   ParseIntPipe) period_value:  number,
   ) {
-    return this.configService.getCpsZonePeriodConfig(cpsZone, period);
+    return this.configService.getCpsZonePeriodConfig(cps_zone_value, period_value);
   }
 
   @Roles(Role.Admin)
   @Get('cps-zone/zone/:cps_zone_value')
   getAllPeriodsForCpsZone(
-    @Param('cps_zone_value', ParseIntPipe) cpsZone: number,
+    @Param('cps_zone_value', ParseIntPipe) cps_zone_value: number,
   ) {
-    return this.configService.getAllPeriodsForCpsZone(cpsZone);
+    return this.configService.getAllPeriodsForCpsZone(cps_zone_value);
   }
 
   @Roles(Role.Admin)
@@ -71,6 +71,23 @@ export class ConfigController {
   @Get('cps-zone/files/:filename')
   getUploadedCpsFile(@Param('filename') filename: string) {
     return this.configService.getUploadedCpsFile(filename);
+  }
+
+  @Roles(Role.Admin)
+  @Get('cps-zone/growing_season/:grid_value/:period')
+  checkPeriodInGrowingSeasonForGrid(
+    @Param('grid_value', ParseIntPipe) grid_value: number,
+    @Param('period', ParseIntPipe) period: number,
+  ) {
+    return this.configService.checkPeriodInGrowingSeasonForGrid(grid_value, period);
+  }
+
+  @Roles(Role.Admin)
+  @Get('cps-zone/growing_season/:grid_value')
+  getGrowingSeasonForGrid(
+    @Param('grid_value', ParseIntPipe) grid_value: number,
+  ) {
+    return this.configService.getGrowingSeasonForGrid(grid_value);
   }
 
   // — NDVI Upload & Status —
