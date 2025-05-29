@@ -56,21 +56,18 @@ export default function AdminDashboard() {
               </span>
             </h1>
             <p className="mt-2 text-[#7a938f] max-w-2xl">
-              Cultivate insights across all insurance cooperatives • Last updated 2h ago
+              Cultivate insights across all insurance cooperatives 
             </p>
           </div>
           <div className="flex gap-4">
-            <button className="flex items-center bg-[#8ba77f] text-white px-4 py-2 rounded-lg hover:bg-[#7a937f] transition-all">
-              <Plus className="w-4 h-4 mr-2" />
-              New Entry
-            </button>
+           
             <AvatarMenu />
           </div>
         </div>
 
         {/* Navigation Tabs */}
         <div className="flex gap-4 mb-8 border-b border-[#e0e7d4]">
-          {['Overview', 'Cooperatives', 'Users', 'Approvals'].map((tab) => (
+          {['Overview'].map((tab) => (
             <button 
               key={tab}
               className={`pb-2 px-1 ${
