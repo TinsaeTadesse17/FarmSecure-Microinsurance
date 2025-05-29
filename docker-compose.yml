@@ -252,6 +252,8 @@ services:
     container_name: dfs_service
     env_file:
       - .env
+    ports:
+      - "8007:8000" # Expose the port defined in the Dockerfile
     depends_on:
       dfs_db:
         condition: service_started

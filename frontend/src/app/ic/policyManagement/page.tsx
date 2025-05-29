@@ -187,7 +187,7 @@ export default function PolicyManagement() {
                 <tbody className="divide-y divide-[#e0e7d4] bg-white">
                   {filteredPolicies.map((policy) => {
                     const totalSumInsured = policy.details?.reduce(
-                      (acc, detail) => acc + (detail.period_sum_insured || 0),
+                      (acc: any, detail: { period_sum_insured: any; }) => acc + (detail.period_sum_insured || 0),
                       0
                     ) ?? 0;
 

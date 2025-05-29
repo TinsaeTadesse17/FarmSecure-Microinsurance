@@ -5,12 +5,14 @@ import Sidebar from '@/components/agent/sidebar';
 import AvatarMenu from '@/components/common/avatar';
 import { getCurrentUser } from '@/utils/api/user';
 import { listPoliciesbyUser, Policy } from '@/utils/api/policy';
+import { getEnrollment, EnrollmentResponse } from '@/utils/api/enrollment';
 import {
   ScrollText,
   ChevronUp,
   ChevronDown,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  User
 } from 'lucide-react';
 
 interface PolicyDetailViewProps {
@@ -19,8 +21,12 @@ interface PolicyDetailViewProps {
   };
 }
 
+interface EnhancedPolicy extends Policy {
+  enrollment?: EnrollmentResponse;
+}
+
 export default function PolicyDetailView({ params }: PolicyDetailViewProps) {
-  const [policies, setPolicies] = useState<Policy[]>([]);
+  const [policies, setPolicies] = useState<EnhancedPolicy[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expandedPolicies, setExpandedPolicies] = useState<Record<number, boolean>>({});
@@ -30,7 +36,24 @@ export default function PolicyDetailView({ params }: PolicyDetailViewProps) {
       try {
         const user = await getCurrentUser();
         const data = await listPoliciesbyUser(Number(user.sub));
-        setPolicies(data);
+        
+        // Fetch enrollment data for each policy
+        const enhancedPolicies = await Promise.all(
+          data.map(async (policy) => {
+            if (policy.enrollment_id) {
+              try {
+                const enrollment = await getEnrollment(policy.enrollment_id);
+                return { ...policy, enrollment };
+              } catch (err) {
+                console.error(`Failed to fetch enrollment for policy ${policy.policy_id}:`, err);
+                return policy;
+              }
+            }
+            return policy;
+          })
+        );
+
+        setPolicies(enhancedPolicies);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch policies');
       } finally {
@@ -146,6 +169,42 @@ export default function PolicyDetailView({ params }: PolicyDetailViewProps) {
                       </p>
                     </div>
                   </div>
+
+                  {/* Customer Info Section */}
+                  {policy.enrollment?.customer && (
+                    <div className="bg-[#f9f8f3] p-4 rounded-lg mb-4 border border-[#e0e7d4]">
+                      <h3 className="text-sm font-medium text-[#7a938f] mb-3 flex items-center gap-2">
+                        <User className="w-4 h-4" />
+                        Customer Information
+                      </h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                          <p className="text-xs font-medium text-[#7a938f]">Name</p>
+                          <p className="mt-1 text-[#3a584e]">
+                            {[
+                              policy.enrollment.customer.f_name,
+                              policy.enrollment.customer.m_name,
+                              policy.enrollment.customer.l_name
+                            ].filter(Boolean).join(' ')}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-[#7a938f]">Account No.</p>
+                          <p className="mt-1 text-[#3a584e]">{policy.enrollment.customer.account_no || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-[#7a938f]">Account Type</p>
+                          <p className="mt-1 text-[#3a584e]">{policy.enrollment.customer.account_type || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-[#7a938f]">Premium</p>
+                          <p className="mt-1 text-[#3a584e]">
+                            {policy.enrollment.premium ? `$${policy.enrollment.premium.toLocaleString()}` : '—'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   <button
                     onClick={() => toggleExpand(policy.policy_id)}
