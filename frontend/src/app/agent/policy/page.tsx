@@ -1,19 +1,17 @@
-"use client";
-import React, { useState, useEffect } from 'react';
+'use client';
+
+import React, { useEffect, useState } from 'react';
 import Sidebar from '@/components/agent/sidebar';
 import AvatarMenu from '@/components/common/avatar';
-import { getPolicy, listPolicyDetails, Policy } from '@/utils/api/policy';
-import { ScrollText, ChevronUp, ChevronDown, AlertTriangle, RefreshCw } from 'lucide-react';
-
-interface PolicyDetail {
-  policy_detail_id: number;
-  customer_id: number;
-  policy_id: number;
-  period_sum_insured: number;
-  cps_zone: string;
-  product_type: number;
-  period: number;
-}
+import { getCurrentUser } from '@/utils/api/user';
+import { listPoliciesbyUser, Policy } from '@/utils/api/policy';
+import {
+  ScrollText,
+  ChevronUp,
+  ChevronDown,
+  AlertTriangle,
+  RefreshCw
+} from 'lucide-react';
 
 interface PolicyDetailViewProps {
   params: {
@@ -22,8 +20,7 @@ interface PolicyDetailViewProps {
 }
 
 export default function PolicyDetailView({ params }: PolicyDetailViewProps) {
-  const [policies, setPolicies] = useState<Record<number, Policy>>({});
-  const [groupedDetails, setGroupedDetails] = useState<Record<number, PolicyDetail[]>>({});
+  const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expandedPolicies, setExpandedPolicies] = useState<Record<number, boolean>>({});
@@ -31,29 +28,11 @@ export default function PolicyDetailView({ params }: PolicyDetailViewProps) {
   useEffect(() => {
     const fetchPolicyData = async () => {
       try {
-        const detailsRes = (await listPolicyDetails()) as PolicyDetail[];
-        
-        const detailsByPolicyId = detailsRes.reduce((acc: Record<number, PolicyDetail[]>, detail) => {
-          if (!acc[detail.policy_id]) {
-            acc[detail.policy_id] = [];
-          }
-          acc[detail.policy_id].push(detail);
-          return acc;
-        }, {});
-
-        const policyIds = Object.keys(detailsByPolicyId).map(Number);
-        const policyPromises = policyIds.map((policyId) => getPolicy(policyId));
-        const policyResponses = await Promise.all(policyPromises);
-
-        const policyMap = policyResponses.reduce((acc: Record<number, Policy>, policy) => {
-          acc[policy.policy_id] = policy;
-          return acc;
-        }, {});
-
-        setPolicies(policyMap);
-        setGroupedDetails(detailsByPolicyId);
+        const user = await getCurrentUser();
+        const data = await listPoliciesbyUser(Number(user.sub));
+        setPolicies(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch policy details');
+        setError(err instanceof Error ? err.message : 'Failed to fetch policies');
       } finally {
         setLoading(false);
       }
@@ -124,22 +103,18 @@ export default function PolicyDetailView({ params }: PolicyDetailViewProps) {
         </div>
 
         <div className="space-y-6">
-          {Object.keys(groupedDetails).length === 0 && (
+          {policies.length === 0 && (
             <div className="bg-white p-8 rounded-xl border border-[#e0e7d4] text-center text-[#7a938f]">
               No active policies found
             </div>
           )}
 
-          {Object.entries(groupedDetails).map(([policyIdStr, details]) => {
-            const policyId = Number(policyIdStr);
-            const policy = policies[policyId];
-            const isExpanded = !!expandedPolicies[policyId];
-
-            if (!policy) return null;
+          {policies.map((policy) => {
+            const isExpanded = !!expandedPolicies[policy.policy_id];
 
             return (
               <div
-                key={policyId}
+                key={policy.policy_id}
                 className="bg-white rounded-xl border border-[#e0e7d4] shadow-sm overflow-hidden"
               >
                 <div className="p-6">
@@ -173,7 +148,7 @@ export default function PolicyDetailView({ params }: PolicyDetailViewProps) {
                   </div>
 
                   <button
-                    onClick={() => toggleExpand(policyId)}
+                    onClick={() => toggleExpand(policy.policy_id)}
                     className="flex items-center text-sm font-medium text-[#8ba77f] hover:text-[#7a937f]"
                   >
                     {isExpanded ? (
@@ -190,11 +165,11 @@ export default function PolicyDetailView({ params }: PolicyDetailViewProps) {
                   </button>
                 </div>
 
-                {isExpanded && (
+                {isExpanded && policy.details && (
                   <div className="bg-[#f9f8f3] p-6 border-t border-[#e0e7d4]">
                     <h3 className="text-sm font-medium text-[#7a938f] mb-4">Coverage Breakdown</h3>
                     <div className="space-y-4">
-                      {details.map((detail) => (
+                      {policy.details.map((detail: { policy_detail_id: React.Key | null | undefined; period_sum_insured: { toLocaleString: () => any; }; cps_zone: any; product_type: any; period: any; }) => (
                         <div
                           key={detail.policy_detail_id}
                           className="bg-white p-4 rounded-lg border border-[#e0e7d4]"

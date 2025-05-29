@@ -1,6 +1,7 @@
 'use client';
+
 import React, { useEffect, useState } from 'react';
-import { listEnrollments, EnrollmentResponse } from '@/utils/api/enrollment';
+import { getEnrollmentsByUser, EnrollmentResponse } from '@/utils/api/enrollment';
 import { getToken, getCurrentUser } from '@/utils/api/user';
 import { RefreshCw, FileText, CheckCircle2, XCircle, Clock } from 'lucide-react';
 
@@ -8,7 +9,6 @@ export default function EnrollmentList() {
   const [enrollments, setEnrollments] = useState<EnrollmentResponse[]>([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [agentId, setAgentId] = useState('');
 
   useEffect(() => {
     async function fetchData() {
@@ -21,22 +21,16 @@ export default function EnrollmentList() {
           return;
         }
 
-        // 1. Get current user info
+        // Get current user info
         const user = await getCurrentUser();
-        setAgentId(user.sub);
 
-        // 2. Fetch enrollments
-        const data = await listEnrollments();
-        
-        // 3. Filter enrollments by matching user_id with the current user's sub (user.sub)
-        const filtered = data.filter((e) => e.user_id === Number(user.sub));
-
-        // 4. Check if enrollments are valid for the current user
-        if (filtered.length === 0) {
+        // Use backend filter by user_id
+        const data = await getEnrollmentsByUser(Number(user.sub));
+        if (Array.isArray(data) && data.length === 0) {
           setError('No enrollments found for this user.');
         }
 
-        setEnrollments(filtered);
+        setEnrollments(Array.isArray(data) ? data : []);
       } catch (err: any) {
         setError(err.message || 'Failed to load enrollments');
       } finally {
@@ -114,7 +108,7 @@ export default function EnrollmentList() {
               <thead className="bg-[#f9f8f3]">
                 <tr>
                   {['Customer', 'Zone', 'Premium', 'Coverage', 'Period', 'Status'].map((header) => (
-                    <th 
+                    <th
                       key={header}
                       className="px-6 py-3 text-left text-sm font-semibold text-[#3a584e]"
                     >
@@ -127,8 +121,8 @@ export default function EnrollmentList() {
                 {enrollments.map((e) => {
                   const statusConfig = getStatusConfig(e.status);
                   return (
-                    <tr 
-                      key={e.enrolement_id} 
+                    <tr
+                      key={e.enrolement_id}
                       className="hover:bg-[#f9f8f3] transition-colors cursor-pointer"
                     >
                       <td className="px-6 py-4">
@@ -152,7 +146,9 @@ export default function EnrollmentList() {
                         <div className="text-xs">to {formatDate(e.date_to)}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${statusConfig.color} gap-2`}>
+                        <div
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${statusConfig.color} gap-2`}
+                        >
                           {statusConfig.icon}
                           {e.status}
                         </div>

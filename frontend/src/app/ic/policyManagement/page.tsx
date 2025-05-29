@@ -84,7 +84,7 @@ export default function PolicyManagement() {
     const term = searchTerm.toLowerCase();
     return (
       policy.policy_id.toString().includes(term) ||
-      (policy.policy_no && policy.policy_no.toLowerCase().includes(term)) ||
+      (typeof policy.policy_no === 'string' && policy.policy_no.toLowerCase().includes(term)) ||
       policy.enrollment_id.toString().includes(term)
     );
   });
