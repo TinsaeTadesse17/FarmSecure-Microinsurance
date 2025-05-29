@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Param, Query, Put, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Param, Query, Put, HttpException, HttpStatus, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ClaimsService } from './claims.service';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -8,24 +8,23 @@ import { Role } from 'src/auth/constants/roles.enum';
 
 @ApiTags('Claims')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('api/claims')
+@Controller('api/v1/claim')
 export class ClaimsController {
   constructor(private readonly claimsService: ClaimsService) {}
 
   @Roles(Role.Admin)
-  @Post('crop')
+  @Post('/claims/crop')
   @ApiOperation({ summary: 'Trigger crop claims for a given period' })
   @ApiResponse({ status: 200, description: 'Claims are being processed.' })
-  async createCrop(@Query('period') period: string) {
-    const p = parseInt(period, 10);
-    if (isNaN(p)) {
+  async createCrop(@Query('period', ParseIntPipe) period: number) {
+    if (isNaN(period)) {
       throw new HttpException('Invalid period', HttpStatus.BAD_REQUEST);
     }
-    return this.claimsService.createCrop(p);
+    return this.claimsService.createCrop(period);
   }
 
   @Roles(Role.Admin)
-  @Post('livestock')
+  @Post('/claims/livestock')
   @ApiOperation({ summary: 'Trigger livestock claims' })
   @ApiResponse({ status: 200, description: 'Claims are being processed.' })
   async createLivestock() {
@@ -33,7 +32,7 @@ export class ClaimsController {
   }
 
   @Roles(Role.Admin)
-  @Post('trigger')
+  @Post('/claims/trigger')
   @ApiOperation({ summary: 'Trigger all claims processing' })
   @ApiResponse({ status: 200, description: 'Background processing started.' })
   async triggerAll() {
@@ -41,7 +40,7 @@ export class ClaimsController {
   }
 
   @Roles(Role.IC, Role.Admin)
-  @Get('by-customer')
+  @Get('/claims/by-customer')
   @ApiOperation({ summary: 'Get claims grouped by customer' })
   @ApiResponse({ status: 200, description: 'List of customer claim summaries' })
   async getByCustomer() {
@@ -53,24 +52,31 @@ export class ClaimsController {
   @ApiOperation({ summary: 'Get a single claim by ID' })
   @ApiResponse({ status: 200, description: 'Claim details' })
   @ApiResponse({ status: 404, description: 'Claim not found' })
-  async getOne(@Param('id') id: string) {
-    const claimId = parseInt(id, 10);
-    if (isNaN(claimId)) {
+  async getOne(@Param('claim_id', ParseIntPipe) claim_id: number) {
+    if (isNaN(claim_id)) {
       throw new HttpException('Invalid claim ID', HttpStatus.BAD_REQUEST);
     }
-    return this.claimsService.getOne(claimId);
+    return this.claimsService.getOne(claim_id);
+  }
+
+  @Roles(Role.IC, Role.Admin)
+  @Get()
+  @ApiOperation({ summary: 'Get all claims' })
+  @ApiResponse({ status: 200, description: 'Claims detail' })
+  @ApiResponse({ status: 404, description: 'Claims not found' })
+  async getAll() {
+    return this.claimsService.getAll();
   }
 
   @Roles(Role.Admin)
-  @Put(':id/authorize')
+  @Put('/:id/authorize')
   @ApiOperation({ summary: 'Authorize a claim' })
   @ApiResponse({ status: 200, description: 'Claim authorized' })
   @ApiResponse({ status: 404, description: 'Claim not found' })
-  async authorize(@Param('id') id: string) {
-    const claimId = parseInt(id, 10);
-    if (isNaN(claimId)) {
+  async authorize(@Param('claim_id', ParseIntPipe) claim_id: number) {
+    if (isNaN(claim_id)) {
       throw new HttpException('Invalid claim ID', HttpStatus.BAD_REQUEST);
     }
-    return this.claimsService.authorize(claimId);
+    return this.claimsService.authorize(claim_id);
   }
 }

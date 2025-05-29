@@ -17,7 +17,7 @@ export class ClaimsService {
     throw new HttpException(message, status);
   }
 
-  async createCrop(period: number) {
+  async createCrop(period: number): Promise<any> {
     try {
       const { data } = await firstValueFrom(
         this.httpService.post(`${this.baseUrl}/api/v1/claim/claims/crop?period=${period}`),
@@ -28,7 +28,7 @@ export class ClaimsService {
     }
   }
 
-  async createLivestock() {
+  async createLivestock(): Promise<any> {
     try {
       const { data } = await firstValueFrom(
         this.httpService.post(`${this.baseUrl}/api/v1/claim/claims/livestock`),
@@ -39,7 +39,7 @@ export class ClaimsService {
     }
   }
 
-  async triggerAll() {
+  async triggerAll(): Promise<any> {
     try {
       const { data } = await firstValueFrom(
         this.httpService.post(`${this.baseUrl}/api/v1/claim/claims/trigger`),
@@ -50,7 +50,8 @@ export class ClaimsService {
     }
   }
 
-  async getByCustomer() {
+  // Get claims grouped by customer
+  async getByCustomer(): Promise<any> {
     try {
       const { data } = await firstValueFrom(
         this.httpService.get(`${this.baseUrl}/api/v1/claim/claims/by-customer`),
@@ -61,25 +62,39 @@ export class ClaimsService {
     }
   }
 
-  async getOne(id: number) {
+  // Get a specific claim by ID
+  async getOne(claim_id: number): Promise<any> {
     try {
       const { data } = await firstValueFrom(
-        this.httpService.get(`${this.baseUrl}/api/v1/claims/${id}`),
+        this.httpService.get(`${this.baseUrl}/api/v1/claim/${claim_id}`),
       );
       return data;
     } catch (err) {
-      this.handleError(err as AxiosError, `Error fetching claim ${id}`);
+      this.handleError(err as AxiosError, `Error fetching claim ${claim_id}`);
     }
   }
 
-  async authorize(id: number) {
+  // Authorize a specific claim by ID
+  async authorize(claim_id: number): Promise<any> {
     try {
       const { data } = await firstValueFrom(
-        this.httpService.put(`${this.baseUrl}/api/v1/claims/${id}/authorize`, {}),
+        this.httpService.put(`${this.baseUrl}/api/v1/claim/${claim_id}/authorize`, {}),
       );
       return data;
     } catch (err) {
-      this.handleError(err as AxiosError, `Error authorizing claim ${id}`);
+      this.handleError(err as AxiosError, `Error authorizing claim ${claim_id}`);
+    }
+  }
+
+  // Get all claims
+  async getAll(): Promise<any> {
+    try {
+      const { data } = await firstValueFrom(
+        this.httpService.get(`${this.baseUrl}/api/v1/claim/`),
+      );
+      return data;
+    } catch (err) {
+      this.handleError(err as AxiosError, 'Error fetching all claims');
     }
   }
 }
