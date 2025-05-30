@@ -45,7 +45,7 @@ def validate_ndvi_data(df: pd.DataFrame):
     if len(df.columns) < 37: # 1 grid column + 36 period columns
         raise HTTPException(status_code=400, detail="File must contain at least 37 columns: one 'grid' column followed by 36 data columns for periods.")
 
-    grid_column_name = df.columns[0]
+    grid_column_name = df.columns[9]
 
     # Validate 'grid' column type and content
     if df[grid_column_name].isnull().any():
@@ -65,7 +65,7 @@ def validate_ndvi_data(df: pd.DataFrame):
         raise HTTPException(status_code=400, detail=f"'{grid_column_name}' values (grid ID) must be non-negative.")
 
     # Validate period data columns (next 36 columns)
-    period_data_columns = df.columns[1:37]
+    period_data_columns = df.columns[11:47]
     for col_name in period_data_columns:
         try:
             # This attempts to convert the whole column. If it fails, raises ValueError.
@@ -105,13 +105,13 @@ async def background_process_ndvi_file(
         # Move file from temp to final location after validation
         shutil.move(temp_file_path, final_file_path)
 
-        grid_column_name = df.columns[0]
-        period_data_columns = df.columns[1:37] # Columns for period 1 through 36
+        grid_column_name = df.columns[9]
+        period_data_columns = df.columns[11:47] # Columns for period 1 through 36
 
         for _, row_data in df.iterrows(): # Iterate over each row in the DataFrame
             grid_val = int(row_data[grid_column_name]) # Already validated and converted to int
 
-            for i in range(36): # For periods 1 to 36
+            for i in range(11, 47): # For periods 1 to 36
                 period_val = i + 1 
                 current_period_column = period_data_columns[i]
                 cell_value = row_data[current_period_column]

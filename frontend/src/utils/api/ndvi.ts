@@ -5,7 +5,7 @@ const getAuthHeaders = (): Record<string, string> => {
   return token ? { "Authorization": `Bearer ${token}` } : {};
 };
 
-const BASE_URL = `http://${process.env.NEXT_PUBLIC_HOST}:${process.env.NEXT_PUBLIC_GATEWAY_PORT}/api/v1/config`;
+const BASE_URL = `http://${process.env.NEXT_PUBLIC_HOST}:${process.env.NEXT_PUBLIC_GATEWAY_PORT}/api/v1`;
 
 interface UploadNDVIParams {
   file: File;

@@ -47,9 +47,8 @@ def process_and_store_cps_data(
         if not (growing_seasons_df['grid'] >= 1).all():
             raise HTTPException(status_code=400, detail="'grid' values in growing season file must be 1 or greater.")
         if not ((growing_seasons_df['start'] >= 1) & (growing_seasons_df['start'] <= 36)).all() or \
-           not ((growing_seasons_df['end'] >= 1) & (growing_seasons_df['end'] <= 36)).all() or \
-           not (growing_seasons_df['start'] <= growing_seasons_df['end']).all(): # Check start <= end for all rows
-            raise HTTPException(status_code=400, detail="Invalid period(s) in growing season file. Start/End must be 1-36, and start_period <= end_period for all rows.")
+           not ((growing_seasons_df['end'] >= 1) & (growing_seasons_df['end'] <= 36)).all():
+            raise HTTPException(status_code=400, detail="Invalid period(s) in growing season file. Start/End must be 1-36")
 
         # Validate percentile files (trigger and exit points)
         for df, name in [(trigger_points_df, "Trigger points"), (exit_points_df, "Exit points")]:
@@ -228,8 +227,6 @@ async def upload_cps_zone_files(
                     if not all(col in df.columns for col in ['grid', 'start', 'end']):
                         raise HTTPException(status_code=400, detail="Growing season file is missing required columns: 'grid', 'start', 'end'.")
                 dataframes[key] = df
-            except HTTPException: # Re-raise specific HTTP exceptions from parsing
-                raise
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"Error parsing Excel file {current_filename_str}: {e}")
             finally:
