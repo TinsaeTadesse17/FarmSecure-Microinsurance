@@ -15,6 +15,9 @@ export interface Product {
   commission_rate: number;
   created_at: string;
   company_id: number;
+  fiscal_year: number;
+  cps_zone_id?: number; // Optional, can be null
+  elc: number;
 }
 
 export interface ProductCreate {
@@ -33,6 +36,13 @@ export interface ProductUpdate {
 
 export interface PremiumCalculation {
   premium: number;
+  premium_rate: number;
+  commission: number;
+  elc: number;
+  load: number;
+  discount: number;
+  trigger: number;
+  exit: number;
 }
 
 // Get all products
@@ -98,6 +108,9 @@ export async function calculatePremium(
     method: 'POST',
     headers: { ...getAuthHeaders() },
   });
-  if (!res.ok) throw new Error('Failed to calculate premium');
+  if (!res.ok) {
+  const error = await res.json();
+  throw new Error(error.detail || 'Failed to calculate premium');
+}
   return await res.json();
 }

@@ -11,7 +11,7 @@ DEFAULT_EXIT = 5.0
 DEFAULT_ELC = 10.0
 
 def get_product(db: Session, product_id: int) -> Product | None:
-    return db.query(Product).first() # filter(Product.product_id == product_id).
+    return db.query(Product).filter(Product.id == product_id).first()  # filter(Product.product_id == product_id).
 
 def get_products_by_company(db: Session, company_id: int):
     return db.query(Product).filter(Product.company_id == company_id).all()

@@ -4,13 +4,24 @@ import React, { useEffect, useState } from 'react';
 import Sidebar from '@/components/ic/sidebar';
 import AvatarMenu from '@/components/common/avatar';
 import CreateProductDialog from '@/components/ic/productDialog';
-import { getProductsbyCompany, createProduct, Product, ProductCreate } from '@/utils/api/product';
+import { getProductsbyCompany, createProduct, calculatePremium, Product, ProductCreate } from '@/utils/api/product';
 import { Plus, RefreshCw, Search, Package } from 'lucide-react';
 import { getCurrentUser, getToken } from '@/utils/api/user';
 
+interface ProductWithPremium extends Product {
+  premium?: number;
+  premium_rate?: number;
+  commission?: number;
+  elc: number;
+  load?: number;
+  discount?: number;
+  trigger?: number;
+  exit?: number;
+}
+
 export default function ProductConfiguration() {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductWithPremium[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,8 +38,27 @@ export default function ProductConfiguration() {
       }
 
       const user = await getCurrentUser();
-      const productsResult = await getProductsbyCompany(Number(user.company_id)); // Backend handles company filtering
-      setProducts(Array.isArray(productsResult) ? productsResult : [productsResult]);
+      const rawProducts = await getProductsbyCompany(Number(user.company_id));
+
+      const enrichedProducts = await Promise.all(
+        rawProducts.map(async (product) => {
+          try {
+            const preview = await calculatePremium(
+              product.id,
+              product.cps_zone_id || 1,
+              Number(product.fiscal_year) || 2025,
+              1,
+              1
+            );
+            return { ...product, ...preview };
+          } catch (err) {
+            console.warn(`Premium calculation failed for product ${product.id}`, err);
+            return { ...product };
+          }
+        })
+      );
+
+      setProducts(enrichedProducts);
     } catch (err) {
       console.error('Error fetching products:', err);
       setError('Failed to load products. Please try again.');
@@ -52,7 +82,6 @@ export default function ProductConfiguration() {
     fetchProducts();
   }, []);
 
-  // Only search filtering (not company_id)
   const filtered = products.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -89,7 +118,7 @@ export default function ProductConfiguration() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-[#e0e7d4] shadow-sm overflow-hidden">
+        <div className="bg-white rounded-xl border border-[#e0e7d4] shadow-sm overflow-auto">
           <div className="p-6 border-b border-[#e0e7d4]">
             <div className="flex justify-between items-center">
               <div>
@@ -143,30 +172,32 @@ export default function ProductConfiguration() {
               <table className="min-w-full divide-y divide-[#e0e7d4]">
                 <thead className="bg-[#f9f8f3]">
                   <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-[#3a584e]">
-                      Insurance Product
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-[#3a584e]">
-                      Coverage Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-[#3a584e]">
-                      Commission Rate
-                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#3a584e]">Product</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#3a584e]">Type</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#3a584e]">Rate (%)</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#3a584e]">Commission (ETB)</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#3a584e]">ELC</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#3a584e]">Load</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#3a584e]">Discount</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#3a584e]">Trigger</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#3a584e]">Exit</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#3a584e]">Premium (ETB)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e0e7d4]">
                   {filtered.map(product => (
-                    <tr key={product.id} className="hover:bg-[#f9f8f3] transition-colors cursor-pointer">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#3a584e]">
-                        {product.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-[#7a938f]">
-                        {product.type}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-3 py-1 inline-flex text-sm font-medium bg-[#eef4e5] text-[#3a584e] rounded-full">
-                          {product.commission_rate}%
-                        </span>
+                    <tr key={product.id} className="hover:bg-[#f9f8f3] transition-colors">
+                      <td className="px-4 py-3 text-sm text-[#3a584e]">{product.name}</td>
+                      <td className="px-4 py-3 text-sm text-[#7a938f]">{product.type}</td>
+                      <td className="px-4 py-3 text-sm">{product.premium_rate ?? 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm">{product.commission ?? 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm">{product.elc ?? 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm">{product.load ?? 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm">{product.discount ?? 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm">{product.trigger ?? 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm">{product.exit ?? 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm text-[#3a584e] font-semibold">
+                        {product.premium !== undefined ? `${product.premium.toFixed(2)} ETB` : 'N/A'}
                       </td>
                     </tr>
                   ))}
