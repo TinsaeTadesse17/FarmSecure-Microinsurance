@@ -39,3 +39,14 @@ class UploadedFile(Base):
     upload_type = Column(String, nullable=True) # More specific: 'trigger', 'exit', 'season', 'ndvi_grid'
     uploaded_at = Column(DateTime, default=func.now()) # Renamed from upload_date
     file_path = Column(String, nullable=False) # Path where the file is stored
+
+
+class GrowingSeasonByGrid(Base):
+    __tablename__ = "growing_season_by_grid"
+
+    id = Column(Integer, primary_key=True, index=True)
+    grid = Column(Integer, index=True, nullable=False)
+    start_period = Column(Integer, nullable=False)
+    end_period = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)

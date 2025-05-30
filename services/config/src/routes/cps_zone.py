@@ -3,7 +3,7 @@ import pandas as pd
 import shutil
 import datetime
 import os
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Path # Added Path
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
@@ -12,6 +12,7 @@ from typing import List, Dict, Optional
 from src.database import models, db
 from src.schemas import cps_zone as cps_zone_schemas
 from src.schemas import file as file_schemas
+from src.schemas import growing_season as growing_season_schemas # New import
 
 router = APIRouter()
 
@@ -32,128 +33,120 @@ def process_and_store_cps_data(
     db_session: Session,
     trigger_points_df: pd.DataFrame,
     exit_points_df: pd.DataFrame,
-    growing_seasons_df: pd.DataFrame,
-    saved_files_info: List[dict] # List of dicts with original_filename, saved_filename, file_path, upload_type
+    growing_seasons_df: pd.DataFrame, # For the new GrowingSeasonByGrid table
+    saved_files_info: List[dict]
 ):
     try:
-        # Validate growing seasons data
-        if not all(col in growing_seasons_df.columns for col in ['cps_zone', 'start', 'end']):
-            raise HTTPException(status_code=400, detail="Growing season file must contain 'cps_zone', 'start', and 'end' columns.")
-        if not pd.api.types.is_numeric_dtype(growing_seasons_df['cps_zone']) or \
+        # Validate growing seasons data (for new table)
+        if not all(col in growing_seasons_df.columns for col in ['grid', 'start', 'end']):
+            raise HTTPException(status_code=400, detail="Growing season file must contain 'grid', 'start', and 'end' columns.")
+        if not pd.api.types.is_numeric_dtype(growing_seasons_df['grid']) or \
            not pd.api.types.is_numeric_dtype(growing_seasons_df['start']) or \
            not pd.api.types.is_numeric_dtype(growing_seasons_df['end']):
-            raise HTTPException(status_code=400, detail="'cps_zone', 'start', and 'end' columns in growing season file must be numeric.")
+            raise HTTPException(status_code=400, detail="'grid', 'start', and 'end' columns in growing season file must be numeric.")
+        if not (growing_seasons_df['grid'] >= 1).all():
+            raise HTTPException(status_code=400, detail="'grid' values in growing season file must be 1 or greater.")
+        if not ((growing_seasons_df['start'] >= 1) & (growing_seasons_df['start'] <= 36)).all() or \
+           not ((growing_seasons_df['end'] >= 1) & (growing_seasons_df['end'] <= 36)).all() or \
+           not (growing_seasons_df['start'] <= growing_seasons_df['end']).all(): # Check start <= end for all rows
+            raise HTTPException(status_code=400, detail="Invalid period(s) in growing season file. Start/End must be 1-36, and start_period <= end_period for all rows.")
 
         # Validate percentile files (trigger and exit points)
         for df, name in [(trigger_points_df, "Trigger points"), (exit_points_df, "Exit points")]:
             if 'cps_zone' not in df.columns:
-                raise HTTPException(status_code=400, detail=f"{name} file must contain a 'cps_zone' column (expected as the first column after header skip). Ensure it's named 'cps_zone' after read.")
+                raise HTTPException(status_code=400, detail=f"{name} file must contain a 'cps_zone' column. Ensure it's named 'cps_zone'.")
             if not pd.api.types.is_numeric_dtype(df['cps_zone']):
                  raise HTTPException(status_code=400, detail=f"'cps_zone' column in {name} file must be numeric.")
-            if not (df['cps_zone'] >= 0).all() or not (df['cps_zone'] <= 200).all(): # Series comparison
+            if not (df['cps_zone'] >= 0).all() or not (df['cps_zone'] <= 200).all():
                 raise HTTPException(status_code=400, detail=f"'cps_zone' values in {name} file must be between 0 and 200.")
-            if len(df.columns) != 37: # cps_zone (1) + 36 periods
+            if len(df.columns) != 37:
                 raise HTTPException(status_code=400, detail=f"{name} file must have a 'cps_zone' column and 36 period columns. Found {len(df.columns)} columns.")
-            # Check that period columns (columns 1 to 36) are numeric
             for col_idx in range(1, 37):
-                # df.columns[col_idx] gives the name of the column at this position
                 if not pd.api.types.is_numeric_dtype(df[df.columns[col_idx]]):
-                    raise HTTPException(status_code=400, detail=f"Period columns in {name} file must be numeric. Column for period {col_idx} (actual column name: {df.columns[col_idx]}) is not.")
+                    raise HTTPException(status_code=400, detail=f"Period columns in {name} file must be numeric. Column for period {col_idx} (name: {df.columns[col_idx]}) is not.")
 
-        growing_seasons_map: Dict[int, tuple[int, int]] = {}
-        for _, row in growing_seasons_df.iterrows():
-            cps_zone = int(row['cps_zone'])
-            start_period = int(row['start'])
-            end_period = int(row['end'])
-            if not (0 <= cps_zone <= 200):
-                raise HTTPException(status_code=400, detail=f"Growing season file: CPS Zone {cps_zone} out of range 0-200.")
-            if not (1 <= start_period <= 36 and 1 <= end_period <= 36 and start_period <= end_period):
-                raise HTTPException(status_code=400, detail=f"Growing season file: Invalid period for CPS Zone {cps_zone}. Start/End must be 1-36, start <= end.")
-            growing_seasons_map[cps_zone] = (start_period, end_period)
+        # After validation, dedupe rows by zone/grid to avoid duplicates
+        trigger_points_df = trigger_points_df.drop_duplicates(subset=['cps_zone'], keep='last')
+        exit_points_df = exit_points_df.drop_duplicates(subset=['cps_zone'], keep='last')
+        growing_seasons_df = growing_seasons_df.drop_duplicates(subset=['grid'], keep='last')
 
-        all_cps_zones_in_files = set(trigger_points_df['cps_zone'].astype(int).unique()) | \
-                                 set(exit_points_df['cps_zone'].astype(int).unique()) | \
-                                 set(growing_seasons_df['cps_zone'].astype(int).unique())
-        
-        if all_cps_zones_in_files:
-            for zone_val_numpy in all_cps_zones_in_files:
-                zone_val_python_int = int(zone_val_numpy) # Explicit conversion to Python int
-                db_session.query(models.CPSZonePeriodConfig).filter(models.CPSZonePeriodConfig.cps_zone == zone_val_python_int).delete()
+        # Clear existing CPSZonePeriodConfig and GrowingSeasonByGrid data
+        # Use .tolist() to ensure native Python ints
+        all_cps_zones_in_percentile_files = {int(z) for z in trigger_points_df['cps_zone'].unique()} | {int(z) for z in exit_points_df['cps_zone'].unique()}
+        if all_cps_zones_in_percentile_files:
+            db_session.query(models.CPSZonePeriodConfig).filter(
+                models.CPSZonePeriodConfig.cps_zone.in_(all_cps_zones_in_percentile_files)
+            ).delete(synchronize_session=False)
+        all_grids_in_season_file = {int(g) for g in growing_seasons_df['grid'].unique()}
+        if all_grids_in_season_file:
+            db_session.query(models.GrowingSeasonByGrid).filter(
+                models.GrowingSeasonByGrid.grid.in_(all_grids_in_season_file)
+            ).delete(synchronize_session=False)
+        db_session.commit()  # commit deletions
+
+        # Bulk upsert CPSZonePeriodConfig entries (trigger & exit) to avoid duplicates
+        from sqlalchemy.dialects.postgresql import insert as pg_insert
+        now = datetime.datetime.utcnow()
+        # Prepare combined rows per (zone,period) to avoid duplicates in same upsert
+        rows_map: Dict[tuple[int,int], dict] = {}
+        for _, row in trigger_points_df.iterrows():
+            zone = int(row['cps_zone'])
+            for idx in range(1, 37):
+                key = (zone, idx)
+                rows_map[key] = {
+                    'cps_zone': zone,
+                    'period': idx,
+                    'trigger_point': float(row.iloc[idx]),
+                    'exit_point': 0.0,
+                    'created_at': now,
+                    'updated_at': now
+                }
+        for _, row in exit_points_df.iterrows():
+            zone = int(row['cps_zone'])
+            for idx in range(1, 37):
+                key = (zone, idx)
+                exit_val = float(row.iloc[idx])
+                if key in rows_map:
+                    rows_map[key]['exit_point'] = exit_val
+                    rows_map[key]['updated_at'] = now
+                else:
+                    rows_map[key] = {
+                        'cps_zone': zone,
+                        'period': idx,
+                        'trigger_point': 0.0,
+                        'exit_point': exit_val,
+                        'created_at': now,
+                        'updated_at': now
+                    }
+        rows = list(rows_map.values())
+        if rows:
+            stmt = pg_insert(models.CPSZonePeriodConfig).values(rows)
+            stmt = stmt.on_conflict_do_update(
+                index_elements=['cps_zone', 'period'],
+                set_={
+                    'trigger_point': stmt.excluded.trigger_point,
+                    'exit_point': stmt.excluded.exit_point,
+                    'updated_at': stmt.excluded.updated_at
+                }
+            )
+            db_session.execute(stmt)
             db_session.commit()
 
-        # Process trigger points
-        for _, row in trigger_points_df.iterrows():
-            cps_zone_val = int(row['cps_zone']) # Ensure this is Python int
-            start_season, end_season = growing_seasons_map.get(cps_zone_val, (0, 0)) 
-
-            for period_idx_in_df in range(1, 37): # Corresponds to columns 1 through 36 for period data
-                period_num = period_idx_in_df # Period number is 1-36
-                trigger_val = 0.0
-                if start_season <= period_num <= end_season:
-                    try:
-                        trigger_val = float(row.iloc[period_idx_in_df]) 
-                    except (IndexError, ValueError) as e:
-                        raise HTTPException(status_code=400, detail=f"Error reading trigger point for CPS Zone {cps_zone_val}, Period {period_num} (column index {period_idx_in_df}). Ensure 36 period columns exist. Error: {e}")
-
-                # Find existing or prepare new entry (without adding yet)
-                config_entry = db_session.query(models.CPSZonePeriodConfig).filter(
-                    models.CPSZonePeriodConfig.cps_zone == cps_zone_val,
-                    models.CPSZonePeriodConfig.period == period_num
-                ).first()
-
-                if config_entry:
-                    config_entry.trigger_point = trigger_val
-                    config_entry.updated_at = datetime.datetime.utcnow()
-                else:
-                    config_entry = models.CPSZonePeriodConfig(
-                        cps_zone=cps_zone_val,
-                        period=period_num,
-                        trigger_point=trigger_val,
-                        exit_point=0.0 # Default, will be set by exit points processing
-                    )
-                    db_session.add(config_entry)
-        db_session.commit() # Commit after all trigger points for all zones
-
-        # Process exit points
-        for _, row in exit_points_df.iterrows():
-            cps_zone_val = int(row['cps_zone']) # Ensure this is also Python int
-            start_season, end_season = growing_seasons_map.get(cps_zone_val, (0, 0))
-
-            for period_idx_in_df in range(1, 37):
-                period_num = period_idx_in_df
-                exit_val = 0.0
-                if start_season <= period_num <= end_season:
-                    try:
-                        exit_val = float(row.iloc[period_idx_in_df])
-                    except (IndexError, ValueError) as e:
-                         raise HTTPException(status_code=400, detail=f"Error reading exit point for CPS Zone {cps_zone_val}, Period {period_num} (column index {period_idx_in_df}). Ensure 36 period columns exist. Error: {e}")
-
-                config_entry = db_session.query(models.CPSZonePeriodConfig).filter(
-                    models.CPSZonePeriodConfig.cps_zone == cps_zone_val,
-                    models.CPSZonePeriodConfig.period == period_num
-                ).first()
-                
-                if config_entry: 
-                    config_entry.exit_point = exit_val
-                    config_entry.updated_at = datetime.datetime.utcnow()
-                else:
-                    # This case implies a zone/period in exit_points not covered by trigger_points processing.
-                    # Create it with trigger_point = 0.0 as per current logic.
-                    config_entry = models.CPSZonePeriodConfig(
-                        cps_zone=cps_zone_val,
-                        period=period_num,
-                        trigger_point=0.0, 
-                        exit_point=exit_val
-                    )
-                    db_session.add(config_entry)
-        db_session.commit() # Commit after all exit points for all zones
+        # Process and store growing season data by grid
+        for _, row in growing_seasons_df.iterrows():
+            db_session.add(models.GrowingSeasonByGrid(
+                grid=int(row['grid']),
+                start_period=int(row['start']),
+                end_period=int(row['end'])
+            ))
+        db_session.commit()
 
         # Save uploaded file metadata
         for file_info in saved_files_info:
             db_file = models.UploadedFile(
                 filename=file_info["original_filename"], 
                 saved_filename=file_info["saved_filename"],
-                file_type="cps_zone_config", 
+                file_type="cps_zone_config", # Consider if "growing_season_config" for type "season"
                 file_path=file_info["file_path"],
                 upload_type=file_info["upload_type"]
             )
@@ -163,15 +156,17 @@ def process_and_store_cps_data(
     except HTTPException:
         db_session.rollback() 
         for file_info in saved_files_info:
-            if os.path.exists(file_info["file_path"]):
-                os.remove(file_info["file_path"])
+            f_path = str(file_info.get("file_path")) if file_info.get("file_path") else ""
+            if f_path and os.path.exists(f_path):
+                os.remove(f_path)
         raise
     except Exception as e:
         db_session.rollback()
         for file_info in saved_files_info:
-            if os.path.exists(file_info["file_path"]):
-                os.remove(file_info["file_path"])
-        print(f"Error processing CPS Zone files: {e}") # Replace with proper logging
+            f_path = str(file_info.get("file_path")) if file_info.get("file_path") else ""
+            if f_path and os.path.exists(f_path):
+                os.remove(f_path)
+        print(f"Error processing CPS Zone files: {e}") 
         raise HTTPException(status_code=500, detail=f"Error processing CPS Zone files: {str(e)}")
 
 
@@ -179,7 +174,7 @@ def process_and_store_cps_data(
 async def upload_cps_zone_files(
     trigger_points_file: UploadFile = File(..., description="Excel file for 15th percentile trigger points. Skip first 2 rows. Col 1: cps_zone, Col 2-37: Periods 1-36."),
     exit_points_file: UploadFile = File(..., description="Excel file for 5th percentile exit points. Skip first 2 rows. Col 1: cps_zone, Col 2-37: Periods 1-36."),
-    growing_seasons_file: UploadFile = File(..., description="Excel file for growing seasons. Cols: cps_zone, start, end."),
+    growing_seasons_file: UploadFile = File(..., description="Excel file for growing seasons. Expected columns: grid, start, end."), # UPDATED
     db_session: Session = Depends(db.get_db)
 ):
     files_to_process: Dict[str, UploadFile] = {
@@ -187,22 +182,21 @@ async def upload_cps_zone_files(
         "exit": exit_points_file,
         "season": growing_seasons_file
     }
-    saved_files_info: List[Dict[str, Optional[str]]] = [] # original_filename can be None if UploadFile.filename is None
+    saved_files_info: List[Dict[str, Optional[str]]] = []
     dataframes: Dict[str, pd.DataFrame] = {}
 
     try:
         for key, file_obj in files_to_process.items():
             if file_obj.filename is None:
                  raise HTTPException(status_code=400, detail=f"File for '{key}' is missing a filename.")
-            # Ensure filename is a string before using endswith
             current_filename_str = str(file_obj.filename)
             if not current_filename_str.endswith(('.xls', '.xlsx')):
                 raise HTTPException(status_code=400, detail=f"Invalid file type for {key} file ({current_filename_str}). Only Excel files (.xls, .xlsx) are allowed.")
 
-            file_prefix = f"cps_{key}_points_" if key != "season" else "cps_growing_season_"
+            file_prefix = f"cps_{key}_points_" if key != "season" else "growing_season_grid_" # UPDATED prefix
             timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
             
-            base, ext = get_safe_filename_parts(file_obj) # Relies on file_obj.filename being checked
+            base, ext = get_safe_filename_parts(file_obj)
             safe_filename = f"{file_prefix}{base.replace(' ', '_')}_{timestamp}{ext}"
             file_path = os.path.join(CPS_ZONE_FILES_DIR, safe_filename)
 
@@ -210,6 +204,9 @@ async def upload_cps_zone_files(
                 with open(file_path, "wb") as buffer:
                     shutil.copyfileobj(file_obj.file, buffer)
             except Exception as e:
+                # Clean up this specific file if saving failed before adding to saved_files_info
+                if os.path.exists(file_path):
+                    os.remove(file_path)
                 raise HTTPException(status_code=500, detail=f"Could not save file {current_filename_str}: {e}")
             finally:
                 file_obj.file.seek(0) 
@@ -225,11 +222,14 @@ async def upload_cps_zone_files(
             try:
                 if key in ["trigger", "exit"]:
                     df = pd.read_excel(io.BytesIO(file_obj.file.read()), skiprows=2, header=None)
-                    # The first column (index 0) is cps_zone. Subsequent columns are period data.
                     df.rename(columns={0: 'cps_zone'}, inplace=True)
                 else: # growing_seasons_file
-                    df = pd.read_excel(io.BytesIO(file_obj.file.read())) # Assumes headers 'cps_zone', 'start', 'end'
+                    df = pd.read_excel(io.BytesIO(file_obj.file.read())) # Assumes headers 'grid', 'start', 'end'
+                    if not all(col in df.columns for col in ['grid', 'start', 'end']):
+                        raise HTTPException(status_code=400, detail="Growing season file is missing required columns: 'grid', 'start', 'end'.")
                 dataframes[key] = df
+            except HTTPException: # Re-raise specific HTTP exceptions from parsing
+                raise
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"Error parsing Excel file {current_filename_str}: {e}")
             finally:
@@ -240,49 +240,80 @@ async def upload_cps_zone_files(
             trigger_points_df=dataframes["trigger"],
             exit_points_df=dataframes["exit"],
             growing_seasons_df=dataframes["season"],
-            saved_files_info=saved_files_info # type: ignore # saved_files_info matches List[dict]
+            saved_files_info=saved_files_info # type: ignore
         )
         
         response_files: List[file_schemas.FileUploadResponse] = []
         for info in saved_files_info:
-            # Ensure info["saved_filename"] is str for query
             s_filename = str(info["saved_filename"]) if info["saved_filename"] else ""
-            db_file_rec = db_session.query(models.UploadedFile).filter(models.UploadedFile.saved_filename == s_filename).first()
+            # Ensure we query for the correct file type if it was changed for growing season files
+            db_file_rec = db_session.query(models.UploadedFile).filter(
+                models.UploadedFile.saved_filename == s_filename
+                # Optionally, add: models.UploadedFile.upload_type == info["upload_type"]
+            ).first()
             if db_file_rec:
                  response_files.append(file_schemas.FileUploadResponse.from_orm(db_file_rec))
             else:
                 print(f"Warning: Could not find saved file record for {s_filename} in DB for response.")
-
-        if not response_files or len(response_files) != len(saved_files_info):
-            raise HTTPException(status_code=500, detail="Failed to record all file uploads or generate full response.")
+        
+        if len(response_files) != len(saved_files_info) and saved_files_info:
+             # This indicates an issue if process_and_store_cps_data supposedly succeeded
+             # but not all file metadata was found.
+            raise HTTPException(status_code=500, detail="Failed to fully record all file uploads or generate complete response.")
 
         return response_files
 
     except HTTPException as http_exc:
         for info in saved_files_info:
-            # Ensure info["file_path"] is str for os.path.exists
-            f_path = str(info["file_path"]) if info["file_path"] else ""
-            if os.path.exists(f_path):
-                is_problematic_file = False
-                # Ensure info["original_filename"] is str for comparison
-                orig_fn = str(info.get("original_filename", ""))
-                for _, f_obj_iter in files_to_process.items():
-                    f_obj_iter_fn = str(f_obj_iter.filename) if f_obj_iter.filename else ""
-                    if f_obj_iter_fn and f_obj_iter_fn in str(http_exc.detail) and orig_fn == f_obj_iter_fn:
-                        is_problematic_file = True
-                        break
-                
-                if is_problematic_file or http_exc.status_code >= 500: 
-                     if os.path.exists(f_path):
-                        os.remove(f_path)
+            f_path = str(info.get("file_path")) if info.get("file_path") else ""
+            if f_path and os.path.exists(f_path):
+                os.remove(f_path)
         raise http_exc
     except Exception as e:
         for info in saved_files_info:
-            f_path = str(info["file_path"]) if info["file_path"] else ""
-            if os.path.exists(f_path):
+            f_path = str(info.get("file_path")) if info.get("file_path") else ""
+            if f_path and os.path.exists(f_path):
                 os.remove(f_path)
-        print(f"Unhandled error during CPS zone file upload: {e}") 
+        print(f"Unhandled error during file upload: {e}") 
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+
+# New endpoint for growing season by grid
+@router.get("/growing_season/{grid_value}", response_model=List[int], tags=["Growing Season"])
+async def get_growing_season_for_grid(
+    grid_value: int = Path(..., title="The grid ID", ge=1, description="Identifier for the grid."),
+    db_session: Session = Depends(db.get_db)
+):
+    """
+    Retrieve growing season (start and end period) for a specific grid.
+    Returns a list of period numbers within the growing season (e.g., [1, 2, 3] if start is 1 and end is 3).
+    Returns an empty list if no data is found for the grid.
+    """
+    # Retrieve scalar start/end via func to get Python ints
+    result = db_session.query(models.GrowingSeasonByGrid.start_period, models.GrowingSeasonByGrid.end_period).filter(
+        models.GrowingSeasonByGrid.grid == grid_value
+    ).first()
+    if not result:
+        return []
+    start, end = result  # native Python ints
+    return list(range(start, end + 1))
+
+@router.get("/growing_season/{grid_value}/{period}", response_model=growing_season_schemas.GrowingSeasonPeriodCheckResponse, tags=["Growing Season"])
+async def check_period_in_growing_season_for_grid(
+    grid_value: int = Path(..., title="The grid ID", ge=1, description="Identifier for the grid."),
+    period: int = Path(..., title="The period number to check", ge=1, le=36, description="Period number (1-36)."),
+    db_session: Session = Depends(db.get_db)
+):
+    """
+    Check if a specific period is within the growing season for a given grid.
+    Returns {"growing_season": True} if the period is within the season, otherwise {"growing_season": False}.
+    """
+    result = db_session.query(models.GrowingSeasonByGrid.start_period, models.GrowingSeasonByGrid.end_period).filter(
+        models.GrowingSeasonByGrid.grid == grid_value
+    ).first()
+    if not result:
+        return growing_season_schemas.GrowingSeasonPeriodCheckResponse(growing_season=False)
+    start, end = result
+    return growing_season_schemas.GrowingSeasonPeriodCheckResponse(growing_season=(start <= period <= end))
 
 
 @router.get("/{cps_zone_value}/{period_value}", response_model=cps_zone_schemas.CPSZonePeriodConfigResponse)
@@ -298,15 +329,15 @@ def get_cps_zone_period_config(cps_zone_value: int, period_value: int, db_sessio
     ).first()
 
     if config_entry is None:
-        # Per requirement: return 0.0 for trigger/exit if period is outside active growing season (or not configured)
+        # If no configuration exists for the given cps_zone and period, return default 0.0 values.
         response_data = {
-            "id": 0, # Placeholder ID as no DB record exists for this specific state
+            "id": 0, 
             "cps_zone": cps_zone_value,
             "period": period_value,
             "trigger_point": 0.0,
             "exit_point": 0.0,
-            "created_at": datetime.datetime.utcnow(), # Placeholder date
-            "updated_at": datetime.datetime.utcnow()  # Placeholder date
+            "created_at": datetime.datetime.utcnow(), 
+            "updated_at": datetime.datetime.utcnow()
         }
         return cps_zone_schemas.CPSZonePeriodConfigResponse(**response_data)
 
