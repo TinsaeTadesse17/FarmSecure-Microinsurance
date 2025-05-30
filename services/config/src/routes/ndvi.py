@@ -28,6 +28,7 @@ class JobStatus(file_schemas.BaseModel): # Using BaseModel from file_schemas for
 
     class Config:
         from_attributes = True
+logger = logging.getLogger(__name__)      
 
 router = APIRouter()
 
@@ -117,7 +118,8 @@ async def background_process_ndvi_file(
                 cell_value = row_data[current_period_column]
 
                 if pd.isna(cell_value):
-                    # Decide how to handle missing NDVI values. Raising an error is a safe default.
+                    logger.warning(f"Grid {grid_val}: missing NDVI for period {period_val} "
+                       f"(column '{current_period_column}')")
                     ndvi_val = None
                 
                 try:
