@@ -7,8 +7,9 @@ import { JwtAuthGuard } from 'src/auth/guards/auth.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from 'src/auth/constants/roles.enum';
 
+
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('api/v1/config/')
+@Controller('api/v1/')
 export class ConfigController {
   constructor(private readonly configService: ConfigService) {}
 
