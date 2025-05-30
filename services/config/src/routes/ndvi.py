@@ -3,6 +3,8 @@ import pandas as pd
 import shutil
 import datetime
 import os
+import logging
+
 import uuid # Added for job IDs
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks
 from fastapi.responses import FileResponse
@@ -111,14 +113,12 @@ async def background_process_ndvi_file(
         for _, row_data in df.iterrows(): # Iterate over each row in the DataFrame
             grid_val = int(row_data[grid_column_name]) # Already validated and converted to int
 
-            for i in range(11, 47): # For periods 1 to 36
-                period_val = i + 1 
-                current_period_column = period_data_columns[i]
+            for period_val, current_period_column in enumerate(period_data_columns, start=1): # For periods 1 to 36
                 cell_value = row_data[current_period_column]
 
                 if pd.isna(cell_value):
                     # Decide how to handle missing NDVI values. Raising an error is a safe default.
-                    raise HTTPException(status_code=400, detail=f"Missing NDVI value for grid {grid_val}, period {period_val} (column '{current_period_column}').")
+                    ndvi_val = None
                 
                 try:
                     ndvi_val = float(cell_value) # Already validated as numeric by validate_ndvi_data
