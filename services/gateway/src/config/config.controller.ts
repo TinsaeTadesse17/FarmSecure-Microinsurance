@@ -104,8 +104,8 @@ export class ConfigController {
 
   @Roles(Role.Admin)
   @Get('ndvi/upload/status/:job_id')
-  getNdviUploadStatus(@Param('job_id') jobId: string) {
-    return this.configService.getNdviUploadStatus(jobId);
+  getNdviUploadStatus(@Param('job_id') job_id: string) {
+    return this.configService.getNdviUploadStatus(job_id);
   }
 
   @Roles(Role.Admin)
