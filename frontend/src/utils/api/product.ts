@@ -1,30 +1,39 @@
-// src/lib/product.ts
-
 const API_BASE = `http://${process.env.NEXT_PUBLIC_HOST}:${process.env.NEXT_PUBLIC_GATEWAY_PORT}/api/products`;
 
+
 const getAuthHeaders = (): Record<string, string> => {
-  const token = localStorage.getItem("token");
-  return token ? { "Authorization": `Bearer ${token}` } : {};
+  const raw = localStorage.getItem("token");
+  if (!raw || raw === "null" || raw === "undefined") return {};
+  return { Authorization: `Bearer ${raw.trim()}` };
+};
+
+const extractError = async (res: Response): Promise<string> => {
+  try {
+    const data = await res.json();
+    return data.detail || res.statusText;
+  } catch {
+    return res.statusText;
+  }
 };
 
 export interface Product {
   id: number;
   name: string;
   description: string;
-  type: string; // Should match ProductType enum
+  type: string;
   commission_rate: number;
   created_at: string;
   company_id: number;
   fiscal_year: number;
-  cps_zone_id?: number; // Optional, can be null
+  cps_zone_id?: number;
   elc: number;
-  premium?: number; // Optional, can be null
-  premium_rate?: number; // Optional, can be null
-  commission?: number; // Optional, can be null
-  load?: number; // Optional, can be null
-  discount?: number; // Optional, can be null
-  trigger?: number; // Optional, can be null
-  exit?: number; // Optional, can be null
+  premium?: number;
+  premium_rate?: number;
+  commission?: number;
+  load?: number;
+  discount?: number;
+  trigger?: number;
+  exit?: number;
 }
 
 export interface ProductCreate {
@@ -52,57 +61,56 @@ export interface PremiumCalculation {
   exit: number;
 }
 
-// Get all products
+// 1. Get all products
 export async function getProducts(skip = 0, limit = 100): Promise<Product[]> {
   const res = await fetch(`${API_BASE}?skip=${skip}&limit=${limit}`, {
     headers: { ...getAuthHeaders() },
   });
-  if (!res.ok) throw new Error('Failed to fetch products');
-  return await res.json();
+  if (!res.ok) throw new Error(await extractError(res));
+  return res.json();
 }
 
-// Get a single product
+// 2. Get a single product
 export async function getProduct(productId: number): Promise<Product> {
   const res = await fetch(`${API_BASE}/${productId}`, {
     headers: { ...getAuthHeaders() },
   });
-  if (!res.ok) throw new Error('Product not found');
-  return await res.json();
+  if (!res.ok) throw new Error(await extractError(res));
+  return res.json();
 }
 
-// get products by company id
+// 3. Get products by company ID
 export async function getProductsbyCompany(company_id: number): Promise<Product[]> {
   const res = await fetch(`${API_BASE}/by-company/${company_id}`, {
     headers: { ...getAuthHeaders() },
   });
-  if (!res.ok) throw new Error('Product not found');
-  return await res.json();
+  if (!res.ok) throw new Error(await extractError(res));
+  return res.json();
 }
 
-
-// Create a new product
+// 4. Create a new product
 export async function createProduct(data: ProductCreate): Promise<Product> {
   const res = await fetch(API_BASE, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Failed to create product');
-  return await res.json();
+  if (!res.ok) throw new Error(await extractError(res));
+  return res.json();
 }
 
-// Update an existing product
+// 5. Update a product
 export async function updateProduct(productId: number, data: ProductUpdate): Promise<Product> {
   const res = await fetch(`${API_BASE}/${productId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Failed to update product');
-  return await res.json();
+  if (!res.ok) throw new Error(await extractError(res));
+  return res.json();
 }
 
-// Calculate premium
+// 6. Calculate premium
 export async function calculatePremium(
   productId: number,
   zone_id: number,
@@ -115,9 +123,6 @@ export async function calculatePremium(
     method: 'POST',
     headers: { ...getAuthHeaders() },
   });
-  if (!res.ok) {
-  const error = await res.json();
-  throw new Error(error.detail || 'Failed to calculate premium');
-}
-  return await res.json();
+  if (!res.ok) throw new Error(await extractError(res));
+  return res.json();
 }

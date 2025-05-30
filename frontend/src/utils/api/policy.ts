@@ -1,12 +1,12 @@
 import { ReactNode } from 'react';
 
-// src/lib/api/policy.ts
-
 const API_BASE = `http://${process.env.NEXT_PUBLIC_HOST}:${process.env.NEXT_PUBLIC_GATEWAY_PORT}/api/v1`;
 
 const getAuthHeaders = (): Record<string, string> => {
-  const token = localStorage.getItem("token");
-  return token ? { "Authorization": `Bearer ${token}` } : {};
+  if (typeof window === 'undefined') return {};
+  const raw = localStorage.getItem("token");
+  if (!raw || raw === "undefined" || raw === "null") return {};
+  return { Authorization: `Bearer ${raw.trim()}` };
 };
 
 export interface PolicyCreateRequest {
@@ -31,6 +31,16 @@ export interface PolicyDetail {
   value: string;
 }
 
+// Utility for better error extraction
+const extractError = async (res: Response): Promise<string> => {
+  try {
+    const data = await res.json();
+    return data.detail || res.statusText;
+  } catch {
+    return res.statusText;
+  }
+};
+
 // 1. Create policy
 export async function createPolicy(data: PolicyCreateRequest): Promise<Policy> {
   const res = await fetch(`${API_BASE}/policy`, {
@@ -38,7 +48,7 @@ export async function createPolicy(data: PolicyCreateRequest): Promise<Policy> {
     headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Failed to create policy');
+  if (!res.ok) throw new Error(await extractError(res));
   return res.json();
 }
 
@@ -48,7 +58,7 @@ export async function approvePolicy(policyId: number): Promise<Policy> {
     method: 'POST',
     headers: { ...getAuthHeaders() },
   });
-  if (!res.ok) throw new Error('Failed to approve policy');
+  if (!res.ok) throw new Error(await extractError(res));
   return res.json();
 }
 
@@ -58,7 +68,7 @@ export async function rejectPolicy(policyId: number): Promise<Policy> {
     method: 'POST',
     headers: { ...getAuthHeaders() },
   });
-  if (!res.ok) throw new Error('Failed to reject policy');
+  if (!res.ok) throw new Error(await extractError(res));
   return res.json();
 }
 
@@ -67,16 +77,16 @@ export async function getPolicy(policyId: number): Promise<Policy> {
   const res = await fetch(`${API_BASE}/policy/${policyId}`, {
     headers: { ...getAuthHeaders() },
   });
-  if (!res.ok) throw new Error('Failed to fetch policy');
+  if (!res.ok) throw new Error(await extractError(res));
   return res.json();
 }
 
-//  Get a single policy by enrollment ID
+// Get a single policy by enrollment ID
 export async function getPolicyByEnrollment(enrollment_id: number): Promise<Policy> {
   const res = await fetch(`${API_BASE}/policy/by-enrollment/${enrollment_id}`, {
     headers: { ...getAuthHeaders() },
   });
-  if (!res.ok) throw new Error('Failed to fetch policy');
+  if (!res.ok) throw new Error(await extractError(res));
   return res.json();
 }
 
@@ -85,7 +95,7 @@ export async function getPolicyDetails(policyId: number): Promise<PolicyDetail[]
   const res = await fetch(`${API_BASE}/policy/${policyId}/details`, {
     headers: { ...getAuthHeaders() },
   });
-  if (!res.ok) throw new Error('Failed to fetch policy details');
+  if (!res.ok) throw new Error(await extractError(res));
   return res.json();
 }
 
@@ -94,25 +104,25 @@ export async function listPolicies(): Promise<Policy[]> {
   const res = await fetch(`${API_BASE}/policies`, {
     headers: { ...getAuthHeaders() },
   });
-  if (!res.ok) throw new Error('Failed to fetch policies');
+  if (!res.ok) throw new Error(await extractError(res));
   return res.json();
 }
 
-// 6. List all policies by comapnyid
+// 6b. List all policies by company ID
 export async function listPoliciesbyCompany(company_id: number): Promise<Policy[]> {
   const res = await fetch(`${API_BASE}/policies/by-company/${company_id}`, {
     headers: { ...getAuthHeaders() },
   });
-  if (!res.ok) throw new Error('Failed to fetch policies');
+  if (!res.ok) throw new Error(await extractError(res));
   return res.json();
 }
 
-// 6. List all policiesby userid
+// 6c. List all policies by user ID
 export async function listPoliciesbyUser(user_id: number): Promise<Policy[]> {
   const res = await fetch(`${API_BASE}/policies/by-user/${user_id}`, {
     headers: { ...getAuthHeaders() },
   });
-  if (!res.ok) throw new Error('Failed to fetch policies');
+  if (!res.ok) throw new Error(await extractError(res));
   return res.json();
 }
 
@@ -121,6 +131,6 @@ export async function listPolicyDetails(): Promise<Record<string, any>[]> {
   const res = await fetch(`${API_BASE}/policies/details`, {
     headers: { ...getAuthHeaders() },
   });
-  if (!res.ok) throw new Error('Failed to fetch all policy details');
+  if (!res.ok) throw new Error(await extractError(res));
   return res.json();
 }
