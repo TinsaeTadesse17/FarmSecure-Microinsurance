@@ -5,8 +5,9 @@ import Sidebar from '@/components/ic/sidebar';
 import AvatarMenu from '@/components/common/avatar';
 import CreateProductDialog from '@/components/ic/productDialog';
 import { getProductsbyCompany, createProduct, calculatePremium, Product, ProductCreate } from '@/utils/api/product';
-import { Plus, RefreshCw, Search, Package } from 'lucide-react';
+import { Plus, RefreshCw, Search, Package, ChevronRight, Info } from 'lucide-react';
 import { getCurrentUser, getToken } from '@/utils/api/user';
+import ProductDetailDialog from '@/components/ic/productDetailDialog';
 
 interface ProductWithPremium extends Product {
   premium?: number;
@@ -21,6 +22,8 @@ interface ProductWithPremium extends Product {
 
 export default function ProductConfiguration() {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<ProductWithPremium | null>(null);
   const [products, setProducts] = useState<ProductWithPremium[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +81,11 @@ export default function ProductConfiguration() {
     }
   };
 
+  const openProductDetail = (product: ProductWithPremium) => {
+    setSelectedProduct(product);
+    setDetailDialogOpen(true);
+  };
+
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -124,7 +132,7 @@ export default function ProductConfiguration() {
               <div>
                 <h2 className="text-xl font-semibold text-[#3a584e]">Product Portfolio</h2>
                 <p className="text-sm text-[#7a938f] mt-1">
-                  Configure insurance products and premium rates
+                  {filtered.length} {filtered.length === 1 ? 'product' : 'products'} available
                 </p>
               </div>
               <button
@@ -172,32 +180,32 @@ export default function ProductConfiguration() {
               <table className="min-w-full divide-y divide-[#e0e7d4]">
                 <thead className="bg-[#f9f8f3]">
                   <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#3a584e]">Product</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#3a584e]">Type</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#3a584e]">Rate (%)</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#3a584e]">Commission (ETB)</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#3a584e]">ELC</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#3a584e]">Load</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#3a584e]">Discount</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#3a584e]">Trigger</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#3a584e]">Exit</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#3a584e]">Premium (ETB)</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-[#3a584e]">Product</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-[#3a584e]">Type</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-[#3a584e]">Premium</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-[#3a584e]">Details</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e0e7d4]">
                   {filtered.map(product => (
                     <tr key={product.id} className="hover:bg-[#f9f8f3] transition-colors">
-                      <td className="px-4 py-3 text-sm text-[#3a584e]">{product.name}</td>
-                      <td className="px-4 py-3 text-sm text-[#7a938f]">{product.type}</td>
-                      <td className="px-4 py-3 text-sm">{product.premium_rate ?? 'N/A'}</td>
-                      <td className="px-4 py-3 text-sm">{product.commission ?? 'N/A'}</td>
-                      <td className="px-4 py-3 text-sm">{product.elc ?? 'N/A'}</td>
-                      <td className="px-4 py-3 text-sm">{product.load ?? 'N/A'}</td>
-                      <td className="px-4 py-3 text-sm">{product.discount ?? 'N/A'}</td>
-                      <td className="px-4 py-3 text-sm">{product.trigger ?? 'N/A'}</td>
-                      <td className="px-4 py-3 text-sm">{product.exit ?? 'N/A'}</td>
-                      <td className="px-4 py-3 text-sm text-[#3a584e] font-semibold">
+                      <td className="px-6 py-4 text-sm font-medium text-[#3a584e]">
+                        <div className="flex items-center gap-3">
+                          <Package className="w-5 h-5 text-[#8ba77f]" />
+                          {product.name}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-[#7a938f] capitalize">{product.type}</td>
+                      <td className="px-6 py-4 text-sm font-semibold text-[#3a584e]">
                         {product.premium !== undefined ? `${product.premium.toFixed(2)} ETB` : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <button
+                          onClick={() => openProductDetail(product)}
+                          className="flex items-center text-[#8ba77f] hover:text-[#7a937f] transition-colors"
+                        >
+                          View details <ChevronRight className="ml-1 h-4 w-4" />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -209,6 +217,13 @@ export default function ProductConfiguration() {
 
         {dialogOpen && (
           <CreateProductDialog onClose={() => setDialogOpen(false)} onCreate={handleCreate} />
+        )}
+
+        {detailDialogOpen && selectedProduct && (
+          <ProductDetailDialog 
+            product={selectedProduct} 
+            onClose={() => setDetailDialogOpen(false)} 
+          />
         )}
       </main>
     </div>

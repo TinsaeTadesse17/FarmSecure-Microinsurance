@@ -18,6 +18,13 @@ export interface Product {
   fiscal_year: number;
   cps_zone_id?: number; // Optional, can be null
   elc: number;
+  premium?: number; // Optional, can be null
+  premium_rate?: number; // Optional, can be null
+  commission?: number; // Optional, can be null
+  load?: number; // Optional, can be null
+  discount?: number; // Optional, can be null
+  trigger?: number; // Optional, can be null
+  exit?: number; // Optional, can be null
 }
 
 export interface ProductCreate {
