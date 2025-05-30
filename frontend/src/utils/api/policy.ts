@@ -71,6 +71,15 @@ export async function getPolicy(policyId: number): Promise<Policy> {
   return res.json();
 }
 
+//  Get a single policy by enrollment ID
+export async function getPolicyByEnrollment(enrollment_id: number): Promise<Policy> {
+  const res = await fetch(`${API_BASE}/policy/by-enrollment/${enrollment_id}`, {
+    headers: { ...getAuthHeaders() },
+  });
+  if (!res.ok) throw new Error('Failed to fetch policy');
+  return res.json();
+}
+
 // 5. Get policy details
 export async function getPolicyDetails(policyId: number): Promise<PolicyDetail[]> {
   const res = await fetch(`${API_BASE}/policy/${policyId}/details`, {
@@ -83,6 +92,24 @@ export async function getPolicyDetails(policyId: number): Promise<PolicyDetail[]
 // 6. List all policies
 export async function listPolicies(): Promise<Policy[]> {
   const res = await fetch(`${API_BASE}/policies`, {
+    headers: { ...getAuthHeaders() },
+  });
+  if (!res.ok) throw new Error('Failed to fetch policies');
+  return res.json();
+}
+
+// 6. List all policies by comapnyid
+export async function listPoliciesbyCompany(company_id: number): Promise<Policy[]> {
+  const res = await fetch(`${API_BASE}/policies/by-company/${company_id}`, {
+    headers: { ...getAuthHeaders() },
+  });
+  if (!res.ok) throw new Error('Failed to fetch policies');
+  return res.json();
+}
+
+// 6. List all policiesby userid
+export async function listPoliciesbyUser(user_id: number): Promise<Policy[]> {
+  const res = await fetch(`${API_BASE}/policies/by-user/${user_id}`, {
     headers: { ...getAuthHeaders() },
   });
   if (!res.ok) throw new Error('Failed to fetch policies');

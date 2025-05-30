@@ -21,7 +21,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
-      router.replace('/login');
+      router.replace('/');
       return;
     }
 
@@ -45,7 +45,7 @@ export default function DashboardPage() {
       setLoading(false);
     } catch (err) {
       console.error('Authentication error:', err);
-      router.replace('/login');
+      router.replace('/');
     }
   }, [router]);
 

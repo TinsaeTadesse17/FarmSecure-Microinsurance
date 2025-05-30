@@ -42,4 +42,11 @@ class ProductResponse(ProductBase):
 
 # Schema for premium calculation request/response
 class PremiumCalculation(BaseModel):
-    premium: float
+    premium: float              # Final premium paid by customer
+    premium_rate: float         # ELC + load - discount
+    commission: float           # premium_rate × commission_rate
+    elc: float                  # Estimated Loss Cost set by IC
+    load: float                 # Load adjustment set by IC
+    discount: float             # Discount adjustment set by IC
+    trigger: float              # NDVI-based trigger point (for info only)
+    exit: float 

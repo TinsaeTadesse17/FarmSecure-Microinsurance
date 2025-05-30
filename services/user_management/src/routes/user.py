@@ -142,30 +142,21 @@ def update_user_account(
     user_id: int,
     updates: user_schema.UserUpdate,
     db: Session = Depends(get_db),
-    # current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # print(f"Editing user: {user_id} | Current User: {current_user.user_id}")
-
-    # Only allow self-edit
-    # if current_user.user_id != user.user_id:
-    #     raise HTTPException(status_code=403, detail="You are only allowed to update your own account.")
-
-    # Allow username update
     if updates.username:
         user.username = updates.username
 
-    # Allow password update
     if updates.password:
         user.password = hash_password(updates.password)
         user.must_change_password = False
 
-    # Prevent self-status editing
-    if updates.status:
-        raise HTTPException(status_code=403, detail="You can't change your own status.")
+    if hasattr(updates, 'status') and updates.status is not None:
+        raise HTTPException(status_code=403, detail="You cannot update status from this endpoint.")
 
     try:
         db.commit()
@@ -173,6 +164,32 @@ def update_user_account(
     except Exception as e:
         print(f"Commit error: {e}")
         raise HTTPException(status_code=500, detail="Database commit failed.")
+
+    return user
+
+@router.put("/update-status/{user_id}", response_model=user_schema.UserOut)
+def update_user_status(
+    user_id: int,
+    status_update: user_schema.StatusUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Only allow admin to update IC user status
+    # if user.role == "ic" and current_user.role != "admin":
+    #     raise HTTPException(status_code=403, detail="Only admins can update the status of IC users.")
+
+    user.status = status_update.status
+
+    try:
+        db.commit()
+        db.refresh(user)
+    except Exception as e:
+        print(f"Status update error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update user status.")
 
     return user
 

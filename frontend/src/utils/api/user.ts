@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom';
 
 const API_BASE = `http://${process.env.NEXT_PUBLIC_HOST}:${process.env.NEXT_PUBLIC_GATEWAY_PORT}`;
 
@@ -26,7 +25,7 @@ export interface CreateUserResponse {
 
 export interface UserOut {
   created_at: string | number | Date;
-  email: any;
+  email: string | null;
   sub: string;
   username: string;
   role: string | string[];
@@ -39,6 +38,9 @@ export interface UserOut {
 export interface UserUpdate {
   username?: string;
   password?: string;
+}
+
+export interface UserStatus{
   status?: string;
 }
 
@@ -111,24 +113,26 @@ export async function createAgentUser(data: UserCreate): Promise<CreateUserRespo
 /**
  * 3. Get current logged-in user
  */
-export async function getCurrentUser(token: string): Promise<UserOut> {
-  try {
-    const res = await fetch(`${API_BASE}/api/user/me`, {
-      headers: { ...getAuthHeaders() },
-    });
-    
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.detail || res.statusText);
-    }
-    
-    return (await res.json()) as UserOut;
-  } catch (error) {
-   const navigate = useNavigate(); // Moving useNavigate inside the function
-    navigate('/');
-    localStorage.removeItem('authToken');
-    throw error;
+export async function getCurrentUser(): Promise<UserOut> {
+  const token = getToken(); // gets it from localStorage
+
+  if (!token) {
+    throw new Error('No token found');
   }
+
+  const res = await fetch(`${API_BASE}/api/user/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || res.statusText);
+  }
+
+  return await res.json() as UserOut;
 }
 
 
@@ -136,12 +140,13 @@ export async function getCurrentUser(token: string): Promise<UserOut> {
  * 4. Update a user account
  */
 export async function updateUserAccount(
-userId: string, data: UserUpdate, token: string): Promise<UserOut> { // Removed token parameter
+  userId: string, data: UserUpdate
+): Promise<UserOut> {
   const res = await fetch(`${API_BASE}/api/user/update/${userId}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      ...getAuthHeaders(), // Used getAuthHeaders
+      ...getAuthHeaders(),
     },
     body: JSON.stringify(data),
   });
@@ -151,6 +156,7 @@ userId: string, data: UserUpdate, token: string): Promise<UserOut> { // Removed 
   }
   return (await res.json()) as UserOut;
 }
+
 
 /**
  * 5. Store access token in localStorage
@@ -206,4 +212,25 @@ export async function getAgentUsers(): Promise<UserOut[]> { // Removed token par
     throw new Error(err.detail || res.statusText);
   }
   return (await res.json()) as UserOut[];
+}
+
+/**
+ * 10. Update a user account
+ */
+export async function updateUserStatus(
+  userId: string, data: UserStatus
+): Promise<UserOut> {
+  const res = await fetch(`${API_BASE}/api/user/update-status/${userId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || res.statusText);
+  }
+  return (await res.json()) as UserOut;
 }

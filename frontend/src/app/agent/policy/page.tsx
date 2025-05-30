@@ -1,19 +1,24 @@
-"use client";
-import React, { useState, useEffect } from 'react';
+'use client';
+
+import React, { useEffect, useState, useRef } from 'react';
 import Sidebar from '@/components/agent/sidebar';
 import AvatarMenu from '@/components/common/avatar';
-import { getPolicy, listPolicyDetails, Policy } from '@/utils/api/policy';
-import { ScrollText, ChevronUp, ChevronDown, AlertTriangle, RefreshCw } from 'lucide-react';
-
-interface PolicyDetail {
-  policy_detail_id: number;
-  customer_id: number;
-  policy_id: number;
-  period_sum_insured: number;
-  cps_zone: string;
-  product_type: number;
-  period: number;
-}
+import { getCurrentUser } from '@/utils/api/user';
+import { listPoliciesbyUser, Policy } from '@/utils/api/policy';
+import { getEnrollment, EnrollmentResponse } from '@/utils/api/enrollment';
+import {
+  ScrollText,
+  ChevronUp,
+  ChevronDown,
+  AlertTriangle,
+  RefreshCw,
+  User,
+  Download,
+  FileText,
+  Shield
+} from 'lucide-react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 interface PolicyDetailViewProps {
   params: {
@@ -21,39 +26,42 @@ interface PolicyDetailViewProps {
   };
 }
 
+interface EnhancedPolicy extends Policy {
+  enrollment?: EnrollmentResponse;
+}
+
 export default function PolicyDetailView({ params }: PolicyDetailViewProps) {
-  const [policies, setPolicies] = useState<Record<number, Policy>>({});
-  const [groupedDetails, setGroupedDetails] = useState<Record<number, PolicyDetail[]>>({});
+  const [policies, setPolicies] = useState<EnhancedPolicy[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expandedPolicies, setExpandedPolicies] = useState<Record<number, boolean>>({});
+  const policyRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const [currentlyExporting, setCurrentlyExporting] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchPolicyData = async () => {
       try {
-        const detailsRes = (await listPolicyDetails()) as PolicyDetail[];
-        
-        const detailsByPolicyId = detailsRes.reduce((acc: Record<number, PolicyDetail[]>, detail) => {
-          if (!acc[detail.policy_id]) {
-            acc[detail.policy_id] = [];
-          }
-          acc[detail.policy_id].push(detail);
-          return acc;
-        }, {});
+        const user = await getCurrentUser();
+        const data = await listPoliciesbyUser(Number(user.sub));
 
-        const policyIds = Object.keys(detailsByPolicyId).map(Number);
-        const policyPromises = policyIds.map((policyId) => getPolicy(policyId));
-        const policyResponses = await Promise.all(policyPromises);
+        const enhancedPolicies = await Promise.all(
+          data.map(async (policy) => {
+            if (policy.enrollment_id) {
+              try {
+                const enrollment = await getEnrollment(policy.enrollment_id);
+                return { ...policy, enrollment };
+              } catch (err) {
+                console.error(`Failed to fetch enrollment for policy ${policy.policy_id}:`, err);
+                return policy;
+              }
+            }
+            return policy;
+          })
+        );
 
-        const policyMap = policyResponses.reduce((acc: Record<number, Policy>, policy) => {
-          acc[policy.policy_id] = policy;
-          return acc;
-        }, {});
-
-        setPolicies(policyMap);
-        setGroupedDetails(detailsByPolicyId);
+        setPolicies(enhancedPolicies);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch policy details');
+        setError(err instanceof Error ? err.message : 'Failed to fetch policies');
       } finally {
         setLoading(false);
       }
@@ -67,6 +75,67 @@ export default function PolicyDetailView({ params }: PolicyDetailViewProps) {
       ...prev,
       [policyId]: !prev[policyId],
     }));
+  };
+
+  const handleExportPDF = async (policyId: number) => {
+    setCurrentlyExporting(policyId);
+
+    if (!expandedPolicies[policyId]) {
+      setExpandedPolicies(prev => ({ ...prev, [policyId]: true }));
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+
+    try {
+      const policyElement = policyRefs.current[policyId];
+      if (!policyElement) return;
+
+      const clone = policyElement.cloneNode(true) as HTMLDivElement;
+      clone.style.position = 'absolute';
+      clone.style.left = '-9999px';
+      clone.style.width = '800px';
+      document.body.appendChild(clone);
+
+      const detailsSection = clone.querySelector('[data-policy-details]');
+      if (detailsSection) {
+        detailsSection.classList.remove('hidden');
+      }
+
+      const canvas = await html2canvas(clone, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+      });
+
+      document.body.removeChild(clone);
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = 210;
+      const pdfHeight = 297;
+      const imgWidth = pdfWidth;
+      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+
+      pdf.save(`policy-${policyId}-details.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    } finally {
+      setCurrentlyExporting(null);
+    }
   };
 
   if (loading) {
@@ -110,7 +179,7 @@ export default function PolicyDetailView({ params }: PolicyDetailViewProps) {
         <div className="flex justify-between items-start mb-8">
           <div>
             <h1 className="text-3xl font-bold text-[#3a584e] flex items-center gap-3">
-              <ScrollText className="w-8 h-8 text-[#8ba77f]" />
+              <Shield className="w-8 h-8 text-[#8ba77f]" />
               Policy Portfolio
               <span className="ml-4 text-sm font-normal bg-[#eef4e5] px-3 py-1 rounded-full">
                 Risk Coverage Details
@@ -124,109 +193,184 @@ export default function PolicyDetailView({ params }: PolicyDetailViewProps) {
         </div>
 
         <div className="space-y-6">
-          {Object.keys(groupedDetails).length === 0 && (
-            <div className="bg-white p-8 rounded-xl border border-[#e0e7d4] text-center text-[#7a938f]">
+          {policies.length === 0 ? (
+            <div className="bg-[#f9f8f3] p-8 rounded-xl border border-[#e0e7d4] text-center text-[#7a938f]">
               No active policies found
             </div>
-          )}
+          ) : (
+            policies.map((policy) => {
+              const isExpanded = !!expandedPolicies[policy.policy_id];
+              const isExporting = currentlyExporting === policy.policy_id;
 
-          {Object.entries(groupedDetails).map(([policyIdStr, details]) => {
-            const policyId = Number(policyIdStr);
-            const policy = policies[policyId];
-            const isExpanded = !!expandedPolicies[policyId];
-
-            if (!policy) return null;
-
-            return (
-              <div
-                key={policyId}
-                className="bg-white rounded-xl border border-[#e0e7d4] shadow-sm overflow-hidden"
-              >
-                <div className="p-6">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-4">
-                    <div>
-                      <p className="text-sm font-medium text-[#7a938f]">Policy Number</p>
-                      <p className="mt-1 font-medium text-[#3a584e]">{policy.policy_no || '—'}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-[#7a938f]">Fiscal Year</p>
-                      <p className="mt-1 text-[#3a584e]">{policy.fiscal_year || '—'}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-[#7a938f]">Status</p>
-                      <span className={`mt-1 inline-block px-2 py-1 text-xs rounded-full ${
-                        policy.status?.toLowerCase() === 'active'
-                          ? 'bg-[#eef4e5] text-[#3a584e]'
-                          : 'bg-[#fff3e5] text-[#d46a1a]'
-                      }`}>
-                        {policy.status || '—'}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-[#7a938f]">Initiated</p>
-                      <p className="mt-1 text-[#3a584e]">
-                        {policy.createdAt
-                          ? new Date(policy.createdAt).toLocaleDateString()
-                          : '—'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => toggleExpand(policyId)}
-                    className="flex items-center text-sm font-medium text-[#8ba77f] hover:text-[#7a937f]"
-                  >
-                    {isExpanded ? (
-                      <>
-                        <span>Collapse Details</span>
-                        <ChevronUp className="w-4 h-4 ml-1" />
-                      </>
-                    ) : (
-                      <>
-                        <span>Expand Coverage</span>
-                        <ChevronDown className="w-4 h-4 ml-1" />
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {isExpanded && (
-                  <div className="bg-[#f9f8f3] p-6 border-t border-[#e0e7d4]">
-                    <h3 className="text-sm font-medium text-[#7a938f] mb-4">Coverage Breakdown</h3>
-                    <div className="space-y-4">
-                      {details.map((detail) => (
-                        <div
-                          key={detail.policy_detail_id}
-                          className="bg-white p-4 rounded-lg border border-[#e0e7d4]"
-                        >
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div>
-                              <p className="text-sm font-medium text-[#7a938f]">Sum Insured</p>
-                              <p className="mt-1 text-[#3a584e]">
-                                ${detail.period_sum_insured?.toLocaleString() || '—'}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-[#7a938f]">CPS Zone</p>
-                              <p className="mt-1 text-[#3a584e]">{detail.cps_zone || '—'}</p>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-[#7a938f]">Product Type</p>
-                              <p className="mt-1 text-[#3a584e]">{detail.product_type || '—'}</p>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-[#7a938f]">Period (Days)</p>
-                              <p className="mt-1 text-[#3a584e]">{detail.period || '—'}</p>
-                            </div>
+              return (
+                <div
+                  key={policy.policy_id}
+                  className="bg-white rounded-xl border border-[#e0e7d4] shadow-sm overflow-hidden"
+                  ref={(el) => { policyRefs.current[policy.policy_id] = el; }}
+                >
+                  <div className="p-6">
+                    {policy.enrollment?.customer && (
+                      <div className="mb-6 bg-[#f5f9f8] p-4 rounded-lg border border-[#e0e7d4]">
+                        <div className="flex justify-between items-center mb-3">
+                          <h3 className="text-sm font-medium text-[#7a938f] flex items-center gap-2">
+                            <User className="w-4 h-4" />
+                            Customer Information
+                          </h3>
+                          <button
+                            onClick={() => handleExportPDF(policy.policy_id)}
+                            className="border border-[#8ba77f] text-[#3a584e] hover:bg-[#eef4e5] flex items-center gap-2 px-3 py-1 rounded-md text-sm transition-colors duration-200"
+                            disabled={isExporting}
+                          >
+                            {isExporting ? (
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Download className="w-4 h-4" />
+                                Export Policy
+                              </>
+                            )}
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                          <div>
+                            <p className="text-xs font-medium text-[#7a938f]">Name</p>
+                            <p className="mt-1 text-[#3a584e]">
+                              {[
+                                policy.enrollment.customer.f_name,
+                                policy.enrollment.customer.m_name,
+                                policy.enrollment.customer.l_name
+                              ].filter(Boolean).join(' ')}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-[#7a938f]">Account No.</p>
+                            <p className="mt-1 text-[#3a584e]">
+                              {policy.enrollment.customer.account_no || '—'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-[#7a938f]">Account Type</p>
+                            <p className="mt-1 text-[#3a584e]">
+                              {policy.enrollment.customer.account_type || '—'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-[#7a938f]">Premium</p>
+                            <p className="mt-1 text-[#3a584e]">
+                              {policy.enrollment.premium 
+                                ? `$${policy.enrollment.premium.toLocaleString('en-US', { minimumFractionDigits: 2 })}` 
+                                : '—'}
+                            </p>
                           </div>
                         </div>
-                      ))}
+                      </div>
+                    )}
+
+                    <h3 className="text-lg font-semibold text-[#3a584e] mb-4 flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-[#8ba77f]" />
+                      Policy Information
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                      <div>
+                        <p className="text-xs font-medium text-[#7a938f]">Policy Number</p>
+                        <p className="mt-1 text-[#3a584e] font-medium">
+                          {policy.policy_no || '—'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-[#7a938f]">Fiscal Year</p>
+                        <p className="mt-1 text-[#3a584e]">{policy.fiscal_year || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-[#7a938f]">Status</p>
+                        <span className={`mt-1 inline-block px-2 py-1 text-xs rounded-full ${
+                          policy.status?.toLowerCase() === 'active'
+                            ? 'bg-[#e6f3d6] text-[#3a7d0a]'
+                            : 'bg-[#fff3e5] text-[#d46a1a]'
+                        }`}>
+                          {policy.status || '—'}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-[#7a938f]">Initiated</p>
+                        <p className="mt-1 text-[#3a584e]">
+                          {policy.createdAt
+                            ? new Date(policy.createdAt).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                              })
+                            : '—'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center mt-6">
+                      <h3 className="text-sm font-medium text-[#7a938f] flex items-center gap-2">
+                        <ScrollText className="w-4 h-4" />
+                        Coverage Details
+                      </h3>
+                      <button
+                        onClick={() => toggleExpand(policy.policy_id)}
+                        className="flex items-center text-sm font-medium text-[#8ba77f] hover:text-[#7a937f] px-3 py-1 rounded-lg hover:bg-[#f0f5ed]"
+                      >
+                        {isExpanded ? (
+                          <>
+                            <span>Collapse</span>
+                            <ChevronUp className="w-4 h-4 ml-1" />
+                          </>
+                        ) : (
+                          <>
+                            <span>Expand</span>
+                            <ChevronDown className="w-4 h-4 ml-1" />
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
-                )}
-              </div>
-            );
-          })}
+
+                  <div
+                    className={`bg-[#f5f9f8] border-t border-[#e0e7d4] ${isExpanded ? 'block' : 'hidden'}`}
+                    data-policy-details
+                  >
+                    <div className="p-6">
+                      <h3 className="text-sm font-medium text-[#7a938f] mb-4">Coverage Breakdown</h3>
+                      <div className="space-y-4">
+                        {policy.details?.map((detail: any) => (
+                          <div 
+                            key={detail.policy_detail_id}
+                            className="bg-white p-4 rounded-lg border border-[#e0e7d4]"
+                          >
+                            <ul className="space-y-3">
+                              <li className="flex justify-between">
+                                <span className="text-sm font-medium text-[#7a938f]">Sum Insured</span>
+                                <span className="text-[#3a584e]">
+                                  ${detail.period_sum_insured?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || '—'}
+                                </span>
+                              </li>
+                              <li className="flex justify-between">
+                                <span className="text-sm font-medium text-[#7a938f]">CPS Zone</span>
+                                <span className="text-[#3a584e]">{detail.cps_zone || '—'}</span>
+                              </li>
+                              <li className="flex justify-between">
+                                <span className="text-sm font-medium text-[#7a938f]">Product Type</span>
+                                <span className="text-[#3a584e]">{detail.product_type || '—'}</span>
+                              </li>
+                              <li className="flex justify-between">
+                                <span className="text-sm font-medium text-[#7a938f]">Period (Days)</span>
+                                <span className="text-[#3a584e]">{detail.period || '—'}</span>
+                              </li>
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </main>
     </div>

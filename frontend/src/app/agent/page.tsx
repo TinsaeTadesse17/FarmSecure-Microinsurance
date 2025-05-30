@@ -9,7 +9,8 @@ import { jwtDecode } from 'jwt-decode';
 import EnrollmentList from '@/components/agent/enrollmentList';
 import { UserPlus, AlertTriangle, CheckCircle2, ListChecks, RefreshCw } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { getProducts } from '@/utils/api/product';
+import { getProductsbyCompany } from '@/utils/api/product';
+import { getCurrentUser } from '@/utils/api/user';
 
 const MapPicker = dynamic(() => import('@/components/agent/mapPicker'), { ssr: false });
 
@@ -50,35 +51,44 @@ export default function CustomerEnrollmentPage() {
   const [companyId, setCompanyId] = useState<number | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [productsError, setProductsError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-
+  const fetchProducts = async () => {
+    setIsLoading(true);
+    setProductsError(null);
     try {
-      const decoded = jwtDecode<DecodedToken>(token);
-      setCompanyId(decoded.company_id?.[0] || 1);
-      setUserId(parseInt(decoded.sub));
-    } catch {
-      setErrorMessage('Invalid token or unable to extract user info');
-    }
-  }, []);
-
-  useEffect(() => {
-    async function fetchProducts() {
-      if (!companyId) return;
-
-      try {
-        const result = await getProducts(0, 100);
-        const filtered = result.filter((product: Product) => product.company_id === companyId);
-        setProducts(filtered);
-      } catch (error) {
-        console.error('Failed to load products', error);
+      const token = await getToken();
+      if (!token) {
+        setProductsError('No authentication token found. Please log in.');
+        setIsLoading(false);
+        return;
       }
-    }
 
-    fetchProducts();
-  }, [companyId]);
+      const user = await getCurrentUser();
+      const userId = Number(user.sub);
+      const companyId = user.company_id ? Number(user.company_id) : null;
+      setCompanyId(companyId);
+      setUserId(userId);
+    
+      const productsResult = await getProductsbyCompany(Number(user.company_id));
+      setProducts(Array.isArray(productsResult) ? productsResult : [productsResult]);
+      
+      // Set default product if available
+      if (productsResult.length > 0) {
+        setFormData(prev => ({ ...prev, productId: productsResult[0].id }));
+      }
+    } catch (err) {
+      console.error('Error fetching products:', err);
+      setProductsError('Failed to load products. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+useEffect(() => {
+  fetchProducts();
+}, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

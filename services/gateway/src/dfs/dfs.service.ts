@@ -25,7 +25,7 @@ export class DfsService {
     }
   }
 
-  async getEnrollmentById(enrollment_id: string) {
+  async getEnrollmentById(enrollment_id: number) {
     try {
       const response = await firstValueFrom(
         this.httpService.get(`${DFS_SERVICE_BASE_URL}/enrollments/${enrollment_id}`),
@@ -42,6 +42,43 @@ export class DfsService {
       );
     }
   }
+
+  async getEnrollmentByCompanyId(company_id: number) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(`${DFS_SERVICE_BASE_URL}/enrollments/by-company/${company_id}`),
+      );
+      return response.data;
+    } catch (error: any) {
+      this.logger.error(`Error fetching enrollment ${company_id}`, error.stack);
+      if (error.response?.status === HttpStatus.NOT_FOUND) {
+        throw new HttpException('Enrollment not found', HttpStatus.NOT_FOUND);
+      }
+      throw new HttpException(
+        error.response?.data || 'Error fetching enrollment',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async getEnrollmentByUserId(user_id: number) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(`${DFS_SERVICE_BASE_URL}/enrollments/by-user/${user_id}`),
+      );
+      return response.data;
+    } catch (error: any) {
+      this.logger.error(`Error fetching enrollment ${user_id}`, error.stack);
+      if (error.response?.status === HttpStatus.NOT_FOUND) {
+        throw new HttpException('Enrollment not found', HttpStatus.NOT_FOUND);
+      }
+      throw new HttpException(
+        error.response?.data || 'Error fetching enrollment',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
 
   async getAllEnrollments() {
     try {

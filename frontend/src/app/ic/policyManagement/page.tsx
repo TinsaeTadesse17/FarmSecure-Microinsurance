@@ -5,9 +5,21 @@ import Sidebar from '@/components/ic/sidebar';
 import AvatarMenu from '@/components/common/avatar';
 import CreatePolicyDialog from '@/components/ic/policyDialog';
 import PolicyDetailModal from '@/components/ic/policyDetail';
-import { listPolicies, approvePolicy, rejectPolicy, Policy } from '@/utils/api/policy';
-import { Plus, RefreshCw, Search, AlertCircle, ClipboardList, Sprout } from 'lucide-react';
-import { getCurrentUser } from '@/utils/api/user'; // Assuming this fetches the current user details
+import {
+  listPoliciesbyCompany,
+  approvePolicy,
+  rejectPolicy,
+  Policy
+} from '@/utils/api/policy';
+import {
+  Plus,
+  RefreshCw,
+  Search,
+  AlertCircle,
+  ClipboardList,
+  Sprout
+} from 'lucide-react';
+import { getCurrentUser } from '@/utils/api/user';
 
 export default function PolicyManagement() {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -23,26 +35,30 @@ export default function PolicyManagement() {
   const [userCompanyId, setUserCompanyId] = useState<number | null>(null);
 
   useEffect(() => {
-    fetchPolicies();
-    fetchCurrentUser(); // Fetch current user to get their company_id
+    const initialize = async () => {
+      try {
+        const user = await getCurrentUser();
+        setUserCompanyId(user.company_id);
+        const data = await listPoliciesbyCompany(user.company_id);
+        setPolicies(data);
+      } catch (err: any) {
+        setError('Failed to load policies or user data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    initialize();
   }, []);
-
-  const fetchCurrentUser = async () => {
-    try {
-      const user = await getCurrentUser();
-      setUserCompanyId(user.company_id); // Store the user's company_id
-    } catch (err) {
-      setError('Failed to fetch user data');
-    }
-  };
 
   const fetchPolicies = async () => {
     try {
       setLoading(true);
-      const data = await listPolicies();
-      setPolicies(data);
+      if (userCompanyId !== null) {
+        const data = await listPoliciesbyCompany(userCompanyId);
+        setPolicies(data);
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to load policies');
+      setError(err.message || 'Failed to refresh policies');
     } finally {
       setLoading(false);
     }
@@ -51,13 +67,11 @@ export default function PolicyManagement() {
   const handleUpdateStatus = async (policyId: number, newStatus: 'approved' | 'rejected') => {
     try {
       let updatedPolicy: Policy;
-
       if (newStatus === 'approved') {
         updatedPolicy = await approvePolicy(policyId);
       } else {
         updatedPolicy = await rejectPolicy(policyId);
       }
-
       setPolicies(policies.map(policy =>
         policy.policy_id === policyId ? updatedPolicy : policy
       ));
@@ -66,16 +80,13 @@ export default function PolicyManagement() {
     }
   };
 
-  // Filter policies to only show those that belong to the user's company_id
   const filteredPolicies = policies.filter(policy => {
-    const searchTermLower = searchTerm.toLowerCase();
-    const isPolicyBelongsToUserCompany = policy.ic_company_id === userCompanyId;
-    const isSearchMatch =
-      policy.policy_id.toString().toLowerCase().includes(searchTermLower) ||
-      (policy.policy_no && policy.policy_no.toLowerCase().includes(searchTermLower)) ||
-      policy.enrollment_id.toString().toLowerCase().includes(searchTermLower);
-    
-    return isPolicyBelongsToUserCompany && isSearchMatch;
+    const term = searchTerm.toLowerCase();
+    return (
+      policy.policy_id.toString().includes(term) ||
+      (typeof policy.policy_no === 'string' && policy.policy_no.toLowerCase().includes(term)) ||
+      policy.enrollment_id.toString().includes(term)
+    );
   });
 
   const getStatusColor = (status: string) => {
@@ -105,7 +116,7 @@ export default function PolicyManagement() {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={fetchPolicies}
               disabled={loading}
               className="p-2 rounded-lg hover:bg-[#eef4e5] transition-colors text-[#3a584e]"
@@ -131,7 +142,7 @@ export default function PolicyManagement() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            
+
             <button
               onClick={() => setDialogOpen(true)}
               className="flex items-center gap-2 px-5 py-2.5 bg-[#8ba77f] text-white rounded-lg hover:bg-[#7a937f] transition-colors shadow-sm text-sm font-medium"
@@ -264,12 +275,8 @@ export default function PolicyManagement() {
         )}
 
         {dialogOpen && <CreatePolicyDialog onClose={() => setDialogOpen(false)} />}
-
         {typeof selectedPolicyId === 'number' && (
-          <PolicyDetailModal
-            policyId={selectedPolicyId}
-            onClose={() => setSelectedPolicyId(null)}
-          />
+          <PolicyDetailModal policyId={selectedPolicyId} onClose={() => setSelectedPolicyId(null)} />
         )}
       </main>
     </div>

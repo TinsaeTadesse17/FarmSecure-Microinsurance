@@ -106,6 +106,51 @@ export class PoliciesService {
     }
   }
 
+  async getAllPoliciesByCompany(company_id: number) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(`${POLICY_SERVICE_BASE_URL}/policies/by-company/${company_id}`),
+      );
+      return response.data;
+    } catch (error: any) {
+      this.logger.error('Error fetching all policies by company id', error.stack);
+      throw new HttpException(
+        error.response?.data || 'Error fetching all policies by company id',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async getAllPoliciesByUser(user_id: number) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(`${POLICY_SERVICE_BASE_URL}/policies/by-user/${user_id}`),
+      );
+      return response.data;
+    } catch (error: any) {
+      this.logger.error('Error fetching all policies by user id', error.stack);
+      throw new HttpException(
+        error.response?.data || 'Error fetching all policies by user id',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async getAllPoliciesByEnrollment(enrollment_id: number) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(`${POLICY_SERVICE_BASE_URL}/policy/by-enrollment/${enrollment_id}`),
+      );
+      return response.data;
+    } catch (error: any) {
+      this.logger.error('Error fetching all policies by enrollment id', error.stack);
+      throw new HttpException(
+        error.response?.data || 'Error fetching all policies by enrollment id',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   async getAllPolicyDetails() {
     try {
       const response = await firstValueFrom(

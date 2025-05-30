@@ -87,6 +87,16 @@ def get_policy(db: Session, policy_id: int) -> Policy:
     return policy
 
 
+def get_policies_by_company(db: Session, company_id: int):
+    return db.query(Policy).filter(Policy.ic_company_id == company_id).all()
+
+def get_policies_by_user(db: Session, user_id: int):
+    return db.query(Policy).filter(Policy.user_id == user_id).all()
+
+def get_policy_by_enrollment(db: Session, enrollment_id: int):
+    return db.query(Policy).filter(Policy.enrollment_id == enrollment_id).first()
+
+
 def list_policies(db: Session):
     return db.query(Policy).all()
 

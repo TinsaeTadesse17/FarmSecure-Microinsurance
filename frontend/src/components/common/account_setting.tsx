@@ -18,15 +18,13 @@ export default function AccountSettingsDialog({ onClose }: { onClose: () => void
     const token = getToken();
     if (!token) return;
 
-    getCurrentUser(token)
+    getCurrentUser()
       .then((user) => {
         setUsername(user.username);
         setUserId(user.sub);
-        console.log("✅ Loaded user:", user);
       })
       .catch(() => {
         setError('Failed to fetch current user');
-        console.warn("❌ Failed to fetch current user");
       });
   }, []);
 
@@ -40,33 +38,14 @@ export default function AccountSettingsDialog({ onClose }: { onClose: () => void
   };
 
   const confirmUpdate = async () => {
-    console.log("🟢 Confirm button clicked");
-
-    if (!userId) {
-      console.warn("⚠️ userId is null. Cannot send update.");
-      return;
-    }
-
-    const token = getToken();
-    if (!token) {
-      console.warn("⚠️ Token not found. User may not be authenticated.");
-      return;
-    }
-
-    console.log("🔧 Preparing to update account with:");
-    console.log("➡️ userId:", userId);
-    console.log("➡️ username:", username);
-    console.log("➡️ password:", password ? '[HIDDEN]' : '(no password)');
-    console.log("➡️ token:", token.slice(0, 10) + '...');
+    if (!userId || !getToken()) return;
 
     setLoading(true);
     setError('');
     setSuccess(false);
 
     try {
-      const response = await updateUserAccount(userId, { username, password }, token);
-      console.log("✅ Update successful:", response);
-
+      await updateUserAccount(userId, { username, password });
       setSuccess(true);
       setPassword('');
       setConfirmPassword('');
@@ -76,11 +55,9 @@ export default function AccountSettingsDialog({ onClose }: { onClose: () => void
         onClose();
       }, 1500);
     } catch (err) {
-      console.error("❌ Error updating account:", err);
       setError((err as Error).message);
     } finally {
       setLoading(false);
-      console.log("⏹️ Finished update request");
     }
   };
 

@@ -15,6 +15,16 @@ export interface Product {
   commission_rate: number;
   created_at: string;
   company_id: number;
+  fiscal_year: number;
+  cps_zone_id?: number; // Optional, can be null
+  elc: number;
+  premium?: number; // Optional, can be null
+  premium_rate?: number; // Optional, can be null
+  commission?: number; // Optional, can be null
+  load?: number; // Optional, can be null
+  discount?: number; // Optional, can be null
+  trigger?: number; // Optional, can be null
+  exit?: number; // Optional, can be null
 }
 
 export interface ProductCreate {
@@ -33,6 +43,13 @@ export interface ProductUpdate {
 
 export interface PremiumCalculation {
   premium: number;
+  premium_rate: number;
+  commission: number;
+  elc: number;
+  load: number;
+  discount: number;
+  trigger: number;
+  exit: number;
 }
 
 // Get all products
@@ -52,6 +69,16 @@ export async function getProduct(productId: number): Promise<Product> {
   if (!res.ok) throw new Error('Product not found');
   return await res.json();
 }
+
+// get products by company id
+export async function getProductsbyCompany(company_id: number): Promise<Product[]> {
+  const res = await fetch(`${API_BASE}/by-company/${company_id}`, {
+    headers: { ...getAuthHeaders() },
+  });
+  if (!res.ok) throw new Error('Product not found');
+  return await res.json();
+}
+
 
 // Create a new product
 export async function createProduct(data: ProductCreate): Promise<Product> {
@@ -88,6 +115,9 @@ export async function calculatePremium(
     method: 'POST',
     headers: { ...getAuthHeaders() },
   });
-  if (!res.ok) throw new Error('Failed to calculate premium');
+  if (!res.ok) {
+  const error = await res.json();
+  throw new Error(error.detail || 'Failed to calculate premium');
+}
   return await res.json();
 }

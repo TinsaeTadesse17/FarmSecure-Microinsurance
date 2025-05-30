@@ -27,6 +27,8 @@ services:
     container_name: company_service
     env_file:
       - .env
+    ports:
+      - "8041:8000"
     depends_on:
       company_db:
         condition: service_started
@@ -78,6 +80,8 @@ services:
     container_name: product_service
     env_file:
       - .env
+    ports:
+      - "8005:8000" # Expose the port defined in the Dockerfile
     depends_on:
       product_db:
         condition: service_healthy
@@ -126,6 +130,8 @@ services:
     container_name: user_service
     env_file:
       - .env
+    ports:
+      - 5000:8000
     depends_on:
       user_db:
         condition: service_healthy
@@ -166,6 +172,8 @@ services:
     container_name: policy_service
     env_file:
       - .env
+    ports:
+      - "8006:8000" # Expose the port defined in the Dockerfile
     depends_on:
       policy_db:
         condition: service_started
@@ -248,6 +256,8 @@ services:
     container_name: dfs_service
     env_file:
       - .env
+    ports:
+      - "8007:8000" # Expose the port defined in the Dockerfile
     depends_on:
       dfs_db:
         condition: service_started
@@ -385,6 +395,8 @@ services:
     restart: always
     env_file:
       - .env
+    ports:
+      - "8010:80" # Expose the port defined in the Dockerfile
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}

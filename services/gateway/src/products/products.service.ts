@@ -38,6 +38,20 @@ export class ProductsService {
     }
   }
 
+  async findAllByCompanyId(company_id: number) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(`${PRODUCT_SERVICE_BASE_URL}/products/by-company/${company_id}`),
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new HttpException(
+        error.response?.data || 'Product not found',
+        error.response?.status || HttpStatus.NOT_FOUND,
+      );
+    }
+  }
+
   async create(productCreateDto: any) {
     try {
       const response = await firstValueFrom(
