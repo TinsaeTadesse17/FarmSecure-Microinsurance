@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Backgro
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional # Added Optional
-
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from src.database import models, db
 from src.schemas import ndvi as ndvi_schemas
 from src.schemas import file as file_schemas
@@ -78,106 +78,146 @@ def validate_ndvi_data(df: pd.DataFrame):
              raise HTTPException(status_code=400, detail=f"Data in period column '{col_name}' must be numeric NDVI values. Found non-numeric entries.")
 
 async def background_process_ndvi_file(
-    db_session: Session, 
-    file_content: bytes, 
-    original_filename: str, 
-    temp_file_path: str, # Path to the temporary file
+    db_session: Session,
+    file_content: bytes,
+    original_filename: str,
+    temp_file_path: str,  # Path to the temporary file
     job_id: str
 ):
-    job_statuses[job_id].status = "processing"
+    job_statuses[job_id].status     = "processing"
     job_statuses[job_id].updated_at = datetime.datetime.utcnow()
     saved_filename = ""
     final_file_path = ""
 
     try:
+        # 1. Read CSV / Excel
         if original_filename.endswith('.csv'):
             df = pd.read_csv(io.BytesIO(file_content))
-        elif original_filename.endswith(('.xls', '.xlsx')):
+        elif original_filename.endswith(('.xls','xlsx')):
             df = pd.read_excel(io.BytesIO(file_content))
         else:
             raise ValueError(f"Unsupported file type: {original_filename}")
 
-        validate_ndvi_data(df) # Full validation on complete data (now expects wide format)
+        # 2. Full validation (wide‐format)
+        validate_ndvi_data(df)
 
-        # Create timestamped filename for final storage
+        # 3. Compute a timestamped “saved_filename” and move the temp file into place
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         base, ext = os.path.splitext(original_filename)
-        saved_filename = f"grid_ndvi_{base.replace(' ', '_')}_{timestamp}{ext}"
-        final_file_path = os.path.join(NDVI_FILES_DIR, saved_filename)
-
-        # Move file from temp to final location after validation
+        saved_filename   = f"grid_ndvi_{base.replace(' ', '_')}_{timestamp}{ext}"
+        final_file_path  = os.path.join(NDVI_FILES_DIR, saved_filename)
         shutil.move(temp_file_path, final_file_path)
 
-        grid_column_name = df.columns[9]
-        period_data_columns = df.columns[11:47] # Columns for period 1 through 36
+        # 4. Identify the columns
+        grid_column_name    = df.columns[9]
+        period_data_columns = df.columns[11:47]  # columns for period 1..36
 
-        for _, row_data in df.iterrows(): # Iterate over each row in the DataFrame
-            grid_val = int(row_data[grid_column_name]) # Already validated and converted to int
+        # ── BEGIN: “MELT → GROUPBY → MEAN” LOGIC ──
 
-            for period_val, current_period_column in enumerate(period_data_columns, start=1): # For periods 1 to 36
-                cell_value = row_data[current_period_column]
+        # a) Build a long list of (grid, period, ndvi) only for non‐NaN cells
+        long_records = []
+        for _, row in df.iterrows():
+            grid_val = int(row[grid_column_name])
 
-                if pd.isna(cell_value):
-                    logger.warning(f"Grid {grid_val}: missing NDVI for period {period_val} "
-                       f"(column '{current_period_column}')")
-                    ndvi_val = None
-                
+            for period_idx, col_name in enumerate(period_data_columns, start=1):
+                raw_val = row[col_name]
+                if pd.isna(raw_val):
+                    continue
                 try:
-                    ndvi_val = float(cell_value) # Already validated as numeric by validate_ndvi_data
+                    ndvi_val = float(raw_val)
                 except ValueError:
-                    # This should ideally not happen if validate_ndvi_data converted columns to numeric
-                    # But as a safeguard for unexpected non-floatable numerics (e.g. complex numbers if somehow present)
-                    raise HTTPException(status_code=400, detail=f"Invalid NDVI value '{cell_value}' in column '{current_period_column}' for grid {grid_val}, period {period_val}. Must be a convertible number.")
+                    raise HTTPException(
+                        status_code=400,
+                        detail=(
+                            f"Invalid NDVI value '{raw_val}' in column '{col_name}' "
+                            f"for grid {grid_val}, period {period_idx}. Must be numeric."
+                        )
+                    )
+                long_records.append({
+                    "grid":   grid_val,
+                    "period": period_idx,
+                    "ndvi":   ndvi_val
+                })
 
-                # Optional: Add specific NDVI range validation here, e.g., -1 to 1
-                # if not (-1 <= ndvi_val <= 1):
-                #     raise HTTPException(status_code=400, detail=f"NDVI value {ndvi_val} for grid {grid_val}, period {period_val} is out of range (-1 to 1).")
+        if not long_records:
+            # If everything was NaN, produce an empty DataFrame with the right columns
+            aggregated_df = pd.DataFrame(columns=["grid", "period", "ndvi"])
+        else:
+            long_df = pd.DataFrame(long_records)
 
-                db_ndvi_instance = db_session.query(models.NDVI).filter_by(grid=grid_val, period=period_val).first()
-            
-                if db_ndvi_instance:
-                    db_ndvi_instance.ndvi = ndvi_val 
-                    # 'updated_at' is automatically handled by the model's onupdate
-                else:
-                    # Create new NDVI record, including period
-                    new_ndvi_instance = models.NDVI(grid=grid_val, period=period_val, ndvi=ndvi_val)
-                    db_session.add(new_ndvi_instance)
-        
+            # b) Group by (grid, period) and take the mean of NDVI
+            aggregated_df = (
+                long_df
+                .groupby(["grid","period"], as_index=False)
+                .agg(ndvi=("ndvi","mean"))
+            )
+            # Now each (grid, period) appears exactly once, with NDVI = mean of duplicates.
+
+        # c) Turn aggregated_df into a list of dict rows (for bulk upsert)
+        now  = datetime.datetime.utcnow()
+        rows = []
+        for _, r in aggregated_df.iterrows():
+            rows.append({
+                "grid":       int(r["grid"]),
+                "period":     int(r["period"]),
+                "ndvi":       float(r["ndvi"]),
+                "created_at": now,
+                "updated_at": now
+            })
+
+        # ── END: “MELT → GROUPBY → MEAN” LOGIC ──
+
+        # 5. Perform bulk upsert into ndvi table
+        stmt = pg_insert(models.NDVI).values(rows)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["grid","period"],
+            set_={
+                "ndvi":       stmt.excluded.ndvi,
+                "updated_at": stmt.excluded.updated_at
+            }
+        )
+        db_session.execute(stmt)
+
+        # 6. Save file metadata into UploadedFile table
         db_file_meta = models.UploadedFile(
-            filename=original_filename, 
-            saved_filename=saved_filename,
-            file_type="ndvi",
-            upload_type="ndvi_grid", # more specific type
-            file_path=final_file_path,
-            # uploaded_at is default in model
+            filename       = original_filename,
+            saved_filename = saved_filename,
+            file_type      = "ndvi",
+            upload_type    = "ndvi_grid",
+            file_path      = final_file_path,
+            # (uploaded_at will default automatically)
         )
         db_session.add(db_file_meta)
         db_session.commit()
 
-        job_statuses[job_id].status = "completed"
-        job_statuses[job_id].message = f"Successfully processed and saved NDVI data from {original_filename} as {saved_filename}"
+        # 7. Mark job as completed
+        job_statuses[job_id].status         = "completed"
+        job_statuses[job_id].message        = (
+            f"Successfully processed and saved NDVI data from {original_filename} as {saved_filename}"
+        )
         job_statuses[job_id].saved_filename = saved_filename
-        job_statuses[job_id].file_path = final_file_path
+        job_statuses[job_id].file_path      = final_file_path
         print(job_statuses[job_id].message)
 
     except Exception as e:
         db_session.rollback()
         error_message = f"Error processing NDVI file {original_filename} in background: {str(e)}"
-        job_statuses[job_id].status = "failed"
+        job_statuses[job_id].status        = "failed"
         job_statuses[job_id].error_details = error_message
-        job_statuses[job_id].message = "Processing failed."
+        job_statuses[job_id].message       = "Processing failed."
         print(error_message)
-        # Remove temp file if it still exists and final file was not created
+
+        # Clean up any leftover files
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
-        # If final file was somehow created before error, consider removing it too
         if final_file_path and os.path.exists(final_file_path):
             os.remove(final_file_path)
+
     finally:
         job_statuses[job_id].updated_at = datetime.datetime.utcnow()
         db_session.close()
 
-
+        
 @router.post("/upload", response_model=JobStatus, status_code=202)
 async def upload_ndvi_file(
     background_tasks: BackgroundTasks,
