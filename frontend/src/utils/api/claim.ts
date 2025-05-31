@@ -3,7 +3,7 @@ import { getToken, getCurrentUser } from './user';
  // Define this based on your schema if needed
 
 const getAuthHeaders = (): Record<string, string> => {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
