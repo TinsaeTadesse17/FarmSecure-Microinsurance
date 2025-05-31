@@ -171,7 +171,7 @@ export async function downloadNdviFile(filename: string): Promise<Blob> {
 // — Claim Calculation trigger —
 //
 export async function startClaimCalculation() {
-  const res = await fetch(`${CLAIM_BASE}/trigger`, {
+  const res = await fetch(`${CLAIM_BASE}/claims/trigger`, {
     method: 'POST',
     headers: getAuthHeaders()
   });
