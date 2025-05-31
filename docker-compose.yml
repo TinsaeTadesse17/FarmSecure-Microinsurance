@@ -8,8 +8,8 @@ services:
       POSTGRES_USER: ${COMPANY_DB_USER}
       POSTGRES_PASSWORD: ${COMPANY_DB_PASS}
       POSTGRES_DB: ${COMPANY_DB_NAME}
-    # volumes:
-      # - pgdata_company:/var/lib/postgresql/data
+    volumes:
+      - pgdata_company:/var/lib/postgresql/data
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${COMPANY_DB_USER} -d ${COMPANY_DB_NAME}"]
