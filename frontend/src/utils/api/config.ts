@@ -38,7 +38,9 @@ export async function getCpsZonePeriodConfig(
   period_value: number
 ) {
   const res = await fetch(`${BASE_URL}/cps-zone/${cps_zone_value}/${period_value}`, {
-    headers: getAuthHeaders()
+        headers: {
+      ...getAuthHeaders(),
+    }
   });
   if (!res.ok) throw new Error('Failed to fetch CPS zone period config');
   return res.json();
@@ -46,7 +48,9 @@ export async function getCpsZonePeriodConfig(
 
 export async function getAllPeriodsForCpsZone(cps_zone_value: number) {
   const res = await fetch(`${BASE_URL}/cps-zone/zone/${cps_zone_value}`, {
-    headers: getAuthHeaders()
+        headers: {
+      ...getAuthHeaders(),
+    }
   });
   if (!res.ok) throw new Error('Failed to fetch all periods for CPS zone');
   return res.json();
@@ -54,7 +58,9 @@ export async function getAllPeriodsForCpsZone(cps_zone_value: number) {
 
 export async function listCpsZoneFiles() {
   const res = await fetch(`${BASE_URL}/cps-zone/files`, {
-    headers: getAuthHeaders()
+        headers: {
+      ...getAuthHeaders(),
+    }
   });
   if (!res.ok) throw new Error('Failed to list CPS zone files');
   return res.json();
@@ -62,7 +68,9 @@ export async function listCpsZoneFiles() {
 
 export async function downloadCpsZoneFile(filename: string): Promise<Blob> {
   const res = await fetch(`${BASE_URL}/cps-zone/files/${encodeURIComponent(filename)}`, {
-    headers: getAuthHeaders()
+        headers: {
+      ...getAuthHeaders(),
+    }
   });
   if (!res.ok) throw new Error('Failed to download CPS zone file');
   return res.blob();
@@ -70,7 +78,9 @@ export async function downloadCpsZoneFile(filename: string): Promise<Blob> {
 
 export async function getGrowingSeasonForGrid(grid_value: number) {
   const res = await fetch(`${BASE_URL}/cps-zone/growing_season/${grid_value}`, {
-    headers: getAuthHeaders()
+        headers: {
+      ...getAuthHeaders(),
+    }
   });
   if (!res.ok) throw new Error('Failed to fetch growing season for grid');
   return res.json() as Promise<number[]>;
@@ -82,7 +92,9 @@ export async function checkPeriodInGrowingSeason(
 ) {
   const res = await fetch(
     `${BASE_URL}/cps-zone/growing_season/${grid_value}/${period}`,
-    { headers: getAuthHeaders() }
+    {     headers: {
+      ...getAuthHeaders(),
+    } }
   );
   if (!res.ok) throw new Error('Failed to check period in growing season');
   return res.json(); // { growing_season: boolean }
@@ -117,7 +129,9 @@ export async function uploadNdviFile(file: File): Promise<JobStatus> {
 
 export async function getNdviJobStatus(job_id: string): Promise<JobStatus> {
   const res = await fetch(`${BASE_URL}/ndvi/upload/status/${job_id}`, {
-    headers: getAuthHeaders()
+        headers: {
+      ...getAuthHeaders(),
+    }
   });
   if (!res.ok) throw new Error('Job status fetch failed');
   return res.json();
@@ -125,7 +139,9 @@ export async function getNdviJobStatus(job_id: string): Promise<JobStatus> {
 
 export async function getNdvi(grid_id: number, period_id: number) {
   const res = await fetch(`${BASE_URL}/ndvi/${grid_id}/${period_id}`, {
-    headers: getAuthHeaders()
+        headers: {
+      ...getAuthHeaders(),
+    }
   });
   if (!res.ok) throw new Error('Failed to fetch NDVI for grid & period');
   return res.json();
@@ -133,7 +149,9 @@ export async function getNdvi(grid_id: number, period_id: number) {
 
 export async function getNdviForGrid(grid_id: number) {
   const res = await fetch(`${BASE_URL}/ndvi/${grid_id}`, {
-    headers: getAuthHeaders()
+        headers: {
+      ...getAuthHeaders(),
+    }
   });
   if (!res.ok) throw new Error('Failed to fetch NDVI for grid');
   return res.json();
@@ -145,7 +163,9 @@ export async function getAllNdviData(
 ) {
   const params = new URLSearchParams({ skip: String(skip), limit: String(limit) });
   const res = await fetch(`${BASE_URL}/ndvi?${params.toString()}`, {
-    headers: getAuthHeaders()
+        headers: {
+      ...getAuthHeaders(),
+    }
   });
   if (!res.ok) throw new Error('Failed to fetch NDVI data');
   return res.json();
@@ -153,7 +173,9 @@ export async function getAllNdviData(
 
 export async function listNdviFiles() {
   const res = await fetch(`${BASE_URL}/ndvi/files`, {
-    headers: getAuthHeaders()
+        headers: {
+      ...getAuthHeaders(),
+    }
   });
   if (!res.ok) throw new Error('Failed to list NDVI files');
   return res.json();
@@ -161,7 +183,9 @@ export async function listNdviFiles() {
 
 export async function downloadNdviFile(filename: string): Promise<Blob> {
   const res = await fetch(`${BASE_URL}/ndvi/files/${encodeURIComponent(filename)}`, {
-    headers: getAuthHeaders()
+        headers: {
+      ...getAuthHeaders(),
+    }
   });
   if (!res.ok) throw new Error('Failed to download NDVI file');
   return res.blob();
@@ -173,7 +197,9 @@ export async function downloadNdviFile(filename: string): Promise<Blob> {
 export async function startClaimCalculation() {
   const res = await fetch(`${CLAIM_BASE}/claims/trigger`, {
     method: 'POST',
-    headers: getAuthHeaders()
+        headers: {
+      ...getAuthHeaders(),
+    }
   });
   if (!res.ok) {
     const err = await res.json();
