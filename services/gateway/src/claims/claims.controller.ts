@@ -69,7 +69,7 @@ export class ClaimsController {
   }
 
   @Roles(Role.Admin)
-  @Put('/:id/authorize')
+  @Put('/:claim_id/authorize')
   @ApiOperation({ summary: 'Authorize a claim' })
   @ApiResponse({ status: 200, description: 'Claim authorized' })
   @ApiResponse({ status: 404, description: 'Claim not found' })
