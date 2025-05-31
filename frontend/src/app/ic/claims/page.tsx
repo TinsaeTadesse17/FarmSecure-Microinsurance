@@ -64,7 +64,6 @@ export default function ClaimsPage() {
   const handleExportPDF = () => {
     const doc = new jsPDF();
     doc.text('Insurance Claims Report', 14, 16);
-    // create a 2D array of values
     const tableData = exportRows.map(r => [
       r.customerId,
       r.policyId,

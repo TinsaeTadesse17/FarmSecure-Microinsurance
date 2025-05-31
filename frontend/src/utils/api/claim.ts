@@ -4,50 +4,20 @@ import { getToken, getCurrentUser } from './user';
 
 const getAuthHeaders = (): Record<string, string> => {
   const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
-  return token ? { "Authorization": `Bearer ${token}` } : {};
+  return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-const BASE_URL = `http://${process.env.NEXT_PUBLIC_HOST}:${process.env.NEXT_PUBLIC_GATEWAY_PORT}/api/claims`;  
+// point at the v1/gateway “claim” controller
+const BASE_URL = `http://${process.env.NEXT_PUBLIC_HOST}:${process.env.NEXT_PUBLIC_GATEWAY_PORT}/api/v1/claim`;
 
-export interface NDVIData {
-  period: number;
-  ndvi_type: Record<string, number>; 
+export interface CustomerClaimsSummary {
+  customer_id: number;
+  claims: ClaimSummary[];
 }
-
-// 1. Fetch all claims
-export async function fetchAllClaims() {
-  const response = await axios.get(`${BASE_URL}/`, { headers: getAuthHeaders() });
-  return response.data;
-}
-
-// 2. Fetch a specific claim by ID
-export async function fetchClaimById(claimId: number) {
-  const response = await axios.get(`${BASE_URL}/${claimId}`, { headers: getAuthHeaders() });
-  return response.data;
-}
-
-// 3. Submit crop claim (NDVI-based)
-export async function submitCropClaim(ndviData: NDVIData) {
-  const response = await axios.post(`${BASE_URL}/crop`, ndviData, { headers: getAuthHeaders() });
-  return response.data;
-}
-
-// 4. Submit livestock claim (NDVI-based)
-export async function submitLivestockClaim(ndviData: NDVIData) {
-  const response = await axios.post(`${BASE_URL}/livestock`, ndviData, { headers: getAuthHeaders() });
-  return response.data;
-}
-
-// 5. Authorize a claim
-export async function authorizeClaim(claimId: number) {
-  const response = await axios.put(`${BASE_URL}/${claimId}/authorize`, {}, { headers: getAuthHeaders() }); // Added empty data object for PUT
-  return response.data;
-}
-// 6. Fetch claims grouped by customer
 export interface ClaimSummary {
   id: number;
   policy_id: number;
-  grid_id: string;
+  grid_id: number;
   claim_type: string;
   status: string;
   claim_amount: number;
@@ -56,33 +26,61 @@ export interface ClaimSummary {
   period: number;
 }
 
-export interface CustomerClaimsSummary {
-  customer_id: number;
-  claims: ClaimSummary[];
+// 1. Get all claims
+export async function fetchAllClaims() {
+  const res = await axios.get(`${BASE_URL}`, { headers: getAuthHeaders() });
+  return res.data;
 }
 
-export async function fetchClaimsByCustomer(): Promise<CustomerClaimsSummary[]> {
-  // const token = getToken(); // Replaced with getAuthHeaders
+// 2. Get a specific claim by ID
+export async function fetchClaimById(claim_id: number) {
+  const res = await axios.get(`${BASE_URL}/${claim_id}`, { headers: getAuthHeaders() });
+  return res.data;
+}
 
+// 3. Trigger crop claims for a given period
+export async function submitCropClaim(period: number) {
+  const res = await axios.post(
+    `${BASE_URL}/claims/crop?period=${period}`,
+    null, // no body expected
+    { headers: getAuthHeaders() }
+  );
+  return res.data;
+}
+
+// 4. Trigger livestock claims
+export async function submitLivestockClaim() {
+  const res = await axios.post(
+    `${BASE_URL}/claims/livestock`,
+    null,
+    { headers: getAuthHeaders() }
+  );
+  return res.data;
+}
+
+// 5. Authorize a claim
+export async function authorizeClaim(claim_id: number) {
+  const res = await axios.put(
+    `${BASE_URL}/${claim_id}/authorize`,
+    null,
+    { headers: getAuthHeaders() }
+  );
+  return res.data;
+}
+
+// 6. Fetch claims grouped by customer
+export async function fetchClaimsByCustomer(): Promise<CustomerClaimsSummary[]> {
   try {
-    const response = await axios.get<CustomerClaimsSummary[]>(
-      `${BASE_URL}/by-customer`,
-      {
-        headers: getAuthHeaders() // Use getAuthHeaders for consistency
-      }
+    const res = await axios.get<CustomerClaimsSummary[]>(
+      `${BASE_URL}/claims/by-customer`,
+      { headers: getAuthHeaders() }
     );
-    return response.data;
+    return res.data;
   } catch (err: any) {
     if (axios.isAxiosError(err)) {
-      if (err.response?.status === 401) {
-        throw new Error('Unauthorized');
-      }
-      if (err.response?.status === 404) {
-        // No claims found for this customer
-        return [];
-      }
-      const detail = err.response?.data?.detail;
-      throw new Error(detail || 'Failed to load claims');
+      if (err.response?.status === 401) throw new Error('Unauthorized');
+      if (err.response?.status === 404) return [];            // no claims for this user
+      throw new Error(err.response?.data?.detail || err.message);
     }
     throw new Error('Failed to load claims');
   }

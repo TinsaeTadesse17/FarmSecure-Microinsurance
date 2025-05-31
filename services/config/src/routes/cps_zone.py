@@ -47,9 +47,8 @@ def process_and_store_cps_data(
         if not (growing_seasons_df['grid'] >= 1).all():
             raise HTTPException(status_code=400, detail="'grid' values in growing season file must be 1 or greater.")
         if not ((growing_seasons_df['start'] >= 1) & (growing_seasons_df['start'] <= 36)).all() or \
-           not ((growing_seasons_df['end'] >= 1) & (growing_seasons_df['end'] <= 36)).all() or \
-           not (growing_seasons_df['start'] <= growing_seasons_df['end']).all(): # Check start <= end for all rows
-            raise HTTPException(status_code=400, detail="Invalid period(s) in growing season file. Start/End must be 1-36, and start_period <= end_period for all rows.")
+           not ((growing_seasons_df['end'] >= 1) & (growing_seasons_df['end'] <= 36)).all():
+            raise HTTPException(status_code=400, detail="Invalid period(s) in growing season file. Start/End must be 1-36")
 
         # Validate percentile files (trigger and exit points)
         for df, name in [(trigger_points_df, "Trigger points"), (exit_points_df, "Exit points")]:
@@ -228,8 +227,6 @@ async def upload_cps_zone_files(
                     if not all(col in df.columns for col in ['grid', 'start', 'end']):
                         raise HTTPException(status_code=400, detail="Growing season file is missing required columns: 'grid', 'start', 'end'.")
                 dataframes[key] = df
-            except HTTPException: # Re-raise specific HTTP exceptions from parsing
-                raise
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"Error parsing Excel file {current_filename_str}: {e}")
             finally:
@@ -280,22 +277,25 @@ async def upload_cps_zone_files(
 # New endpoint for growing season by grid
 @router.get("/growing_season/{grid_value}", response_model=List[int], tags=["Growing Season"])
 async def get_growing_season_for_grid(
-    grid_value: int = Path(..., title="The grid ID", ge=1, description="Identifier for the grid."),
+    grid_value: int = Path(..., ge=1),
     db_session: Session = Depends(db.get_db)
 ):
-    """
-    Retrieve growing season (start and end period) for a specific grid.
-    Returns a list of period numbers within the growing season (e.g., [1, 2, 3] if start is 1 and end is 3).
-    Returns an empty list if no data is found for the grid.
-    """
-    # Retrieve scalar start/end via func to get Python ints
-    result = db_session.query(models.GrowingSeasonByGrid.start_period, models.GrowingSeasonByGrid.end_period).filter(
-        models.GrowingSeasonByGrid.grid == grid_value
-    ).first()
+    result = (
+        db_session
+        .query(models.GrowingSeasonByGrid.start_period,
+               models.GrowingSeasonByGrid.end_period)
+        .filter(models.GrowingSeasonByGrid.grid == grid_value)
+        .first()
+    )
     if not result:
         return []
-    start, end = result  # native Python ints
-    return list(range(start, end + 1))
+
+    start, end = result
+    if start <= end:
+        return list(range(start, end + 1))
+    else:
+        # handle wrap-around seasons
+        return list(range(start, 37)) + list(range(1, end + 1))
 
 @router.get("/growing_season/{grid_value}/{period}", response_model=growing_season_schemas.GrowingSeasonPeriodCheckResponse, tags=["Growing Season"])
 async def check_period_in_growing_season_for_grid(
@@ -332,8 +332,8 @@ def get_cps_zone_period_config(cps_zone_value: int, period_value: int, db_sessio
         # If no configuration exists for the given cps_zone and period, return default 0.0 values.
         response_data = {
             "id": 0, 
-            "cps_zone": cps_zone_value,
-            "period": period_value,
+            "cps_zone_value": cps_zone_value,
+            "period_value": period_value,
             "trigger_point": 0.0,
             "exit_point": 0.0,
             "created_at": datetime.datetime.utcnow(), 

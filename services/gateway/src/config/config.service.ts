@@ -26,20 +26,21 @@ export class ConfigService {
     throw new HttpException(message, status);
   }
 
+  // Upload CPS Zone files
   async uploadCpsZone(
     trigger: Express.Multer.File,
     exit: Express.Multer.File,
-    growing: Express.Multer.File,
+    season: Express.Multer.File,
   ): Promise<any> {
     try {
       this.logger.log(
-        `uploadCpsZone: forwarding files [${trigger.originalname}, ${exit.originalname}, ${growing.originalname}]`,
+        `uploadCpsZone: forwarding files [${trigger.originalname}, ${exit.originalname}, ${season.originalname}]`,
       );
 
       const form = new FormData();
       form.append('trigger_points_file', trigger.buffer, trigger.originalname);
-      form.append('exit_points_file',    exit.buffer,    exit.originalname);
-      form.append('growing_seasons_file', growing.buffer, growing.originalname);
+      form.append('exit_points_file', exit.buffer, exit.originalname);
+      form.append('growing_seasons_file', season.buffer, season.originalname);
 
       const response: AxiosResponse<any> = await firstValueFrom(
         this.httpService.post(
@@ -55,49 +56,91 @@ export class ConfigService {
     }
   }
 
-
+  // Get CPS Zone Period Config
   async getCpsZonePeriodConfig(
-    cpsZone: number,
-    period: number,
+    cps_zone_value: number,
+    period_value: number,
   ): Promise<any> {
     try {
-      this.logger.log(`getCpsZonePeriodConfig: zone=${cpsZone}, period=${period}`);
+      this.logger.log(`getCpsZonePeriodConfig: zone=${cps_zone_value}, period=${period_value}`);
       const response: AxiosResponse<any> = await firstValueFrom(
         this.httpService.get(
-          `${this.baseUrl}/api/v1/cps-zone/${cpsZone}/${period}`,
+          `${this.baseUrl}/api/v1/cps-zone/${cps_zone_value}/${period_value}`,
         ),
       );
       return response.data;
     } catch (err: unknown) {
       this.handleError(
         err as AxiosError,
-        `Error fetching CPS Zone config for zone=${cpsZone}, period=${period}`,
+        `Error fetching CPS Zone config for zone=${cps_zone_value}, period=${period_value}`,
       );
     }
   }
 
-  async getAllPeriodsForCpsZone(cpsZone: number): Promise<any> {
+  // Get all periods for a CPS Zone
+  async getAllPeriodsForCpsZone(cps_zone_value: number): Promise<any> {
     try {
-      this.logger.log(`getAllPeriodsForCpsZone: zone=${cpsZone}`);
+      this.logger.log(`getAllPeriodsForCpsZone: zone=${cps_zone_value}`);
       const response: AxiosResponse<any> = await firstValueFrom(
         this.httpService.get(
-          `${this.baseUrl}/api/v1/cps-zone/zone/${cpsZone}`,
+          `${this.baseUrl}/api/v1/cps-zone/zone/${cps_zone_value}`,
         ),
       );
       return response.data;
     } catch (err: unknown) {
       this.handleError(
         err as AxiosError,
-        `Error fetching all periods for CPS Zone=${cpsZone}`,
+        `Error fetching all periods for CPS Zone=${cps_zone_value}`,
+      );
+    }
+  }
+
+  // Get growing season for a specific grid
+  async getGrowingSeasonForGrid(grid_value: number): Promise<any> {
+    try {
+      this.logger.log(`getGrowingSeasonForGrid: grid=${grid_value}`);
+      const response: AxiosResponse<any> = await firstValueFrom(
+        this.httpService.get(
+          `${this.baseUrl}/api/v1/cps-zone/growing_season/${grid_value}`,
+        ),
+      );
+      return response.data;
+    } catch (err: unknown) {
+      this.handleError(
+        err as AxiosError,
+        `Error fetching growing season for grid=${grid_value}`,
+      );
+    }
+  }
+
+  // Check if a period is within the growing season for a grid
+  async checkPeriodInGrowingSeasonForGrid(
+    grid_value: number,
+    period: number,
+  ): Promise<any> {
+    try {
+      this.logger.log(
+        `checkPeriodInGrowingSeasonForGrid: grid=${grid_value}, period=${period}`,
+      );
+      const response: AxiosResponse<any> = await firstValueFrom(
+        this.httpService.get(
+          `${this.baseUrl}/api/v1/cps-zone/growing_season/${grid_value}/${period}`,
+        ),
+      );
+      return response.data;
+    } catch (err: unknown) {
+      this.handleError(
+        err as AxiosError,
+        `Error checking period=${period} in growing season for grid=${grid_value}`,
       );
     }
   }
 
   async getUploadedCpsFiles(): Promise<any> {
     try {
-      this.logger.log('getUploadedCpsFiles');
+      this.logger.log('listUploadedCpsFiles');
       const response: AxiosResponse<any> = await firstValueFrom(
-        this.httpService.get(`${this.baseUrl}/api/v1/cps-zone/files`),
+        this.httpService.get(`${this.baseUrl}/api/v1/cps-zone/files/`),
       );
       return response.data;
     } catch (err: unknown) {
