@@ -385,6 +385,8 @@ services:
     restart: always
     env_file:
       - .env
+    ports:
+      - "8080:80"
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
