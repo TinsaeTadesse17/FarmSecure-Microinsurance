@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from psycopg2.errors import UniqueViolation
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from src.database.db import get_db
 from src.database.models.user import User
@@ -161,9 +163,11 @@ def update_user_account(
     try:
         db.commit()
         db.refresh(user)
-    except Exception as e:
-        print(f"Commit error: {e}")
-        raise HTTPException(status_code=500, detail="Database commit failed.")
+    except IntegrityError as e:
+        db.rollback()
+        if isinstance(e.orig, UniqueViolation):
+            raise HTTPException(status_code=409, detail="Username already exists")
+        raise HTTPException(status_code=500, detail="Username already exists.")
 
     return user
 
