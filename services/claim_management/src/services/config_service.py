@@ -19,7 +19,7 @@ async def fetch_cps_config(cps_zone: int, period: int) -> dict:
     Fetch configuration (trigger/exit) for a given CPS zone and period.
     Raises HTTPException on failure.
     """
-    url = f"{CONFIG_SERVICE_URL}{settings.API_V1_STR}/cps_zone/{cps_zone}/{period}"
+    url = f"{CONFIG_SERVICE_URL}{settings.API_V1_STR}/cps-zone/{cps_zone}/{period}"
     async with httpx.AsyncClient(timeout=timeout) as client:
         try:
             resp = await client.get(url)
