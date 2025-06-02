@@ -1,20 +1,23 @@
-# src/routes/enrolement_routes.py
-
-from fastapi import APIRouter, Depends, HTTPException, Query
+import logging
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from src.database.crud.enrolement_crud import EnrolementService
 from src.database.crud.customer_crud import CustomerService
-from src.schemas.enrolement_schema import EnrolementRequest, EnrolementResponse, CustomerResponse
-from src.database.db import get_db
-from src.schemas.customer_schema import CustomerRequest
-from src.core.config import settings
+from src.schemas.enrolement_schema import EnrolementRequest, EnrolementResponse
+from src.schemas.customer_schema import CustomerRequest, CustomerResponse
 from src.utils.grid_and_zone_getter import GridAndZoneGetter
+from src.database.db import get_db
 import httpx
 from src.database.models.customer import Customer
 
 POLICY_SERVICE_URL = settings.POLICY_SERVICE_URL + '/api'
 
+# Initialize GridAndZoneGetter
 grid_zone_getter = GridAndZoneGetter()
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -23,41 +26,71 @@ def create_enrolement(
     enrolement: EnrolementRequest,
     db: Session = Depends(get_db),
 ):
+    logger.info("Starting enrollment process...")
     service = EnrolementService(db)
     customer_service = CustomerService(db)
+
     try:
-        customer = CustomerRequest(
+        # 1) Create customer record
+        logger.info(f"Creating customer with details: {enrolement.dict()}")
+        customer_req = CustomerRequest(
             f_name=enrolement.f_name,
             m_name=enrolement.m_name,
             l_name=enrolement.l_name,
             account_no=enrolement.account_no,
             account_type=enrolement.account_type,
         )
-        customer_id = customer_service.create_customer(customer)
+        customer_id = customer_service.create_customer(customer_req)
+        logger.info(f"Customer created with ID: {customer_id}")
 
-        grid , cps_zone = grid_zone_getter.get_grid_and_zone_inference_filtered(enrolement.lattitude,  enrolement.longitude)
+        # 2) Fetch and set grid & CPS zone based on latitude/longitude
+        logger.info(f"Fetching grid and zone for coordinates: lat={enrolement.lattitude}, lon={enrolement.longitude}")
+        grid, cps_zone = grid_zone_getter.get_grid_and_zone_inference_filtered(
+            enrolement.lattitude, enrolement.longitude
+        )
         enrolement.cps_zone = cps_zone
         enrolement.grid = grid
+        logger.info(f"Grid and zone fetched: GRID={grid}, CPS_ZONE={cps_zone}")
+
     except HTTPException as e:
+        logger.error(f"HTTPException occurred: {e.detail}")
         if e.status_code == 400:
             raise HTTPException(status_code=400, detail="Customer already enrolled")
         else:
             raise HTTPException(status_code=500, detail="Internal server error")
-    
+
+    except ValueError as e:
+        logger.error(f"ValueError occurred: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+    except Exception as e:
+        logger.error(f"Unexpected error occurred: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+    # 3) Create enrollment record
+    logger.info("Creating enrollment record...")
     enroll_json = service.create_enrolement(enrolement, customer_id)
     enroll_id = enroll_json["enrolement_id"]
-    createdAt = enroll_json["createdAt"]
+    created_at = enroll_json["createdAt"]
+    logger.info(f"Enrollment created with ID: {enroll_id}, createdAt: {created_at}")
+
+    # 4) Build a complete CustomerResponse and convert to dict
+    cust = CustomerResponse(
+        customer_id=customer_id,
+        f_name=enrolement.f_name,
+        m_name=enrolement.m_name,
+        l_name=enrolement.l_name,
+        account_no=enrolement.account_no,
+        account_type=enrolement.account_type,
+    )
+    cust_dict = cust.dict()
+
+    # 5) Construct and return EnrolementResponse, passing `customer` as plain dict
     enroll = EnrolementResponse(
         enrolement_id=enroll_id,
         customer_id=customer_id,
-        customer=CustomerResponse(
-            f_name=enrolement.f_name,
-            m_name=enrolement.m_name,
-            l_name=enrolement.l_name,
-            account_no=enrolement.account_no,
-            account_type=enrolement.account_type,
-        ),
-        createdAt=createdAt,
+        customer=cust_dict,       # plain dict instead of model instance
+        createdAt=created_at,
         user_id=enrolement.user_id,
         status="pending",
         ic_company_id=enrolement.ic_company_id,
@@ -73,6 +106,7 @@ def create_enrolement(
         lattitude=enrolement.lattitude,
         longitude=enrolement.longitude,
     )
+    logger.info(f"Enrollment response prepared: {enroll.dict()}")
     return enroll
 
 @router.get("/{enrollment_id}", response_model=EnrolementResponse)

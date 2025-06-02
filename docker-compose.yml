@@ -391,6 +391,8 @@ services:
     depends_on:
       product_db:
         condition: service_healthy
+    ports:
+      - "8010:80"
     networks:
       - app_network
 
