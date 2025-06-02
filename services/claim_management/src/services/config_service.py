@@ -41,7 +41,7 @@ async def fetch_ndvi(grid_id: int, period: int) -> float:
             resp = await client.get(url)
             resp.raise_for_status()
             data = resp.json()
-            val = data.get('ndvi_value')
+            val = data.get('ndvi')
             if not isinstance(val, (int, float)):
                 logger.error("Invalid NDVI response: %s", data)
                 raise HTTPException(status_code=500, detail="Invalid NDVI format.")
@@ -58,7 +58,7 @@ async def fetch_growing_season(grid_id: int) -> list[int]:
     Fetch growing season periods for a given grid.
     Raises HTTPException on failure.
     """
-    url = f"{CONFIG_SERVICE_URL}{settings.API_V1_STR}/growing_season/{grid_id}"
+    url = f"{CONFIG_SERVICE_URL}{settings.API_V1_STR}/cps-zone/growing_season/{grid_id}"
     async with httpx.AsyncClient(timeout=timeout) as client:
         try:
             resp = await client.get(url)
