@@ -23,17 +23,28 @@ class GridAndZoneGetter:
         logger.info(f"Distance threshold set to {self.distance_threshold}")
 
     def get_grid_and_zone_inference_filtered(self, lat, lon):
-        logger.info(f"Querying grid and zone for coordinates: lat={lat}, lon={lon}")
-        if self.data_df.empty:
-            logger.warning("DataFrame is empty. Returning None, None.")
-            return None, None
-        dist, ind = self.tree_model.query([[lon, lat]], k=1)
-        logger.info(f"KDTree query result: dist={dist}, ind={ind}")
-        closest_row_index = self.data_df.iloc[ind[0][0]].name
-        closest_row = self.data_df.loc[closest_row_index]
-        logger.info(f"Closest row found: {closest_row.to_dict()}")
-        if not (1 <= closest_row["CPS_ZONE"] <= 200):
-            logger.error(f"CPS_ZONE {closest_row['CPS_ZONE']} is out of range (1-200).")
-            raise ValueError(f"CPS_ZONE {closest_row['CPS_ZONE']} is out of range (1-200).")
-        logger.info(f"Returning GRID_CODE={closest_row['GRID_CODE']}, CPS_ZONE={closest_row['CPS_ZONE']}")
-        return float(closest_row["GRID_CODE"]), float(closest_row["CPS_ZONE"])
+     logger.info(f"Querying grid and zone for coordinates: lat={lat}, lon={lon}")
+
+     if self.data_df.empty:
+        logger.warning("DataFrame is empty. Returning None, None.")
+        return None, None
+
+     dist, ind = self.tree_model.query([[lon, lat]], k=1)
+     logger.info(f"KDTree query result: dist={dist}, ind={ind}")
+
+     closest_row_index = self.data_df.iloc[ind[0][0]].name
+     closest_row = self.data_df.loc[closest_row_index]
+
+    # ✅ Explicitly log the closest latitude and longitude matched
+     closest_lat = closest_row["latitude"]
+     closest_lon = closest_row["longitude"]
+     logger.info(f"Closest match coordinates (from dataset): latitude={closest_lat}, longitude={closest_lon}")
+
+     logger.info(f"Closest row found: {closest_row.to_dict()}")
+
+     if not (1 <= closest_row["CPS_ZONE"] <= 200):
+        logger.error(f"CPS_ZONE {closest_row['CPS_ZONE']} is out of range (1-200).")
+        raise ValueError(f"CPS_ZONE {closest_row['CPS_ZONE']} is out of range (1-200).")
+
+     logger.info(f"Returning GRID_CODE={closest_row['GRID_CODE']}, CPS_ZONE={closest_row['CPS_ZONE']}")
+     return float(closest_row["GRID_CODE"]), float(closest_row["CPS_ZONE"])
