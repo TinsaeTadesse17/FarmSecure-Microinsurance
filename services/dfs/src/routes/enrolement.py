@@ -322,3 +322,4 @@ def reject_enrolement(
         return service.reject_enrolement(enrollment_id)
     except HTTPException as e:
         raise e
+    
