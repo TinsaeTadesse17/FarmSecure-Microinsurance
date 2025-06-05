@@ -139,6 +139,7 @@ def read_enrolement(
         enrolement_id=db_enr.enrolment_id,
         customer_id=db_enr.customer_id,
         customer=CustomerResponse(
+            customer_id=db_customer.customer_id,
             f_name=db_customer.f_name,
             m_name=db_customer.m_name,
             l_name=db_customer.l_name,
@@ -178,6 +179,7 @@ def get_enrollments_by_company_id(
             enrolement_id=db_enr.enrolment_id,
             customer_id=db_enr.customer_id,
             customer=CustomerResponse(
+                customer_id=db_customer.customer_id,
                 f_name=db_customer.f_name,
                 m_name=db_customer.m_name,
                 l_name=db_customer.l_name,
@@ -217,6 +219,7 @@ def get_enrollments_by_user_id(
             enrolement_id=db_enr.enrolment_id,
             customer_id=db_enr.customer_id,
             customer=CustomerResponse(
+                customer_id=db_customer.customer_id,
                 f_name=db_customer.f_name,
                 m_name=db_customer.m_name,
                 l_name=db_customer.l_name,
@@ -255,6 +258,7 @@ def list_enrolements(
             enrolement_id=db_enr.enrolment_id,
             customer_id=db_enr.customer_id,
             customer=CustomerResponse(
+                customer_id=db_customer.customer_id,
                 f_name=db_customer.f_name,
                 m_name=db_customer.m_name,
                 l_name=db_customer.l_name,
