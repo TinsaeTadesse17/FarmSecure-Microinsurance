@@ -3,6 +3,7 @@ from decimal import Decimal
 from pydantic import BaseModel
 
 class CustomerResponse(BaseModel):
+    customer_id: int
     f_name: str
     m_name: str
     l_name: str
@@ -49,3 +50,4 @@ class EnrolementResponse(BaseModel):
     grid: int | float | Decimal | None
     lattitude: float 
     longitude: float
+

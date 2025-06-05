@@ -1,5 +1,4 @@
-# src/routes/enrolement_routes.py
-
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from src.database.crud.enrolement_crud import EnrolementService
@@ -14,7 +13,12 @@ from src.database.models.customer import Customer
 
 POLICY_SERVICE_URL = settings.POLICY_SERVICE_URL + '/api'
 
+# Initialize GridAndZoneGetter
 grid_zone_getter = GridAndZoneGetter()
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -23,41 +27,84 @@ def create_enrolement(
     enrolement: EnrolementRequest,
     db: Session = Depends(get_db),
 ):
+    logger.info(">>> Incoming Enrollment Request")
+    logger.info(f"Payload: {enrolement.dict()}")
+
     service = EnrolementService(db)
     customer_service = CustomerService(db)
+
     try:
-        customer = CustomerRequest(
+        # 1) Validate coordinates
+        if enrolement.lattitude is None or enrolement.longitude is None:
+            logger.error("Latitude or longitude is missing.")
+            raise HTTPException(status_code=400, detail="Latitude or longitude is required.")
+
+        logger.info(f"Validated coordinates: lat={enrolement.lattitude}, lon={enrolement.longitude}")
+
+        # 2) Create customer
+        customer_req = CustomerRequest(
             f_name=enrolement.f_name,
             m_name=enrolement.m_name,
             l_name=enrolement.l_name,
             account_no=enrolement.account_no,
             account_type=enrolement.account_type,
         )
-        customer_id = customer_service.create_customer(customer)
 
-        grid , cps_zone = grid_zone_getter.get_grid_and_zone_inference_filtered(enrolement.lattitude,  enrolement.longitude)
+        logger.info("Creating customer record...")
+        customer_id = customer_service.create_customer(customer_req)
+        logger.info(f"Customer created successfully with ID: {customer_id}")
+
+        # 3) Grid and zone lookup
+        logger.info("Calling GridAndZoneGetter to fetch grid and zone...")
+        try:
+            grid, cps_zone = grid_zone_getter.get_grid_and_zone_inference_filtered(
+                enrolement.lattitude, enrolement.longitude
+            )
+            logger.info(f"Received GRID: {grid}, CPS_ZONE: {cps_zone}")
+        except Exception as e:
+            logger.exception("Grid and zone lookup failed.")
+            raise HTTPException(status_code=400, detail=f"Grid/Zone error: {str(e)}")
+
         enrolement.cps_zone = cps_zone
         enrolement.grid = grid
+
     except HTTPException as e:
-        if e.status_code == 400:
-            raise HTTPException(status_code=400, detail="Customer already enrolled")
-        else:
-            raise HTTPException(status_code=500, detail="Internal server error")
-    
-    enroll_json = service.create_enrolement(enrolement, customer_id)
-    enroll_id = enroll_json["enrolement_id"]
-    createdAt = enroll_json["createdAt"]
-    enroll = EnrolementResponse(
+        logger.error(f"Handled HTTPException: {e.detail}")
+        raise
+    except ValueError as e:
+        logger.error(f"Handled ValueError: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.exception("Unhandled exception during enrollment setup.")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+    # 4) Create enrollment
+    logger.info("Creating enrollment record...")
+    try:
+        enroll_json = service.create_enrolement(enrolement, customer_id)
+        enroll_id = enroll_json["enrolement_id"]
+        created_at = enroll_json["createdAt"]
+        logger.info(f"Enrollment created: ID={enroll_id}, createdAt={created_at}")
+    except Exception as e:
+        logger.exception("Failed to create enrollment record.")
+        raise HTTPException(status_code=500, detail="Enrollment creation failed")
+
+    # 5) Prepare customer response
+    cust_dict = CustomerResponse(
+        customer_id=customer_id,
+        f_name=enrolement.f_name,
+        m_name=enrolement.m_name,
+        l_name=enrolement.l_name,
+        account_no=enrolement.account_no,
+        account_type=enrolement.account_type,
+    ).dict()
+
+    # 6) Return enrollment response
+    response = EnrolementResponse(
         enrolement_id=enroll_id,
         customer_id=customer_id,
-        customer=CustomerResponse(
-            f_name=enrolement.f_name,
-            m_name=enrolement.m_name,
-            l_name=enrolement.l_name,
-            account_no=enrolement.account_no,
-            account_type=enrolement.account_type,
-        ),
-        createdAt=createdAt,
+        customer=cust_dict,
+        createdAt=created_at,
         user_id=enrolement.user_id,
         status="pending",
         ic_company_id=enrolement.ic_company_id,
@@ -73,7 +120,10 @@ def create_enrolement(
         lattitude=enrolement.lattitude,
         longitude=enrolement.longitude,
     )
-    return enroll
+
+    logger.info(f"Final enrollment response: {response.dict()}")
+    return response
+
 
 @router.get("/{enrollment_id}", response_model=EnrolementResponse)
 def read_enrolement(
@@ -89,6 +139,7 @@ def read_enrolement(
         enrolement_id=db_enr.enrolment_id,
         customer_id=db_enr.customer_id,
         customer=CustomerResponse(
+            customer_id=db_customer.customer_id,
             f_name=db_customer.f_name,
             m_name=db_customer.m_name,
             l_name=db_customer.l_name,
@@ -128,6 +179,7 @@ def get_enrollments_by_company_id(
             enrolement_id=db_enr.enrolment_id,
             customer_id=db_enr.customer_id,
             customer=CustomerResponse(
+                customer_id=db_customer.customer_id,
                 f_name=db_customer.f_name,
                 m_name=db_customer.m_name,
                 l_name=db_customer.l_name,
@@ -167,6 +219,7 @@ def get_enrollments_by_user_id(
             enrolement_id=db_enr.enrolment_id,
             customer_id=db_enr.customer_id,
             customer=CustomerResponse(
+                customer_id=db_customer.customer_id,
                 f_name=db_customer.f_name,
                 m_name=db_customer.m_name,
                 l_name=db_customer.l_name,
@@ -205,6 +258,7 @@ def list_enrolements(
             enrolement_id=db_enr.enrolment_id,
             customer_id=db_enr.customer_id,
             customer=CustomerResponse(
+                customer_id=db_customer.customer_id,
                 f_name=db_customer.f_name,
                 m_name=db_customer.m_name,
                 l_name=db_customer.l_name,
