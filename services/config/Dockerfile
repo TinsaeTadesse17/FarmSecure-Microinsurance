@@ -22,7 +22,7 @@ RUN pip install --upgrade pip setuptools wheel
 COPY requirements.txt .
 
 # Install Python dependencies with verbose logging to debug potential metadata errors
-RUN pip install -vvv -r requirements.txt
+RUN pip install --prefer-binary -r requirements.txt
 
 # Copy the rest of the application code
 COPY . .
