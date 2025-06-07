@@ -2,6 +2,7 @@ from pydantic_settings import BaseSettings
 from pydantic import ConfigDict
 
 class Settings(BaseSettings):
+    REDIS_HOST: str
     DATABASE_URL: str
     DFS_SERVICE_URL: str
     PRODUCT_SERVICE_URL: str
@@ -9,3 +10,5 @@ class Settings(BaseSettings):
     model_config = ConfigDict(from_attributes=True)
 
 settings = Settings()
+
+

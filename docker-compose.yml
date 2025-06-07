@@ -158,6 +158,14 @@ services:
     networks:
       - app_network
 
+  redis:
+   image: redis:7
+   container_name: redis
+   ports:
+      - "6379:6379"
+   networks:
+      - app_network
+
   policy_service:
     build:
       context: ./services/policy
@@ -169,7 +177,12 @@ services:
     depends_on:
       policy_db:
         condition: service_started
+      redis:
+        condition: service_started
+    ports:
+      - "8050:8000"
     environment:
+      REDIS_HOST: redis
       DB_HOST: policy_db
       DB_PORT: 5432
       DB_USER: ${POLICY_DB_USER}
@@ -385,14 +398,15 @@ services:
     restart: always
     env_file:
       - .env
+    ports:
+      - "8010:80"
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     depends_on:
       product_db:
         condition: service_healthy
-    ports:
-      - "8010:80"
+
     networks:
       - app_network
 

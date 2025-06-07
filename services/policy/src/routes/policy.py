@@ -1,6 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
+import redis
+import json
+import logging
+from src.core.redis import redis_client  
 from src.database.db import get_db
 from src.database.crud.policy_crud import (
 
@@ -17,6 +21,7 @@ from ..schemas.policy_schema import (
 )
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 @router.post("/policy", response_model=PolicySchema)
 def create_policy_endpoint(
@@ -90,7 +95,31 @@ def list_policies_endpoint(
     return list_policies(db)
 
 @router.get("/policies/details", response_model=List[dict])
-def list_policy_details_endpoint(
-    db: Session = Depends(get_db)
-):
-    return list_policy_details(db)
+async def list_policy_details_endpoint(db: Session = Depends(get_db)):
+    cache_key = "cached_policy_details"
+
+    try:
+        cached_data = await redis_client.get(cache_key)
+        if cached_data:
+            return json.loads(cached_data)
+    except Exception as e:
+        # Log and continue to fallback to DB
+        print(f"[Redis] Cache read failed: {e}")
+
+    if cached_data:
+        logger.info("[CACHE] Returning cached policy details.")
+    else:
+        logger.info("[CACHE MISS] Fetching policy details from DB.")
+
+    try:
+        details = list_policy_details(db)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to fetch policy details from DB.")
+
+    try:
+        await redis_client.set(cache_key, json.dumps(details), ex=60)  # cache for 1 min
+    except Exception as e:
+        print(f"[Redis] Cache write failed: {e}")
+
+    return details
+
