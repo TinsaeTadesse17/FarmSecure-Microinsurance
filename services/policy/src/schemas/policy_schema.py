@@ -3,6 +3,7 @@ from typing import List, Optional
 
 class PolicyDetailSchema(BaseModel):
     period: int
+    company_id: int
     period_sum_insured: float
 
     class Config:

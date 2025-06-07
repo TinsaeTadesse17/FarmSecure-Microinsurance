@@ -23,6 +23,7 @@ class Policy(Base):
 class PolicyDetail(Base):
     __tablename__ = 'policy_detail'
     policy_detail_id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer,  nullable=False)
     policy_id = Column(Integer, ForeignKey('policy.policy_id'), nullable=False)
     period = Column(Integer, nullable=False)
     period_sum_insured = Column(Numeric(14, 2), nullable=False)

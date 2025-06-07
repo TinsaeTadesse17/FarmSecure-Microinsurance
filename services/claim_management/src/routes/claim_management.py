@@ -71,6 +71,7 @@ async def process_all_claims_task(db_session_factory, background_tasks_parent: B
                 
                 claim_data = {
                     "policy_id": current_policy_id,
+                    "company_id": policy.get('company_id'),  # Ensure company_id is included
                     "customer_id": policy['customer_id'],
                     "grid_id": policy.get('grid') or policy['cps_zone'], 
                     "claim_type": ctype,
@@ -148,6 +149,7 @@ class ClaimDetailForCustomerOutputSchema(BaseModel):
     # Explicitly list fields for the output, EXCLUDING cps_zone
     id: int
     policy_id: int
+    company_id: int | None = None # Assuming these might be on the DB object
     grid_id: str | None = None
     claim_type: str
     status: str
@@ -355,6 +357,7 @@ async def create_crop_claim(
         db.begin_nested() # Use a nested transaction for individual claim creation
         try:
             claim_data = {
+                "company_id": policy['company_id'], # Ensure company_id is included
                 "policy_id": policy['policy_id'],
                 "customer_id": policy['customer_id'],
                 "grid_id": policy.get('grid') or policy['cps_zone'], # Use 'grid' if available, else 'cps_zone'
@@ -413,6 +416,7 @@ async def create_livestock_claim(
         db.begin_nested()
         try:
             claim_data = {
+                "company_id": policy['company_id'], # Ensure company_id is included
                 "policy_id": policy['policy_id'],
                 "customer_id": policy['customer_id'],
                 "grid_id": policy.get('grid') or policy['cps_zone'], # Use 'grid' if available, else 'cps_zone'
@@ -506,6 +510,7 @@ async def get_claims_grouped_by_customer(db: Session = Depends(get_db)):
             # Prepare data for ClaimDetailForCustomerOutputSchema
             data_for_output_schema = {
                 "id": claim_db_obj.id,
+                "company_id": claim_db_obj.company_id,# Assuming company_id might be on the DB object
                 "policy_id": claim_db_obj.policy_id,
                 "grid_id": str(getattr(claim_db_obj, 'grid_id', None)),
                 "claim_type": getattr(claim_db_obj, 'claim_type', None),

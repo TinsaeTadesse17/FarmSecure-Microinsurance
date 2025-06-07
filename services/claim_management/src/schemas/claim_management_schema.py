@@ -15,6 +15,7 @@ class ClaimStatusEnum(str, Enum):
 
 class ClaimBase(BaseModel):
     policy_id: int
+    company_id: int
     customer_id: int
     grid_id: int # Changed from cps_zone to grid_id
     period: int  # Added period

@@ -20,6 +20,7 @@ class Claim(Base):
     __tablename__ = "claim"
 
     id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, nullable=False)
     policy_id = Column(Integer, nullable=False)
     customer_id = Column(Integer, nullable=False)
     grid_id = Column(Integer, nullable=False)

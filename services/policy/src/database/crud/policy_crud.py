@@ -48,10 +48,12 @@ def create_policy(db: Session, enrollment_id: int) -> Policy:
         # Livestock: 2 periods
         details.append(PolicyDetail(
             policy_id=policy.policy_id, period=1,
+            company_id=policy.ic_company_id, 
             period_sum_insured=sum_insured * 0.58
         ))
         details.append(PolicyDetail(
             policy_id=policy.policy_id, period=2,
+            company_id=policy.ic_company_id, 
             period_sum_insured=sum_insured * 0.42
         ))
     else:
@@ -61,6 +63,7 @@ def create_policy(db: Session, enrollment_id: int) -> Policy:
             details.append(PolicyDetail(
                 policy_id=policy.policy_id,
                 period=p,
+                company_id=policy.ic_company_id,
                 period_sum_insured=per_sum
             ))
 
@@ -114,6 +117,7 @@ def list_policy_details(db: Session):
         enrollment = fetch_enrollment(p.enrollment_id)
         output.append({
             'policy_detail_id': d.policy_detail_id,
+            'company_id': p.ic_company_id,
             'customer_id': enrollment.get('customer_id'),
             'policy_id': p.policy_id,
             'period_sum_insured': float(d.period_sum_insured),
