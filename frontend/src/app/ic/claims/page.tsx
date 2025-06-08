@@ -2,13 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/ic/sidebar';
 import AvatarMenu from '@/components/common/avatar';
-import { fetchClaimsByCustomer, CustomerClaimsSummary } from '@/utils/api/claim';
+import { fetchClaimsByCustomerByCompany, CustomerClaimsSummary } from '@/utils/api/claim';
+import { getToken, getCurrentUser } from '@/utils/api/user';
 import { Sprout, ChevronDown, ChevronUp } from 'lucide-react';
-
-// CSV export
 import { CSVLink } from 'react-csv';
-
-// PDF export
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
@@ -18,9 +15,28 @@ export default function ClaimsPage() {
   const [data, setData] = useState<CustomerClaimsSummary[]>([]);
 
   useEffect(() => {
-    (async () => {
+    const fetchClaims = async () => {
+      setLoading(true);
+      setError(null);
+
       try {
-        const summary = await fetchClaimsByCustomer();
+        const token = await getToken();
+        if (!token) {
+          setError('No authentication token found. Please log in.');
+          setLoading(false);
+          return;
+        }
+
+        const user = await getCurrentUser();
+        const company_id = Number(user.company_id);
+
+        if (!company_id) {
+          setError('Invalid company ID. Please check your account.');
+          setLoading(false);
+          return;
+        }
+
+        const summary = await fetchClaimsByCustomerByCompany(company_id);
         setData(summary);
       } catch (e: any) {
         const msg = e.message.toLowerCase();
@@ -34,10 +50,11 @@ export default function ClaimsPage() {
       } finally {
         setLoading(false);
       }
-    })();
+    };
+
+    fetchClaims();
   }, []);
 
-  // Flatten for both CSV and PDF
   const exportRows = data.flatMap(group =>
     group.claims.map(c => ({
       customerId: group.customer_id,
@@ -50,15 +67,14 @@ export default function ClaimsPage() {
     }))
   );
 
-  // CSV headers
   const csvHeaders = [
     { label: 'Customer ID', key: 'customerId' },
-    { label: 'Policy ID',    key: 'policyId' },
-    { label: 'Claim Type',   key: 'claimType' },
-    { label: 'Amount',       key: 'claimAmount' },
-    { label: 'Status',       key: 'status' },
-    { label: 'Grid ID',      key: 'gridId' },
-    { label: 'Period',       key: 'period' },
+    { label: 'Policy ID', key: 'policyId' },
+    { label: 'Claim Type', key: 'claimType' },
+    { label: 'Amount', key: 'claimAmount' },
+    { label: 'Status', key: 'status' },
+    { label: 'Grid ID', key: 'gridId' },
+    { label: 'Period', key: 'period' },
   ];
 
   const handleExportPDF = () => {
@@ -102,6 +118,7 @@ export default function ClaimsPage() {
   }
 
   if (error) return <div className="text-red-600">{error}</div>;
+
   if (data.length === 0 || data[0].claims.length === 0) {
     return (
       <div className="flex min-h-screen bg-[#f9f8f3] text-[#2c423f]">
@@ -148,11 +165,11 @@ export default function ClaimsPage() {
 
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold text-[#2c423f] mb-8">Insurance Claims</h1>
-          
+
           <div className="space-y-4">
             {data.map(group => (
-              <details 
-                key={group.customer_id} 
+              <details
+                key={group.customer_id}
                 className="group bg-white rounded-xl shadow-sm border border-[#e0e7d4]"
               >
                 <summary className="flex justify-between items-center p-6 cursor-pointer list-none">
@@ -169,11 +186,11 @@ export default function ClaimsPage() {
                     {group.claims.length} claim{group.claims.length !== 1 ? 's' : ''}
                   </span>
                 </summary>
-                
+
                 <div className="px-6 pb-6 pt-2 space-y-4">
                   {group.claims.map(c => (
-                    <details 
-                      key={c.id} 
+                    <details
+                      key={c.id}
                       className="bg-[#f9f8f3] p-4 rounded-lg border border-[#e0e7d4] hover:border-[#3a5a40] transition-colors"
                     >
                       <summary className="flex justify-between items-center cursor-pointer list-none">
@@ -181,11 +198,15 @@ export default function ClaimsPage() {
                           <span className="font-medium text-[#2c423f]">Policy {c.policy_id}</span>
                           <span className="text-gray-500 ml-2">– {c.claim_type}</span>
                         </div>
-                        <span className={`text-lg font-semibold ${c.claim_amount === 0 ? 'text-gray-500' : 'text-[#3a5a40]'}`}>
+                        <span
+                          className={`text-lg font-semibold ${
+                            c.claim_amount === 0 ? 'text-gray-500' : 'text-[#3a5a40]'
+                          }`}
+                        >
                           ${c.claim_amount.toFixed(2)}
                         </span>
                       </summary>
-                      
+
                       {c.claim_amount > 0 && (
                         <div className="mt-4 pt-4 border-t border-[#e0e7d4]">
                           <div className="grid grid-cols-2 gap-4 text-sm">

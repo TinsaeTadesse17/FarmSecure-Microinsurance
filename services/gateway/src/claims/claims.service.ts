@@ -1,6 +1,6 @@
-import { Injectable, Logger, HttpException } from '@nestjs/common';
+import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, lastValueFrom } from 'rxjs';
 import { AxiosError } from 'axios';
 
 @Injectable()
@@ -97,4 +97,19 @@ export class ClaimsService {
       this.handleError(err as AxiosError, 'Error fetching all claims');
     }
   }
+
+async getByCustomerByCompany(company_id: number) {
+  try {
+    const { data } = await firstValueFrom(
+      this.httpService.get(`${this.baseUrl}/api/v1/claim/claims/by-customer/${company_id}`)
+    );
+    return data;
+  } catch (error: any) {
+    if (error.response?.status === 404) {
+      throw new HttpException('No claims found for the specified company', HttpStatus.NOT_FOUND);
+    }
+    throw new HttpException('Error retrieving claims by company', HttpStatus.INTERNAL_SERVER_ERROR);
+  }
+}
+
 }

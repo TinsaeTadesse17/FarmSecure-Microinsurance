@@ -581,3 +581,64 @@ def authorize_claim_endpoint(claim_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Claim not found")
     print(f"Claim with ID {claim_id} authorized successfully.")
     return claim
+
+@router.get("/claims/by-customer/{company_id}", response_model=List[CustomerClaimsSummarySchema], tags=["claims"])
+async def get_claims_grouped_by_customer_and_company(
+    company_id: int,
+    db: Session = Depends(get_db)
+):
+    print(f"Received request to get claims grouped by customer for company_id {company_id}.")
+    all_claims_db = get_all_claims(db)
+    if not all_claims_db:
+        print("No claims found in the system.")
+        raise HTTPException(status_code=404, detail="No claims found in the system.")
+
+    # Filter claims by company_id
+    filtered_claims = [claim for claim in all_claims_db if claim.company_id == company_id]
+    print(f"Filtered down to {len(filtered_claims)} claims for company_id {company_id}.")
+
+    if not filtered_claims:
+        raise HTTPException(status_code=404, detail="No claims found for the specified company.")
+
+    try:
+        policy_details_list = await fetch_policy_details()
+    except HTTPException as e:
+        raise HTTPException(status_code=503, detail=f"Policy service unavailable: {e.detail}")
+    except Exception as e:
+        logger.exception("Failed to fetch policy details", exc_info=True)
+        raise HTTPException(status_code=503, detail="Could not retrieve policy details.")
+
+    policy_info_map = {policy['policy_id']: policy for policy in policy_details_list}
+    customer_aggregated_claims = {}
+
+    for claim_db_obj in filtered_claims:
+        if claim_db_obj.customer_id is None:
+            continue
+
+        customer_id = claim_db_obj.customer_id
+        policy_id = claim_db_obj.policy_id
+        period = policy_info_map.get(policy_id, {}).get('period')
+
+        claim_output_item = ClaimDetailForCustomerOutputSchema(
+            id=claim_db_obj.id,
+            company_id=claim_db_obj.company_id,
+            policy_id=policy_id,
+            grid_id=str(getattr(claim_db_obj, 'grid_id', None)),
+            claim_type=claim_db_obj.claim_type,
+            status=claim_db_obj.status,
+            claim_amount=claim_db_obj.claim_amount,
+            # created_at=claim_db_obj.created_at,
+            # updated_at=claim_db_obj.updated_at,
+            period=period
+        )
+
+        if customer_id not in customer_aggregated_claims:
+            customer_aggregated_claims[customer_id] = []
+        customer_aggregated_claims[customer_id].append(claim_output_item)
+
+    result = [
+        CustomerClaimsSummarySchema(customer_id=cust_id, claims=claims_list)
+        for cust_id, claims_list in customer_aggregated_claims.items()
+    ]
+    print(f"Returning claims grouped for {len(result)} customers under company_id {company_id}.")
+    return result

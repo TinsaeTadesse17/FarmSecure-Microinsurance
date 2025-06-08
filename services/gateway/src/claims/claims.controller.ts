@@ -79,4 +79,17 @@ export class ClaimsController {
     }
     return this.claimsService.authorize(claim_id);
   }
+
+  @Roles(Role.IC, Role.Agent)
+@Get('/claims/by-customer/:company_id')
+@ApiOperation({ summary: 'Get claims grouped by customer for a specific company' })
+@ApiResponse({ status: 200, description: 'List of customer claim summaries for the given company' })
+@ApiResponse({ status: 404, description: 'No claims found for this company' })
+async getByCustomerByCompany(@Param('company_id', ParseIntPipe) company_id: number) {
+  if (isNaN(company_id)) {
+    throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
+  }
+  return this.claimsService.getByCustomerByCompany(company_id);
+}
+
 }

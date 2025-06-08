@@ -14,7 +14,7 @@ interface ProductWithPremium extends Product {
   premium_rate?: number;
   commission?: number;
   elc: number;
-  load?: number;
+  load?: number;wwwwww
   discount?: number;
   trigger?: number;
   exit?: number;
