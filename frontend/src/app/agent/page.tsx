@@ -41,7 +41,7 @@ export default function CustomerEnrollmentPage() {
     productId: 1,
     cpsZone: 0,
     longitude: '',
-    latitude: '',
+    lattitude: '',
     grid: 0
   });
 
@@ -103,7 +103,7 @@ useEffect(() => {
   const handleLocationSelect = (lat: number, lng: number) => {
     setFormData(prev => ({
       ...prev,
-      latitude: lat.toString(),
+      lattitude: lat.toString(),
       longitude: lng.toString()
     }));
   };
@@ -138,7 +138,7 @@ useEffect(() => {
         product_id: formData.productId,
         cps_zone: "0",
         longitude: formData.longitude,
-        latitude: formData.latitude,
+        lattitude: formData.lattitude,
         grid: "0"
       });
 
@@ -157,7 +157,7 @@ useEffect(() => {
         productId: 1,
         cpsZone: 0,
         longitude: '',
-        latitude: '',
+        lattitude: '',
         grid: 0
       });
     } catch (error: any) {
@@ -318,9 +318,9 @@ useEffect(() => {
               <div>
                 <h3 className="text-lg font-medium text-[#3a584e] mb-2">Location (Click map to set)</h3>
                 <MapPicker onLocationSelect={handleLocationSelect} />
-                {formData.latitude && formData.longitude && (
+                {formData.lattitude && formData.longitude && (
                   <p className="text-sm text-[#7a938f] mt-2">
-                    Selected Coordinates: <strong>{formData.latitude}, {formData.longitude}</strong>
+                    Selected Coordinates: <strong>{formData.lattitude}, {formData.longitude}</strong>
                   </p>
                 )}
               </div>

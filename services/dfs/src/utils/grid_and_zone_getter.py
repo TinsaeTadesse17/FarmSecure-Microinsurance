@@ -37,10 +37,10 @@ class GridAndZoneGetter:
             closest_row_index = self.data_df.iloc[ind[0][0]].name
             closest_row = self.data_df.loc[closest_row_index]
 
-            # ✅ Explicitly log the closest latitude and longitude matched
-            closest_lat = closest_row["latitude"]
+            # ✅ Explicitly log the closest lattitude and longitude matched
+            closest_lat = closest_row["lattitude"]
             closest_lon = closest_row["longitude"]
-            logger.info(f"Closest match coordinates (from dataset): latitude={closest_lat}, longitude={closest_lon}")
+            logger.info(f"Closest match coordinates (from dataset): lattitude={closest_lat}, longitude={closest_lon}")
 
             logger.info(f"Closest row found: {closest_row.to_dict()}")
 

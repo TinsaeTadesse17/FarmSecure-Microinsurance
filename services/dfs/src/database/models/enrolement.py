@@ -34,5 +34,5 @@ class Enrolement(Base):
     cps_zone     = Column(Integer, nullable=False)
     createdAt    = Column(Date, server_default=func.now(), nullable=False)
     grid = Column(Integer, nullable=False)
-    latitude = Column(Numeric(12, 8), nullable=False)
+    lattitude = Column(Numeric(12, 8), nullable=False)
     longitude = Column(Numeric(12, 8), nullable=False)
