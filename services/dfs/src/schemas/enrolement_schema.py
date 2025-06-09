@@ -25,7 +25,7 @@ class EnrolementRequest(BaseModel):
     date_to: datetime
     receipt_no: str
     product_id: int
-    lattitude: float
+    latitude: float
     longitude: float
     grid: int
     cps_zone: int
@@ -48,6 +48,6 @@ class EnrolementResponse(BaseModel):
     product_id: int
     cps_zone: int | float
     grid: int | float | Decimal | None
-    lattitude: float 
+    latitude: float 
     longitude: float
 

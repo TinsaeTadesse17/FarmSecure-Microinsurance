@@ -35,11 +35,11 @@ def create_enrolement(
 
     try:
         # 1) Validate coordinates
-        if enrolement.lattitude is None or enrolement.longitude is None:
+        if enrolement.latitude is None or enrolement.longitude is None:
             logger.error("Latitude or longitude is missing.")
             raise HTTPException(status_code=400, detail="Latitude or longitude is required.")
 
-        logger.info(f"Validated coordinates: lat={enrolement.lattitude}, lon={enrolement.longitude}")
+        logger.info(f"Validated coordinates: lat={enrolement.latitude}, lon={enrolement.longitude}")
 
         # 2) Create customer
         customer_req = CustomerRequest(
@@ -58,7 +58,7 @@ def create_enrolement(
         logger.info("Calling GridAndZoneGetter to fetch grid and zone...")
         try:
             grid, cps_zone = grid_zone_getter.get_grid_and_zone_inference_filtered(
-                enrolement.lattitude, enrolement.longitude
+                enrolement.latitude, enrolement.longitude
             )
             logger.info(f"Received GRID: {grid}, CPS_ZONE: {cps_zone}")
         except Exception as e:
@@ -117,7 +117,7 @@ def create_enrolement(
         product_id=enrolement.product_id,
         cps_zone=enrolement.cps_zone,
         grid=enrolement.grid,
-        lattitude=enrolement.lattitude,
+        latitude=enrolement.latitude,
         longitude=enrolement.longitude,
     )
 
@@ -159,7 +159,7 @@ def read_enrolement(
         product_id=db_enr.product_id,
         cps_zone=db_enr.cps_zone,
         grid=db_enr.grid,
-        lattitude=db_enr.lattitude,
+        latitude=db_enr.latitude,
         longitude=db_enr.longitude,
     )
     return result
@@ -199,7 +199,7 @@ def get_enrollments_by_company_id(
             product_id=db_enr.product_id,
             cps_zone=db_enr.cps_zone,
             grid=db_enr.grid,
-            lattitude=db_enr.lattitude,
+            latitude=db_enr.latitude,
             longitude=db_enr.longitude,
         )
         result.append(enrol)
@@ -239,7 +239,7 @@ def get_enrollments_by_user_id(
             product_id=db_enr.product_id,
             cps_zone=db_enr.cps_zone,
             grid=db_enr.grid,
-            lattitude=db_enr.lattitude,
+            latitude=db_enr.latitude,
             longitude=db_enr.longitude,
         )
         result.append(enrol)
@@ -278,7 +278,7 @@ def list_enrolements(
             product_id=db_enr.product_id,
             cps_zone=db_enr.cps_zone,
             grid=db_enr.grid,
-            lattitude=db_enr.lattitude,
+            latitude=db_enr.latitude,
             longitude=db_enr.longitude,
         )
         result.append(enrol)

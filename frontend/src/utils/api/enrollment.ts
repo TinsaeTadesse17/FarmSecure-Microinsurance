@@ -21,7 +21,7 @@ export interface EnrollmentPayload extends CustomerInfo {
   cps_zone: string;
   longitude: string;
   grid: string;
-  lattitude: string;
+  latitude: string;
 }
 
 export interface EnrollmentResponse {

@@ -48,7 +48,7 @@ class EnrolementService:
             customer_id = customer_id,
             cps_zone  = enrolement.cps_zone,
             grid     = enrolement.grid,
-            lattitude = enrolement.lattitude,
+            latitude = enrolement.latitude,
             longitude = enrolement.longitude,
             user_id      = enrolement.user_id,
             ic_company_id= enrolement.ic_company_id,
