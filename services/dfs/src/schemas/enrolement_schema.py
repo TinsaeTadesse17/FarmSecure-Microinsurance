@@ -48,6 +48,6 @@ class EnrolementResponse(BaseModel):
     product_id: int
     cps_zone: int | float
     grid: int | float | Decimal | None
-    latitude: float 
+    lattitude: float 
     longitude: float
 
