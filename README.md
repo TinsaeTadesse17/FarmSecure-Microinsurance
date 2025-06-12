@@ -1,6 +1,6 @@
-# 🌾Agteck Micro Insurance Platform
+# 🌾FarmSecure-Microinsurance Platform
 
-This project implements a comprehensive backend for a **Agteck Micro Insurance Platform** that supports crop and livestock insurance with configurable products, policy management, enrolment, claims processing, NDVI-based trigger evaluation, commission tracking, and more.
+This project implements a comprehensive backend for a **FarmSecure-Microinsurance Platform** that supports crop and livestock insurance with configurable products, policy management, enrolment, claims processing, NDVI-based trigger evaluation, commission tracking, and more.
 
 ## 🚀 Project Overview
 
